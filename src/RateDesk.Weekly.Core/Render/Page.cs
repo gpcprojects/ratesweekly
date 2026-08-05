@@ -83,11 +83,12 @@ namespace RateDesk.Weekly.Core.Render
                 .rw-navrow{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;justify-content:center}
                 .rw-navrow+.rw-navrow{border-top:1px solid var(--rw-border);padding-top:8px}
                 .rw-grp{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
-                .rw-grp b{font-size:10px;letter-spacing:.08em;color:var(--rw-muted);text-transform:uppercase;margin-right:2px}
+                .rw-grp b{font-size:13px;letter-spacing:.06em;color:var(--rw-ink);text-transform:uppercase;
+                  font-weight:700;margin-right:4px}
                 .rw-nav a{text-decoration:none;color:var(--rw-ink2);padding:3px 7px;border-radius:6px;font-size:12px}
                 .rw-nav a:hover{background:var(--rw-plane);color:var(--rw-ink)}
                 .rw-nav a.on{background:var(--rw-today);color:var(--rw-surface);font-weight:600}
-                .rw-hub{font-weight:600}
+                .rw-hub{font-weight:700;font-size:13px;color:var(--rw-ink);letter-spacing:.02em}
                 /* Two panels per row on a widescreen; one on anything narrower. 820px is the point
                    below which a panel's table+chart split stops being readable. */
                 .rw-panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(820px,1fr));
