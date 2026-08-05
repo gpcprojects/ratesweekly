@@ -58,6 +58,38 @@ seeded forever, so raising SeedDays would have fetched nothing, reported success
 charts dark permanently. Fixed, with regression tests (`SeededDepth_IsWhatDrivesDeepening…`).
 Do not reintroduce an existence test there.
 
+## 0b. Ticker conventions established by probing (do not re-derive; do not guess)
+
+All verified against the live terminal 2026-08-05 by NAME/SECURITY_DES, never by "has a price".
+
+| Family | Pattern | Notes |
+|---|---|---|
+| Nominal forwards (FWCM) | `{id}FS {start}{tenor} BLC Curncy` | e.g. `S0490FS 5Y2Y BLC Curncy`. **BLC is mandatory** |
+| Nominal forwards (year-pair) | `{id}{start:00}{tenor:00} BLC Curncy` | EUSA / NDFS / SKFS / SAFS / KWFS |
+| **Inflation forwards** | `.{US\|EU\|UK}{start}{tenor}IN G Index` | `.US1010IN G Index` = 10y10y, `.US22IN G Index` = 2y2y. Bare integers, no padding. Calculated indices: price-only, **no bid/ask, no maturity** |
+| Inflation ZC par | `USSWIT{n}` / `BPSWIT{n}` / `EUSWI{n}` | 1y-30y |
+| **Inflation monthly fixings** | `USSWIF{m}` / `BPSWIF{m}` / `EUSWIF{m}` | `m` = CALENDAR MONTH (1=Jan…12=Dec), not position |
+
+**Inflation forward grid** — sparse and identical in all three markets. Available: 1y1y, 2y1y,
+2y2y, 3y1y, 3y2y, 4y1y, 5y1y, 5y2y, 5y5y, 10y2y, 10y5y, 10y10y, 15y5y, 20y5y, 20y10y.
+Probed and ABSENT everywhere: 7y3y, 12y3y, 30y20y, 3y3y, 4y4y, 5y10y, 10y1y, 10y20y, 30y10y.
+The wired ladder mirrors the nominal one where the family quotes it, plus the 2y2y/5y5y/10y10y
+benchmarks.
+
+**CPI fixing swaps.** The lag lives in the security's own MATURITY (reference month + lag):
+USD and EUR **+3 months**, GBP **+2** (`USSWIF7` "JUL" matures 2026-10-01; `BPSWIF7` "JUL"
+matures 2026-09-15). So the lag is DERIVED per family, and this independently confirms the
+2-month RPI swap convention. Sorting the twelve by maturity puts the next unfixed month first,
+which is how the front is identified without maintaining a release calendar.
+
+**Units differ by market** — the one trap here. USD quotes the INDEX LEVEL (`USSWIF7` 334.11
+continues CPURNSA's 333.95). GBP and EUR quote the YEAR-ON-YEAR RATE in bp (`BPSWIF7` 328.5 =
+3.285% against a UKRPI index of 416.5; `EUSWIF7` 287.5 = 2.875% against a CPTFEMU index of
+102.98). The declared unit is re-checked against the published index on every build.
+
+**Sources**: BLC is EMPTY for all three fixing families; plain and BGN return the same composite.
+GBP/EUR fixings are genuinely ~16bp wide — that is the market, not a bad ticker.
+
 ## 1. What it is
 
 A standalone Windows desktop app for the interest-rate derivatives desk. Once a week, one click:
@@ -217,10 +249,15 @@ Q1-Q4 resolved 2026-08-05 — see §0. Repo placement is my stated interpretatio
 (requirement was user-independence from Dodgeball, satisfied by a standalone exe): flag if the
 SOURCE must also live outside the dodgeball repo.
 
-⚠ backlog (each confirmed with the desk before it lands, none blocks P1): slope/fly sets in §5(c,e);
-movers ranked by |z| with bp alongside; oil anchor per ccy (Brent default, WTI for CAD/COP/MXN);
-invoice spread definition/contracts (§7); 730d seed depth; storage-account naming/custom domain;
-whether non-Dodgeball users also run Update (per-machine publish credentials) or only view.
+⚠ backlog (each confirmed with the desk before it lands): slope/fly sets in §5(c,e); movers ranked
+by |z| with bp alongside; oil anchor per ccy (Brent default, WTI for CAD/COP/MXN); invoice spread
+definition/contracts (§7); deep seed depth; storage-account naming/custom domain; whether
+non-Dodgeball users also run Update (per-machine publish credentials) or only view; whether the
+thin 30y20y nominal point (~9bp wide in USD) should be flagged indicative.
+
+RESOLVED: GBP RPI 2-month lag — no longer an assumption, it is what Bloomberg's own maturity field
+says (§0b). Inflation forward tickers — desk supplied the `.{CC}{a}{b}IN G Index` convention
+2026-08-05 and the grid was probed point by point.
 
 ## 11. Phasing
 
