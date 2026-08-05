@@ -5,13 +5,14 @@ using RateDesk.Weekly.Core.Series;
 
 namespace RateDesk.Weekly.Core.Render
 {
-    /// <summary>Design tokens. The three curve lines are an ORDINAL ramp, not categorical hues:
-    /// today / 1w / 1m are the same measure at three times, so recency is encoded as darkness on
-    /// one hue. Both ramps were run through the data-viz validator (validate_palette.py --ordinal)
-    /// and pass monotone-lightness, adjacent-ΔL, light-end contrast and single-hue in BOTH modes:
-    ///   light #86b6ef → #3987e5 → #104281   (light end 2.06:1 vs #fcfcfb)
-    ///   dark  #256abf → #5598e7 → #cde2fb   (light end 3.23:1 vs #1a1a19)
-    /// Do not hand-tweak these without re-running the validator.
+    /// <summary>Design tokens. The three curve lines follow the EMPHASIS pattern: today is the
+    /// point of the chart and wears the highest-contrast ink; 1w and 1m are context and take two
+    /// strongly separated hues. A one-hue ramp was tried first and rejected on the desk's read —
+    /// the shades were too close to tell apart at a glance when the lines nearly overlap.
+    /// The two context hues were validated (validate_palette.py) in both modes: adjacent CVD
+    /// ΔE 9.2 light / 9.4 dark and normal-vision ΔE 27.6 / 26.5, comfortably clear of the gates.
+    /// The light-mode aqua sits at 2.74:1 on the surface, which the always-visible table satisfies
+    /// as relief. Do not hand-tweak these without re-running the validator.
     ///
     /// CHANGE cells are a separate, deliberately non-accessible choice: GREEN = higher yield,
     /// RED = lower, matching the desk's existing Dodgeball weekly email (desk call 2026-08-05).
@@ -31,7 +32,7 @@ namespace RateDesk.Weekly.Core.Render
               --rw-surface:#fcfcfb; --rw-plane:#f9f9f7;
               --rw-ink:#0b0b0b; --rw-ink2:#52514e; --rw-muted:#898781;
               --rw-grid:#e1e0d9; --rw-axis:#c3c2b7; --rw-border:rgba(11,11,11,.10);
-              --rw-today:#104281; --rw-week:#3987e5; --rw-month:#86b6ef;
+              --rw-today:#0b0b0b; --rw-week:#eb6834; --rw-month:#1baf7a;
               --rw-up:#1a7f37; --rw-down:#c5342f; --rw-flat:#f0efec;
             }
             @media (prefers-color-scheme:dark){
@@ -40,7 +41,7 @@ namespace RateDesk.Weekly.Core.Render
                 --rw-surface:#1a1a19; --rw-plane:#0d0d0d;
                 --rw-ink:#fff; --rw-ink2:#c3c2b7; --rw-muted:#898781;
                 --rw-grid:#2c2c2a; --rw-axis:#383835; --rw-border:rgba(255,255,255,.10);
-                --rw-today:#cde2fb; --rw-week:#5598e7; --rw-month:#256abf;
+                --rw-today:#ffffff; --rw-week:#d95926; --rw-month:#199e70;
                 --rw-up:#3fb950; --rw-down:#f07470; --rw-flat:#383835;
               }
             }
@@ -49,7 +50,7 @@ namespace RateDesk.Weekly.Core.Render
               --rw-surface:#1a1a19; --rw-plane:#0d0d0d;
               --rw-ink:#fff; --rw-ink2:#c3c2b7; --rw-muted:#898781;
               --rw-grid:#2c2c2a; --rw-axis:#383835; --rw-border:rgba(255,255,255,.10);
-              --rw-today:#cde2fb; --rw-week:#5598e7; --rw-month:#256abf;
+              --rw-today:#ffffff; --rw-week:#d95926; --rw-month:#199e70;
               --rw-up:#3fb950; --rw-down:#f07470; --rw-flat:#383835;
             }
             """;

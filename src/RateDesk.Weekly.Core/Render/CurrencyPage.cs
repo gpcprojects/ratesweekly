@@ -12,6 +12,11 @@ namespace RateDesk.Weekly.Core.Render
     /// never a fabricated series.</summary>
     public static class CurrencyPage
     {
+        /// <summary>Currencies whose FRA strip is quoted but not really traded, so it earns no
+        /// panel. EUR: the desk's call, 2026-08-05.</summary>
+        private static readonly HashSet<string> NoFraPanel =
+            new(StringComparer.OrdinalIgnoreCase) { "EUR" };
+
         public static string Build(CurrencyConfig cfg, string src, HistoryStore store, DateTime asOf)
         {
             var body = new StringBuilder();
@@ -23,65 +28,58 @@ namespace RateDesk.Weekly.Core.Render
 
             body.Append(Panels.Linked("levels", $"{cfg.Ccy} par swaps",
                 "quoted par rate by tenor · level, and change in bp vs 1 week and 1 month ago",
-                Panels.From(par), par.Notes));
+                Panels.From(par)));
 
             body.Append(Panels.Linked("fwd", $"{cfg.Ccy} forward ladder",
                 "spot 1y and the quoted forward grid out to 30y20y",
-                Panels.From(ladder), ladder.Notes));
+                Panels.From(ladder)));
 
-            // ---- central bank meetings -------------------------------------------------
             foreach (var sched in MeetingsStore.Schedules)
             {
                 if (!sched.Ccy.Equals(cfg.Ccy, StringComparison.OrdinalIgnoreCase)) continue;
                 if (sched.Kind.Equals("fra", StringComparison.OrdinalIgnoreCase)) continue;
-                var strip = RollingStrip.ForMeetings(sched, store, asOf);
-                var rows = Panels.From(strip);
+                var rows = Panels.From(RollingStrip.ForMeetings(sched, store, asOf));
                 if (rows.Count == 0) continue;
                 body.Append(Panels.Linked($"mtg-{sched.Name.ToLowerInvariant()}",
                     $"{sched.Name} meeting-dated OIS",
                     "one row per scheduled decision · changes follow the meeting through ticker rolls",
-                    rows, strip.Notes));
+                    rows));
             }
 
-            // ---- FRA strip --------------------------------------------------------------
-            var (fraRows, fraNotes) = FraRun.Build(cfg, src, store, asOf);
-            if (fraRows.Count > 0)
-                body.Append(Panels.Linked("fra", $"{cfg.Ccy} FRA run",
-                    "quoted forward rate agreements", fraRows, fraNotes));
+            if (!NoFraPanel.Contains(cfg.Ccy))
+            {
+                var (fraRows, _) = FraRun.Build(cfg, src, store, asOf);
+                if (fraRows.Count > 0)
+                    body.Append(Panels.Linked("fra", $"{cfg.Ccy} FRA run",
+                        "quoted forward rate agreements", fraRows));
+            }
 
-            // ---- inflation ---------------------------------------------------------------
             foreach (var lad in cfg.Ladders.Where(l =>
                          l.Kind.Equals("INFLATION", StringComparison.OrdinalIgnoreCase)))
             {
                 var infPar = Inflation.ParCurve(lad, store, asOf);
                 if (infPar.Count > 0)
                     body.Append(Panels.Linked("infpar", $"{cfg.Ccy} {lad.Name} zero-coupon curve",
-                        "quoted breakeven by tenor", infPar, new List<string>()));
+                        "quoted breakeven by tenor", infPar));
 
                 var infFwd = Inflation.Forwards(cfg.Ccy, store, asOf);
                 if (infFwd.Count > 0)
                     body.Append(Panels.Linked("inffwd", $"{cfg.Ccy} {lad.Name} forwards",
-                        "quoted inflation forwards", infFwd, new List<string>()));
+                        "quoted inflation forwards", infFwd));
 
-                // Market-implied monthly fixings, ordered from the next one still to print.
                 if (CpiFixings.For(cfg.Ccy) is { } fam)
                 {
                     var fx = CpiFixings.Build(fam, store, asOf);
-                    if (CpiFixings.SanityNote(fam, store, asOf, fx.Rows) is { } warn) fx.Notes.Add(warn);
                     body.Append(Panels.Linked("inffix", $"{cfg.Ccy} {fam.Name} monthly fixings",
                         $"market-implied {fx.ValueLabel} for each upcoming print · next to fix first",
-                        fx.Rows, fx.Notes, valueDp: fx.Dp,
+                        fx.Rows, valueDp: fx.Dp,
                         valueSuffix: fam.Unit == CpiFixings.FixUnit.YoYBp ? "%" : ""));
                 }
 
                 var pub = Inflation.Fixings(lad, cfg.Ccy, store, asOf);
                 if (pub.Count > 0)
                     body.Append(Panels.Linked("infpub", $"{cfg.Ccy} {lad.Name} published prints",
-                        "the index itself, as released",
-                        pub, new List<string>
-                        {
-                            "publishes monthly, so this fills in as the stored history deepens",
-                        }, valueDp: 2, valueSuffix: ""));
+                        "the index itself, as released", pub, valueDp: 2, valueSuffix: ""));
             }
 
             body.Append(Pending("Rolling correlations",

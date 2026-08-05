@@ -94,19 +94,22 @@ namespace RateDesk.Weekly.Core.Render
                 /* Two panels per row on a widescreen; one on anything narrower. 820px is the point
                    below which a panel's table+chart split stops being readable. */
                 .rw-panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(820px,1fr));
-                  gap:16px;align-items:start}
+                  gap:16px;align-items:stretch}
                 .rw-panel{background:var(--rw-surface);border:1px solid var(--rw-border);border-radius:12px;
                   padding:14px 16px 12px}
                 .rw-panel-head h3{margin:0;font-size:14px;font-weight:600}
-                .rw-panel-body{display:grid;grid-template-columns:minmax(230px,320px) 1fr;gap:18px;
-                  align-items:start;margin-top:10px}
-                .rw-tblwrap{overflow-x:auto;max-height:330px;overflow-y:auto}
-                table.rw-lvl{border-collapse:collapse;width:100%;font-size:12px}
+                /* Table stays as narrow as its numbers allow; the chart takes every remaining pixel
+                   and fills the panel's height, so panels in a row end up the same size. */
+                .rw-panel{display:flex;flex-direction:column}
+                .rw-panel-body{display:grid;grid-template-columns:auto 1fr;gap:14px;
+                  align-items:stretch;margin-top:8px;flex:1;min-height:300px}
+                .rw-tblwrap{overflow-x:hidden;overflow-y:auto;max-height:330px}
+                table.rw-lvl{border-collapse:collapse;width:auto;font-size:11.5px;white-space:nowrap}
                 table.rw-lvl th{position:sticky;top:0;background:var(--rw-surface);text-align:right;
-                  font-weight:500;font-size:10px;letter-spacing:.04em;text-transform:uppercase;
-                  color:var(--rw-muted);padding:3px 7px;border-bottom:1px solid var(--rw-grid)}
+                  font-weight:500;font-size:9.5px;letter-spacing:.03em;text-transform:uppercase;
+                  color:var(--rw-muted);padding:2px 6px;border-bottom:1px solid var(--rw-grid)}
                 table.rw-lvl th:first-child{text-align:left}
-                table.rw-lvl td{padding:3px 7px;text-align:right;font-variant-numeric:tabular-nums;
+                table.rw-lvl td{padding:2px 6px;text-align:right;font-variant-numeric:tabular-nums;
                   border-bottom:1px solid var(--rw-grid)}
                 td.rw-lab{text-align:left;color:var(--rw-ink2);white-space:nowrap}
                 td.rw-val{font-weight:600}
@@ -116,21 +119,17 @@ namespace RateDesk.Weekly.Core.Render
                 tr.rw-row{cursor:default}
                 tr.rw-row:hover,tr.rw-row.on,tr.rw-row:focus{background:var(--rw-plane);outline:none}
                 tr.rw-row.on td.rw-lab{color:var(--rw-ink);font-weight:600}
-                .rw-chartwrap{position:relative;min-width:0}
-                circle.rw-pt,circle.rw-cpt{opacity:0;transition:opacity .08s}
-                circle.rw-pt.on,circle.rw-cpt.on{opacity:1}
-                .rw-zero{stroke:var(--rw-ink2);stroke-width:1.25}
+                .rw-chartwrap{position:relative;min-width:0;display:flex}
+                circle.rw-pt{opacity:0;transition:opacity .08s}
+                circle.rw-pt.on{opacity:1}
                 .rw-cross{stroke:var(--rw-axis);stroke-width:1}
-                .rw-axlab{fill:var(--rw-muted);font-size:9px;letter-spacing:.04em}
+                .rw-klab{fill:var(--rw-ink2);font-size:10px}
                 .rw-tip .r.sep{border-top:1px solid var(--rw-border);margin-top:4px;padding-top:4px}
-                .rw-svg{width:100%;height:auto;display:block;overflow:visible;margin-top:6px}
+                .rw-svg{width:100%;height:100%;min-height:270px;display:block;overflow:visible}
                 .rw-grid{stroke:var(--rw-grid);stroke-width:1}
                 .rw-axis{stroke:var(--rw-axis);stroke-width:1}
                 .rw-tick{fill:var(--rw-muted);font-size:10px;font-variant-numeric:tabular-nums}
                 .rw-tick-y{text-anchor:end}.rw-tick-x{text-anchor:middle}
-                .rw-legend{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 0}
-                .rw-key{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--rw-ink2)}
-                .rw-key i{width:14px;height:3px;border-radius:2px;display:inline-block}
                 .rw-tip{position:absolute;pointer-events:none;background:var(--rw-surface);
                   border:1px solid var(--rw-border);border-radius:8px;padding:7px 9px;font-size:11px;
                   box-shadow:0 4px 14px rgba(0,0,0,.13);z-index:5;min-width:118px}
@@ -138,13 +137,10 @@ namespace RateDesk.Weekly.Core.Render
                 .rw-tip .r{display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}
                 .rw-tip .r i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px}
                 .rw-empty{color:var(--rw-muted);font-size:12px;padding:26px 0;text-align:center;font-style:italic}
-                .rw-note{color:var(--rw-muted);font-size:11px;margin:6px 0 0}
                 .rw-pending{background:var(--rw-surface);border:1px dashed var(--rw-axis);border-radius:12px;
                   padding:20px;color:var(--rw-muted);font-size:12px}
                 .rw-toggle{position:absolute;right:0;top:0;background:var(--rw-surface);color:var(--rw-ink2);
                   cursor:pointer;border:1px solid var(--rw-border);border-radius:8px;padding:5px 10px;font-size:12px}
-                footer.rw-foot{margin-top:30px;color:var(--rw-muted);font-size:11px;
-                  border-top:1px solid var(--rw-border);padding-top:12px}
                 @media (max-width:900px){.rw-panel-body{grid-template-columns:1fr}}
                 </style>
                 </head>
@@ -157,10 +153,6 @@ namespace RateDesk.Weekly.Core.Render
                 </header>
                 %%NAV%%
                 <div class="rw-panels">%%BODY%%</div>
-                <footer class="rw-foot">
-                  Source: Bloomberg / RATESWEEKLY · levels are close-to-close; 1w and 1m lookbacks are the
-                  last close at or before 7 and 31 calendar days back. Generated %%ASOF%%.
-                </footer>
                 </div>
                 <script>
                 (function(){
@@ -186,7 +178,6 @@ namespace RateDesk.Weekly.Core.Render
                         tip=panel.querySelector('.rw-tip'), wrap=panel.querySelector('.rw-chartwrap');
                     if(!svg||!hit||!tip||!wrap)return;
                     var pts=[].slice.call(panel.querySelectorAll('circle.rw-pt'));
-                    var cpts=[].slice.call(panel.querySelectorAll('circle.rw-cpt'));
                     var rows=[].slice.call(panel.querySelectorAll('tr.rw-row'));
                     var cross=panel.querySelector('.rw-cross');
                     var pw=d.W-d.ml-d.mr;
@@ -196,11 +187,10 @@ namespace RateDesk.Weekly.Core.Render
 
                     function show(i,clientY){
                       pts.forEach(function(c){c.classList.toggle('on',+c.dataset.i===i)});
-                      cpts.forEach(function(c){c.classList.toggle('on',+c.dataset.i===i)});
                       rows.forEach(function(r){r.classList.toggle('on',+r.dataset.i===i)});
                       if(cross){var px=sx(i); cross.setAttribute('x1',px); cross.setAttribute('x2',px); cross.style.display='';}
                       var h='<b>'+d.labels[i]+'</b>';
-                      h+='<div class="r"><span><i style="background:var(--rw-today)"></i>latest</span><span>'+fmt(d.now[i])+'</span></div>';
+                      h+='<div class="r"><span><i style="background:var(--rw-today)"></i>today</span><span>'+fmt(d.now[i])+'</span></div>';
                       if(d.week[i]!==null&&d.week[i]!==undefined)
                         h+='<div class="r"><span><i style="background:var(--rw-week)"></i>1w ago</span><span>'+fmt(d.week[i])+'</span></div>';
                       if(d.month[i]!==null&&d.month[i]!==undefined)
@@ -219,7 +209,6 @@ namespace RateDesk.Weekly.Core.Render
                     }
                     function clear(){
                       pts.forEach(function(c){c.classList.remove('on')});
-                      cpts.forEach(function(c){c.classList.remove('on')});
                       rows.forEach(function(r){r.classList.remove('on')});
                       if(cross)cross.style.display='none';
                       tip.hidden=true;
