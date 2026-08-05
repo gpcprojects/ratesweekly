@@ -12,6 +12,12 @@ namespace RateDesk.Weekly.Core.Render
     {
         public double? W1Bp => Now.HasValue && Week.HasValue ? (Now.Value - Week.Value) * 100.0 : null;
         public double? M1Bp => Now.HasValue && Month.HasValue ? (Now.Value - Month.Value) * 100.0 : null;
+
+        /// <summary>Change against an earlier level, scaled to the panel's unit. Rates use 100
+        /// (percent → basis points); an index-quoted series uses 1, because multiplying index
+        /// points by 100 produces a number that looks like basis points and is not.</summary>
+        public double? Change(double? earlier, double scale) =>
+            Now.HasValue && earlier.HasValue ? (Now.Value - earlier.Value) * scale : null;
     }
 
     /// <summary>Table and chart side by side, cross-highlighting on hover: hovering a table row
@@ -23,7 +29,8 @@ namespace RateDesk.Weekly.Core.Render
         public static string Linked(
             string id, string title,
             IReadOnlyList<LadderPoint> pts,
-            int valueDp = 3, string valueSuffix = "%")
+            int valueDp = 3, string valueSuffix = "%",
+            double changeScale = 100.0, int changeDp = 1, string changeUnit = "")
         {
             var sb = new StringBuilder();
             sb.Append($"<section class=\"rw-panel\" id=\"{Viz.Esc(id)}\" data-panel=\"{Viz.Esc(id)}\">");
@@ -38,7 +45,7 @@ namespace RateDesk.Weekly.Core.Render
 
             sb.Append("<div class=\"rw-panel-body\">");
             sb.Append("<div class=\"rw-tblwrap\"><table class=\"rw-lvl\"><thead><tr>")
-              .Append("<th>&nbsp;</th><th>level</th><th>1w</th><th>1m</th></tr></thead><tbody>");
+              .Append($"<th>&nbsp;</th><th>level</th><th>1w{changeUnit}</th><th>1m{changeUnit}</th></tr></thead><tbody>");
             for (int i = 0; i < pts.Count; i++)
             {
                 var p = pts[i];
@@ -46,7 +53,8 @@ namespace RateDesk.Weekly.Core.Render
                 sb.Append($"<tr class=\"rw-row\" data-i=\"{i}\" tabindex=\"0\">")
                   .Append($"<td class=\"rw-lab\">{Viz.Esc(p.Label)}</td>")
                   .Append($"<td class=\"rw-val\">{Viz.F(p.Now.Value, valueDp)}</td>")
-                  .Append(BpCell(p.W1Bp)).Append(BpCell(p.M1Bp)).Append("</tr>");
+                  .Append(BpCell(p.Change(p.Week, changeScale), changeDp))
+                  .Append(BpCell(p.Change(p.Month, changeScale), changeDp)).Append("</tr>");
             }
             sb.Append("</tbody></table></div>");
             sb.Append(Chart(pts, valueDp, valueSuffix));
@@ -56,11 +64,13 @@ namespace RateDesk.Weekly.Core.Render
 
         /// <summary>Change cell. GREEN = higher yield, RED = lower (the desk's convention). The
         /// sign is always in the text, so the colour is never the sole carrier of direction.</summary>
-        private static string BpCell(double? bp)
+        private static string BpCell(double? bp, int dp)
         {
             if (bp is null) return "<td class=\"rw-bp rw-nil\">—</td>";
-            string cls = Math.Abs(bp.Value) < 0.5 ? "rw-flatbp" : bp.Value > 0 ? "rw-upbp" : "rw-downbp";
-            return $"<td class=\"rw-bp {cls}\">{bp.Value.ToString("+0.0;-0.0", CultureInfo.InvariantCulture)}</td>";
+            double flat = 0.5 * Math.Pow(10, -(dp - 1));
+            string cls = Math.Abs(bp.Value) < flat ? "rw-flatbp" : bp.Value > 0 ? "rw-upbp" : "rw-downbp";
+            string fmt = "+0." + new string('0', dp) + ";-0." + new string('0', dp);
+            return $"<td class=\"rw-bp {cls}\">{bp.Value.ToString(fmt, CultureInfo.InvariantCulture)}</td>";
         }
 
         /// <summary>One plot, scaled tight to the data. The three lines sit only a few basis points

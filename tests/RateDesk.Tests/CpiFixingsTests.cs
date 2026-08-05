@@ -37,10 +37,24 @@ namespace RateDesk.Tests
 
             var lad = CpiFixings.Build(Usd, store, AsOf);
 
-            Assert.Equal(12, lad.Rows.Count);
             Assert.Equal("Jul 26", lad.Rows[0].Label);     // next to print, not "Jan"
             Assert.Equal("Dec 26", lad.Rows[5].Label);
-            Assert.Equal("Jun 27", lad.Rows[^1].Label);    // wraps into next year
+        }
+
+        [Fact]
+        public void DropsTheFurthestFixing_ItIsAlwaysTheJustRolledOne()
+        {
+            // The last slot is the ticker whose month published most recently and re-pointed a
+            // year forward, so its history straddles a roll inside any 1-month lookback. Twelve
+            // slots in, eleven rows out, ending one month short of the full window.
+            using var store = Store();
+            SeedUsd(store, AsOf);
+
+            var lad = CpiFixings.Build(Usd, store, AsOf);
+
+            Assert.Equal(11, lad.Rows.Count);
+            Assert.Equal("May 27", lad.Rows[^1].Label);
+            Assert.DoesNotContain(lad.Rows, r => r.Label == "Jun 27");
         }
 
         [Fact]

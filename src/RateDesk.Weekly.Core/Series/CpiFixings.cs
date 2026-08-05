@@ -72,6 +72,13 @@ namespace RateDesk.Weekly.Core.Series
             slots.Sort((a, b) => a.Mat.CompareTo(b.Mat));
             int lagMonths = LagFrom(slots[0]);
 
+            // Drop the furthest fixing. It is ALWAYS the newest entrant to the window — the ticker
+            // whose month published most recently and re-pointed a year forward — so its history is
+            // the only one in the set guaranteed to straddle a roll inside a 1-month lookback. Its
+            // level is real, but the row would carry a permanently unusable 1m change. Verified on
+            // BPSWIF6, which jumped 295.75 -> 420.25 on 2026-07-22 when June RPI printed.
+            if (slots.Count > 1) slots.RemoveAt(slots.Count - 1);
+
             var rows = new List<LadderPoint>();
             int rolled = 0;
             foreach (var s in slots)
@@ -118,8 +125,15 @@ namespace RateDesk.Weekly.Core.Series
             HistoryStore store, (string Ticker, DateTime Mat, int Month) s, DateTime then, ref int rolled)
         {
             var thenMat = store.MaturityAsOf(s.Ticker, then);
-            if (thenMat is null) return store.ValueAsOf(s.Ticker, then);   // no record: best effort
-            if (thenMat.Value != s.Mat) { rolled++; return null; }
+            if (thenMat is not null)
+            {
+                if (thenMat.Value != s.Mat) { rolled++; return null; }
+                return store.ValueAsOf(s.Ticker, then);
+            }
+            // No maturity on file that far back (the store only began recording them recently).
+            // Fall back to reading the roll out of the PRICES: a re-pointing ticker leaves a jump
+            // orders of magnitude larger than its own daily noise.
+            if (RollDetect.LooksRolled(store, s.Ticker, then, DateTime.Today)) { rolled++; return null; }
             return store.ValueAsOf(s.Ticker, then);
         }
 

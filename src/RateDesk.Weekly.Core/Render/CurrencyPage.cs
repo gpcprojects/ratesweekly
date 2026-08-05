@@ -61,16 +61,22 @@ namespace RateDesk.Weekly.Core.Render
                 if (CpiFixings.For(cfg.Ccy) is { } fam)
                 {
                     var fx = CpiFixings.Build(fam, store, asOf);
+                    bool idx = fam.Unit == CpiFixings.FixUnit.IndexLevel;
+                    // An index-quoted family moves in index points, not basis points — scaling by
+                    // 100 would print "-55.0" for a 0.55-point move under a column every other
+                    // panel reads as bp.
                     body.Append(Panels.Linked("inffix",
                         $"{cfg.Ccy} {fam.Name} monthly fixings ({fx.ValueLabel})",
-                        fx.Rows, valueDp: fx.Dp,
-                        valueSuffix: fam.Unit == CpiFixings.FixUnit.YoYBp ? "%" : ""));
+                        fx.Rows, valueDp: fx.Dp, valueSuffix: idx ? "" : "%",
+                        changeScale: idx ? 1.0 : 100.0, changeDp: idx ? 2 : 1,
+                        changeUnit: idx ? " idx" : ""));
                 }
 
                 var pub = Inflation.Fixings(lad, cfg.Ccy, store, asOf);
                 if (pub.Count > 0)
                     body.Append(Panels.Linked("infpub", $"{cfg.Ccy} {lad.Name} published prints",
-                        pub, valueDp: 2, valueSuffix: ""));
+                        pub, valueDp: 2, valueSuffix: "",
+                        changeScale: 1.0, changeDp: 2, changeUnit: " idx"));
             }
 
             body.Append(Pending("Rolling correlations",
