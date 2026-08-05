@@ -28,6 +28,29 @@
 - **Layout**: Movers hub + 28 per-currency pages, shared grouped nav.
 - **"corr 10y to usd"**: both lines on one chart — vs US 10y swap and vs DXY (USD page: DXY only).
 
+## 0a. DEFERRED UNTIL THE HISTORY IS DEEPENED — read this before "improving" anything
+
+Store state 2026-08-05 20:04: first 45-day seed DONE (932 tickers, 29,570 closes, 32 business days
+2026-06-22..2026-08-04; 1w lookback available for 932/932 tickers, 1m for 929/932). Everything
+below is BLOCKED ON DEPTH, not on code, and must light up when the store is deepened:
+
+| Feature | Needs | Why |
+|---|---|---|
+| Rolling corr 2y vs oil (§6.4) | ~2.5y | 63-day rolling window shown over a ~2y span |
+| Rolling corr 10y vs US10y + DXY (§6.5) | ~2.5y | same |
+| Movers ranked by \|z\| of the 1w change (§5) | ~1y | σ of weekly changes needs ≥40 weekly obs |
+| Z-score / percentile / range tiles | 366d | SeriesStats windows are 366/186/93 calendar days |
+| Realized-vol and half-life columns | ~1y | daily-change std ×√252 |
+
+Until then: corr sections render a "pending history depth" placeholder (never fake numbers), and
+movers rank by RAW bp move with the |z| column blank.
+
+**Deepening procedure** (desk said gradual/overnight): raise `UpdateEngine.SeedDays` (and
+`CorrSeedDays`) and re-run `RatesWeeklyCli update`. Upsert-on-overlap deepens the store in place —
+no wipe, no migration. Do it out of hours: the BDH allowance is shared with the rest of the desk.
+⚠ Confirm the seed/maintain partition actually re-fetches already-seeded tickets at the deeper
+window before trusting this (audit item, 2026-08-05).
+
 ## 1. What it is
 
 A standalone Windows desktop app for the interest-rate derivatives desk. Once a week, one click:

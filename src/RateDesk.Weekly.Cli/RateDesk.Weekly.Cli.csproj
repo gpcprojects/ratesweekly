@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>RatesWeeklyCli</AssemblyName>
+    <Product>RATESWEEKLY CLI</Product>
+    <AssemblyTitle>RATESWEEKLY CLI — scriptable history maintenance</AssemblyTitle>
+    <Company>Gabriel Pycroft</Company>
+    <Copyright>© 2026 Gabriel Pycroft</Copyright>
+    <Version>0.1.0</Version>
+    <FileVersion>0.1.0.0</FileVersion>
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RateDesk.Weekly.Core\RateDesk.Weekly.Core.csproj" />
+  </ItemGroup>
+
+</Project>
