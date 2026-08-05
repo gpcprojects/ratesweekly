@@ -99,10 +99,20 @@ namespace RateDesk.Weekly.Core.Render
                 /* Table stays as narrow as its numbers allow; the chart takes every remaining pixel
                    and fills the panel's height, so panels in a row end up the same size. */
                 .rw-panel{display:flex;flex-direction:column}
-                .rw-panel-body{display:grid;grid-template-columns:auto 1fr;gap:14px;
+                /* FIXED table width, not auto. With an auto column the track sized to the widest
+                   label in that currency (4 chars for "1Y", 18 for "23-Dec-26 (interp)"), which
+                   pushed the outer grid wider and made the 2-pane breakpoint drift per currency.
+                   128px fits the longest label in any market, so every page is now identical. */
+                .rw-panel-body{display:grid;grid-template-columns:272px 1fr;gap:14px;
                   align-items:stretch;margin-top:8px;flex:1;min-height:400px}
+                .rw-panel-body>*{min-width:0}
+                .rw-panel,.rw-panels>*{min-width:0}
                 .rw-tblwrap{overflow-x:hidden;overflow-y:auto;max-height:420px}
-                table.rw-lvl{border-collapse:collapse;width:auto;font-size:11.5px;white-space:nowrap}
+                table.rw-lvl{border-collapse:collapse;width:100%;table-layout:fixed;font-size:11.5px;white-space:nowrap}
+                table.rw-lvl th:nth-child(1),table.rw-lvl td:nth-child(1){width:128px}
+                table.rw-lvl th:nth-child(2),table.rw-lvl td:nth-child(2){width:54px}
+                table.rw-lvl th:nth-child(n+3),table.rw-lvl td:nth-child(n+3){width:45px}
+                table.rw-lvl td{overflow:hidden;text-overflow:ellipsis}
                 table.rw-lvl th{position:sticky;top:0;background:var(--rw-surface);text-align:right;
                   font-weight:500;font-size:9.5px;letter-spacing:.03em;text-transform:uppercase;
                   color:var(--rw-muted);padding:2px 6px;border-bottom:1px solid var(--rw-grid)}
