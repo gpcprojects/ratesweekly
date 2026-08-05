@@ -16,22 +16,34 @@ namespace RateDesk.Weekly.Core.Render
             new[] { "ASIA EM", "TWD", "THB", "MYR", "INR", "CNY", "HKD", "SGD", "KRW" },
         };
 
+        /// <summary>DM occupies the first row on its own; EM, LATAM and ASIA EM share the second
+        /// (desk layout, 2026-08-05).</summary>
         public static string Nav(string current)
         {
-            var sb = new StringBuilder("<nav class=\"rw-nav\"><a class=\"rw-hub");
+            var sb = new StringBuilder("<nav class=\"rw-nav\">");
+
+            sb.Append("<div class=\"rw-navrow\"><a class=\"rw-hub");
             sb.Append(current.Equals("movers", StringComparison.OrdinalIgnoreCase) ? " on" : "");
             sb.Append("\" href=\"index.html\">◆ Movers</a>");
-            foreach (var g in Groups)
-            {
-                sb.Append($"<span class=\"rw-grp\"><b>{Viz.Esc(g[0])}</b>");
-                for (int i = 1; i < g.Length; i++)
-                {
-                    bool on = g[i].Equals(current, StringComparison.OrdinalIgnoreCase);
-                    sb.Append($"<a class=\"rw-cc{(on ? " on" : "")}\" href=\"{g[i].ToLowerInvariant()}.html\">{g[i]}</a>");
-                }
-                sb.Append("</span>");
-            }
+            sb.Append(GroupHtml(Groups[0], current));
+            sb.Append("</div>");
+
+            sb.Append("<div class=\"rw-navrow\">");
+            for (int g = 1; g < Groups.Length; g++) sb.Append(GroupHtml(Groups[g], current));
+            sb.Append("</div>");
+
             return sb.Append("</nav>").ToString();
+        }
+
+        private static string GroupHtml(string[] g, string current)
+        {
+            var sb = new StringBuilder($"<span class=\"rw-grp\"><b>{Viz.Esc(g[0])}</b>");
+            for (int i = 1; i < g.Length; i++)
+            {
+                bool on = g[i].Equals(current, StringComparison.OrdinalIgnoreCase);
+                sb.Append($"<a class=\"rw-cc{(on ? " on" : "")}\" href=\"{g[i].ToLowerInvariant()}.html\">{g[i]}</a>");
+            }
+            return sb.Append("</span>").ToString();
         }
 
         public static string Shell(string title, string current, string heading, string sub, string body, string asOf)
@@ -65,8 +77,10 @@ namespace RateDesk.Weekly.Core.Render
                 header.rw-head h1{font-size:22px;margin:0;letter-spacing:-.01em}
                 .rw-asof{color:var(--rw-muted);font-size:12px}
                 .rw-sub{color:var(--rw-ink2);font-size:12px;margin:2px 0 0}
-                .rw-nav{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin:14px 0 20px;
+                .rw-nav{display:flex;flex-direction:column;gap:8px;margin:14px 0 20px;
                   padding:10px 12px;background:var(--rw-surface);border:1px solid var(--rw-border);border-radius:10px}
+                .rw-navrow{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+                .rw-navrow+.rw-navrow{border-top:1px solid var(--rw-border);padding-top:8px}
                 .rw-grp{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
                 .rw-grp b{font-size:10px;letter-spacing:.08em;color:var(--rw-muted);text-transform:uppercase;margin-right:2px}
                 .rw-nav a{text-decoration:none;color:var(--rw-ink2);padding:3px 7px;border-radius:6px;font-size:12px}
@@ -74,6 +88,30 @@ namespace RateDesk.Weekly.Core.Render
                 .rw-nav a.on{background:var(--rw-today);color:var(--rw-surface);font-weight:600}
                 .rw-hub{font-weight:600}
                 .rw-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:16px}
+                .rw-panel{background:var(--rw-surface);border:1px solid var(--rw-border);border-radius:12px;
+                  padding:14px 16px 12px;margin-bottom:16px}
+                .rw-panel-head h3{margin:0;font-size:14px;font-weight:600}
+                .rw-panel-body{display:grid;grid-template-columns:minmax(210px,300px) 1fr;gap:18px;
+                  align-items:start;margin-top:10px}
+                .rw-tblwrap{overflow-x:auto;max-height:340px;overflow-y:auto}
+                table.rw-lvl{border-collapse:collapse;width:100%;font-size:12px}
+                table.rw-lvl th{position:sticky;top:0;background:var(--rw-surface);text-align:right;
+                  font-weight:500;font-size:10px;letter-spacing:.04em;text-transform:uppercase;
+                  color:var(--rw-muted);padding:3px 7px;border-bottom:1px solid var(--rw-grid)}
+                table.rw-lvl th:first-child{text-align:left}
+                table.rw-lvl td{padding:3px 7px;text-align:right;font-variant-numeric:tabular-nums;
+                  border-bottom:1px solid var(--rw-grid)}
+                td.rw-lab{text-align:left;color:var(--rw-ink2);white-space:nowrap}
+                td.rw-val{font-weight:600}
+                td.rw-bp{font-size:11px}
+                .rw-upbp{color:var(--rw-up)}.rw-downbp{color:var(--rw-down)}
+                .rw-flatbp,.rw-nil{color:var(--rw-muted)}
+                tr.rw-row{cursor:default}
+                tr.rw-row:hover,tr.rw-row.on,tr.rw-row:focus{background:var(--rw-plane);outline:none}
+                tr.rw-row.on td.rw-lab{color:var(--rw-ink);font-weight:600}
+                .rw-chartwrap{position:relative;min-width:0}
+                circle.rw-pt{opacity:0;transition:opacity .08s}
+                circle.rw-pt.on{opacity:1}
                 .rw-card{margin:0;background:var(--rw-surface);border:1px solid var(--rw-border);
                   border-radius:12px;padding:14px 16px 12px;position:relative}
                 .rw-card h3{margin:0;font-size:14px;font-weight:600}
@@ -138,49 +176,57 @@ namespace RateDesk.Weekly.Core.Render
                     try{localStorage.setItem(k,nx)}catch(e){}
                   });
 
-                  document.querySelectorAll('.rw-card').forEach(function(card){
-                    var el=card.querySelector('.rw-data'); if(!el)return;
+                  // Linked table + chart: hovering either side highlights the same point in
+                  // the other. The table is the primary surface (every value is text), so the
+                  // chart interaction supplements it rather than gating anything.
+                  document.querySelectorAll('.rw-panel').forEach(function(panel){
+                    var el=panel.querySelector('.rw-data'); if(!el)return;
                     var d; try{d=JSON.parse(el.textContent)}catch(e){return}
-                    var svg=card.querySelector('.rw-svg'), hit=card.querySelector('.rw-hit'),
-                        cross=card.querySelector('.rw-cross'), tip=card.querySelector('.rw-tip');
-                    if(!svg||!hit||!tip)return;
-                    var pw=d.W-d.ml-d.mr, ph=d.height-d.mt-d.mb;
-                    function sx(x){return d.ml+(x-d.xMin)/(d.xMax-d.xMin)*pw}
-                    function sy(y){return d.mt+(d.yMax-y)/(d.yMax-d.yMin)*ph}
-                    var xs=[]; d.series.forEach(function(s){s.pts.forEach(function(p){
-                      if(xs.indexOf(p[0])<0)xs.push(p[0])})}); xs.sort(function(a,b){return a-b});
+                    var svg=panel.querySelector('.rw-svg'), hit=panel.querySelector('.rw-hit'),
+                        tip=panel.querySelector('.rw-tip'), wrap=panel.querySelector('.rw-chartwrap');
+                    if(!svg||!hit||!tip||!wrap)return;
+                    var pts=[].slice.call(panel.querySelectorAll('circle.rw-pt'));
+                    var rows=[].slice.call(panel.querySelectorAll('tr.rw-row'));
+                    var pw=d.W-d.ml-d.mr;
+                    function sx(i){return d.n<=1?d.ml+pw/2:d.ml+i/(d.n-1)*pw}
+                    function fmt(v){return v===null||v===undefined?'--':v.toFixed(d.dp)+d.suffix}
 
-                    function move(ev){
-                      var r=svg.getBoundingClientRect();
-                      var ux=(ev.clientX-r.left)/r.width*d.W;
-                      var best=null,bd=1e9;
-                      xs.forEach(function(x){var dd=Math.abs(sx(x)-ux); if(dd<bd){bd=dd;best=x}});
-                      if(best===null)return;
-                      var px=sx(best);
-                      cross.setAttribute('x1',px); cross.setAttribute('x2',px);
-                      cross.style.display='';
-                      var h='<b>'+fmtX(best)+'</b>';
-                      d.series.forEach(function(s){
-                        var hitp=null;
-                        s.pts.forEach(function(p){if(Math.abs(p[0]-best)<1e-9)hitp=p});
-                        if(hitp)h+='<div class="r"><span><i style="background:'+s.color+'"></i>'+s.name+
-                          '</span><span>'+hitp[1].toFixed(3)+'%</span></div>';
-                      });
+                    function show(i,clientY){
+                      pts.forEach(function(c){c.classList.toggle('on',+c.dataset.i===i)});
+                      rows.forEach(function(r){r.classList.toggle('on',+r.dataset.i===i)});
+                      var h='<b>'+d.labels[i]+'</b>';
+                      h+='<div class="r"><span><i style="background:var(--rw-today)"></i>latest</span><span>'+fmt(d.now[i])+'</span></div>';
+                      if(d.week[i]!==null&&d.week[i]!==undefined)
+                        h+='<div class="r"><span><i style="background:var(--rw-week)"></i>1w ago</span><span>'+fmt(d.week[i])+'</span></div>';
+                      if(d.month[i]!==null&&d.month[i]!==undefined)
+                        h+='<div class="r"><span><i style="background:var(--rw-month)"></i>1m ago</span><span>'+fmt(d.month[i])+'</span></div>';
                       tip.innerHTML=h; tip.hidden=false;
-                      var cw=card.clientWidth, tw=tip.offsetWidth;
-                      var left=px/d.W*cw+12; if(left+tw>cw-8)left=px/d.W*cw-tw-12;
-                      tip.style.left=Math.max(4,left)+'px';
-                      tip.style.top=(ev.clientY-card.getBoundingClientRect().top+14)+'px';
+                      var wr=wrap.getBoundingClientRect(), tw=tip.offsetWidth;
+                      var px=sx(i)/d.W*wr.width;
+                      var left=px+12; if(left+tw>wr.width-6)left=px-tw-12;
+                      tip.style.left=Math.max(2,left)+'px';
+                      var top=(clientY===undefined?wr.top+wr.height/2:clientY)-wr.top+12;
+                      tip.style.top=Math.max(2,Math.min(top,wr.height-10))+'px';
                     }
-                    function fmtX(v){
-                      var f=card.dataset.xfmt;
-                      if(f==='date'){var dt=new Date(v*86400000);
-                        return dt.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'2-digit'})}
-                      if(f==='fwd')return v+'y1y';
-                      return (v%1?v.toFixed(2):v)+'y';
+                    function clear(){
+                      pts.forEach(function(c){c.classList.remove('on')});
+                      rows.forEach(function(r){r.classList.remove('on')});
+                      tip.hidden=true;
                     }
-                    hit.addEventListener('pointermove',move);
-                    hit.addEventListener('pointerleave',function(){tip.hidden=true;cross.style.display='none'});
+
+                    hit.addEventListener('pointermove',function(ev){
+                      var r=svg.getBoundingClientRect();
+                      var ux=(ev.clientX-r.left)/r.width*d.W, best=0, bd=1e9;
+                      for(var i=0;i<d.n;i++){var dd=Math.abs(sx(i)-ux); if(dd<bd){bd=dd;best=i}}
+                      show(best,ev.clientY);
+                    });
+                    hit.addEventListener('pointerleave',clear);
+                    rows.forEach(function(r){
+                      var i=+r.dataset.i;
+                      r.addEventListener('pointerenter',function(ev){show(i,ev.clientY)});
+                      r.addEventListener('focus',function(){show(i)});
+                    });
+                    panel.querySelector('.rw-tblwrap').addEventListener('pointerleave',clear);
                   });
                 })();
                 </script>

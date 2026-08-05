@@ -127,21 +127,24 @@ namespace RateDesk.Weekly.Core.Series
                 }
             }
 
-            static double? Interp(List<CurvePoint> pts, double years)
+            static double? Interp(List<CurvePoint> pts, double years) => InterpAt(pts, years);
+        }
+
+        /// <summary>Linear interpolation along a curve, never extrapolated past the quoted ends.</summary>
+        public static double? InterpAt(List<CurvePoint> pts, double years)
+        {
+            if (pts.Count == 0 || years < pts[0].Years - 1e-9 || years > pts[^1].Years + 1e-9) return null;
+            for (int i = 0; i < pts.Count; i++)
             {
-                if (pts.Count == 0 || years < pts[0].Years - 1e-9 || years > pts[^1].Years + 1e-9) return null;
-                for (int i = 0; i < pts.Count; i++)
+                if (Math.Abs(pts[i].Years - years) < 1e-9) return pts[i].RatePct;
+                if (pts[i].Years > years)
                 {
-                    if (Math.Abs(pts[i].Years - years) < 1e-9) return pts[i].RatePct;
-                    if (pts[i].Years > years)
-                    {
-                        var lo = pts[i - 1]; var hi = pts[i];
-                        double w = (years - lo.Years) / (hi.Years - lo.Years);
-                        return lo.RatePct + w * (hi.RatePct - lo.RatePct);
-                    }
+                    var lo = pts[i - 1]; var hi = pts[i];
+                    double w = (years - lo.Years) / (hi.Years - lo.Years);
+                    return lo.RatePct + w * (hi.RatePct - lo.RatePct);
                 }
-                return null;
             }
+            return null;
         }
     }
 }

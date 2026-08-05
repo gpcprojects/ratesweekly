@@ -1,5 +1,6 @@
 using RateDesk.Core;
 using RateDesk.Core.Config;
+using RateDesk.Weekly.Core.Series;
 
 namespace RateDesk.Weekly.Core
 {
@@ -37,6 +38,14 @@ namespace RateDesk.Weekly.Core
             {
                 if (cfg.Ois != null || cfg.Irs != null)
                     all.AddRange(svc.TickersWithDiscount(cfg, svc.SourceFor(cfg.Ccy)));
+
+                // The forward LADDER (1y1y … 30y20y) as QUOTED securities. This app has no curve
+                // engine, so deriving these would mean bootstrapping per date per currency; the
+                // quoted point also gives an exact close-to-close 1w/1m change on the same
+                // instrument. Probed live 2026-08-05: every requested point resolves by NAME with
+                // two-sided prices in both families. Currencies with no forward id (CLP/HKD/THB/BRL
+                // — Bloomberg's curves are wrong for them, deliberately) simply contribute nothing.
+                all.AddRange(ForwardLadder.Tickers(cfg));
 
                 foreach (var lad in cfg.Ladders)
                 {
