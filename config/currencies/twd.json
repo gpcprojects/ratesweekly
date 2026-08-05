@@ -1,0 +1,92 @@
+{
+  "ccy": "TWD",
+  "name": "Taiwan Dollar — 3M TAIBOR IRS (NDIRS)",
+  "enabled": true,
+  "calendar": "TWD",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN",
+    "CMPT"
+  ],
+  "defaultProduct": "IRS",
+  "discounting": "SELF",
+  "ccps": [
+    "LCH"
+  ],
+  "irs": {
+    "bdc": "ModifiedFollowing",
+    "legs": [
+      {
+        "maxTenor": null,
+        "fixedFreq": "Quarterly",
+        "fixedDcc": "ACT/365F",
+        "floatIndex": "TAIBOR",
+        "floatTenor": "3M",
+        "floatFreq": "Quarterly",
+        "floatDcc": "ACT/365F",
+        "fixingDays": 2,
+        "fixingTicker": "TAIBOR3M Index"
+      }
+    ],
+    "curve": [
+      {
+        "tenor": "3M",
+        "type": "DEPO",
+        "ticker": "TAIBOR3M Index"
+      },
+      {
+        "tenor": "6M",
+        "type": "SWAP",
+        "ticker": "TDSWNIF"
+      },
+      {
+        "tenor": "1Y",
+        "type": "SWAP",
+        "ticker": "TDSWNI1"
+      },
+      {
+        "tenor": "2Y",
+        "type": "SWAP",
+        "ticker": "TDSWNI2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "SWAP",
+        "ticker": "TDSWNI3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "SWAP",
+        "ticker": "TDSWNI4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "SWAP",
+        "ticker": "TDSWNI5"
+      },
+      {
+        "tenor": "7Y",
+        "type": "SWAP",
+        "ticker": "TDSWNI7"
+      },
+      {
+        "tenor": "10Y",
+        "type": "SWAP",
+        "ticker": "TDSWNI10"
+      },
+      {
+        "tenor": "12Y",
+        "type": "SWAP",
+        "ticker": "TDSWNI12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "SWAP",
+        "ticker": "TDSWNI15"
+      }
+    ],
+    "fwdCurveId": "S0203"
+  },
+  "notes": "DISABLED: TRSW*V3 tickers resolve but published no API prices on this terminal (BGN/CMPN/CMPT all empty) - likely a contributor entitlement. Enable once a publishing source is entitled (check ALLQ on TRSW5V3 Curncy) and set defaultSource accordingly. Re-probed 2026-07: TRSW5V3 and onshore NTSWO5 ('TWD SWP ONSH v90D CP') both still resolve with NO px; TWSW/TAISW/NTSW/TRSW roots unknown. RE-ENABLED 2026-07-30. Was disabled because every TRSW{n}V3 pillar was unpriced (still is - the family is dead on the API). Rebuilt on the non-deliverable TDSWNI strip, which prices: TDSWNI1..TDSWNI15 = 'TWD NDIRS (TAIBOR3M) nYR'. TDSWNI20 exists but carries no price and TDSWNI30 does not exist, so the curve stops at 15Y. Forwards audit against S0203 (TWD Fwd Swap)."
+}

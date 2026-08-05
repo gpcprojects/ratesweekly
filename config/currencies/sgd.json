@@ -1,0 +1,127 @@
+{
+  "ccy": "SGD",
+  "name": "Singapore Dollar — SORA OIS",
+  "enabled": true,
+  "calendar": "SGD",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "OIS",
+  "discounting": "OIS",
+  "ccps": [
+    "LCH",
+    "CME"
+  ],
+  "ois": {
+    "indexName": "SORA",
+    "onFixingTicker": "SIBCSORA Index",
+    "indexDcc": "ACT/365F",
+    "fixedFreq": "Semiannual",
+    "fixedDcc": "ACT/365F",
+    "bdc": "ModifiedFollowing",
+    "payLag": 2,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "SDSOAA"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "SDSOAC"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "SDSOAF"
+      },
+      {
+        "tenor": "9M",
+        "type": "OIS",
+        "ticker": "SDSOAI"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "SDSOA1"
+      },
+      {
+        "tenor": "18M",
+        "type": "OIS",
+        "ticker": "SDSOA1F"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "SDSOA2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "SDSOA3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "SDSOA4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "SDSOA5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "SDSOA6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "SDSOA7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "SDSOA8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "SDSOA9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "SDSOA10"
+      },
+      {
+        "tenor": "12Y",
+        "type": "OIS",
+        "ticker": "SDSOA12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "OIS",
+        "ticker": "SDSOA15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "OIS",
+        "ticker": "SDSOA20"
+      },
+      {
+        "tenor": "30Y",
+        "type": "OIS",
+        "ticker": "SDSOA30"
+      }
+    ],
+    "fwdCurveId": "S0527"
+  },
+  "notes": "SOR ceased; SORA OIS is the SGD standard (ABS conventions: semi-annual Act/365F). Quotes live via explicit BGN source."
+}

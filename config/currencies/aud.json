@@ -1,0 +1,320 @@
+{
+  "ccy": "AUD",
+  "name": "Australian Dollar — BBSW IRS / AONIA OIS",
+  "enabled": true,
+  "calendar": "AUD",
+  "spotLag": 1,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN",
+    "NABZ"
+  ],
+  "defaultProduct": "IRS",
+  "discounting": "OIS",
+  "ccps": [
+    "LCH",
+    "CME"
+  ],
+  "ois": {
+    "indexName": "AONIA",
+    "onFixingTicker": "RBACOR Index",
+    "indexDcc": "ACT/365F",
+    "fixedFreq": "Annual",
+    "fixedDcc": "ACT/365F",
+    "bdc": "ModifiedFollowing",
+    "payLag": 2,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      {
+        "tenor": "1W",
+        "type": "OIS",
+        "ticker": "ADSO1Z"
+      },
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "ADSOA"
+      },
+      {
+        "tenor": "2M",
+        "type": "OIS",
+        "ticker": "ADSOB"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "ADSOC"
+      },
+      {
+        "tenor": "4M",
+        "type": "OIS",
+        "ticker": "ADSOD"
+      },
+      {
+        "tenor": "5M",
+        "type": "OIS",
+        "ticker": "ADSOE"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "ADSOF"
+      },
+      {
+        "tenor": "9M",
+        "type": "OIS",
+        "ticker": "ADSOI"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "ADSO1"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "ADSO2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "ADSO3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "ADSO4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "ADSO5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "ADSO6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "ADSO7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "ADSO8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "ADSO9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "ADSO10"
+      },
+      {
+        "tenor": "12Y",
+        "type": "OIS",
+        "ticker": "ADSO12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "OIS",
+        "ticker": "ADSO15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "OIS",
+        "ticker": "ADSO20"
+      }
+    ],
+    "fwdCurveId": "S0159"
+  },
+  "irs": {
+    "bdc": "ModifiedFollowing",
+    "legs": [
+      {
+        "maxTenor": "3Y",
+        "fixedFreq": "Quarterly",
+        "fixedDcc": "ACT/365F",
+        "floatIndex": "BBSW",
+        "floatTenor": "3M",
+        "floatFreq": "Quarterly",
+        "floatDcc": "ACT/365F",
+        "fixingDays": 0,
+        "fixingTicker": "BBSW3M Index"
+      },
+      {
+        "maxTenor": null,
+        "fixedFreq": "Semiannual",
+        "fixedDcc": "ACT/365F",
+        "floatIndex": "BBSW",
+        "floatTenor": "6M",
+        "floatFreq": "Semiannual",
+        "floatDcc": "ACT/365F",
+        "fixingDays": 0,
+        "fixingTicker": "BBSW6M Index"
+      }
+    ],
+    "curve": [
+      {
+        "tenor": "3M",
+        "type": "DEPO",
+        "ticker": "BBSW3M Index",
+        "band": "3M"
+      },
+      {
+        "tenor": "6M",
+        "type": "DEPO",
+        "ticker": "BBSW6M Index",
+        "band": "6M"
+      },
+      {
+        "tenor": "1Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP1Q",
+        "band": "3M"
+      },
+      {
+        "tenor": "18M",
+        "type": "SWAP",
+        "ticker": "ADSWQ1F",
+        "band": "3M"
+      },
+      {
+        "tenor": "2Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP2Q",
+        "band": "3M"
+      },
+      {
+        "tenor": "3Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP3Q",
+        "band": "3M"
+      },
+      {
+        "tenor": "4Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP4Q",
+        "band": "3M"
+      },
+      {
+        "tenor": "5Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP5Q",
+        "band": "3M"
+      },
+      {
+        "tenor": "6Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP6Q",
+        "band": "3M"
+      },
+      {
+        "tenor": "7Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP7Q",
+        "band": "3M"
+      },
+      {
+        "tenor": "8Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP8Q",
+        "band": "3M"
+      },
+      {
+        "tenor": "9Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP9Q",
+        "band": "3M"
+      },
+      {
+        "tenor": "4Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP10"
+      },
+      {
+        "tenor": "12Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "SWAP",
+        "ticker": "ADSWAP30"
+      },
+      {
+        "tenor": "1X4",
+        "type": "FRA",
+        "ticker": "ADFR0AD Curncy",
+        "band": "3M"
+      },
+      {
+        "tenor": "3X6",
+        "type": "FRA",
+        "ticker": "ADFR0CF Curncy",
+        "band": "3M"
+      },
+      {
+        "tenor": "6X9",
+        "type": "FRA",
+        "ticker": "ADFR0FI Curncy",
+        "band": "3M"
+      }
+    ],
+    "fwdCurveId": "S0302",
+    "fwdCurveIdShort": "S0303",
+    "fwdShortMaxYears": 3.0
+  },
+  "notes": "AFMA convention: <=3Y quarterly Act/365F vs 3M BBSW (ADSWAPxQ quotes); >3Y semi-annual Act/365F vs 6M BBSW. T+1 settle. Use '3s'/'6s' in a command to force the index. NABZ (NAB) source resolves but published no API prices on this terminal - entitlement may be required. FRA strip added 2026-07 (composite-only full securities) to shape the front end between swap pillars; FRAs whose maturity clashes with a quoted pillar are skipped by the bootstrapper. FWCM: q/q curve S0303 for legs ENDING <=3y (and explicit qq tags); s/s S0302 beyond (and explicit ss) - 2026-07. q/q band extended 5Y-9Y with the real ADSWAP5Q..9Q quotes 2026-08-04 (a q/q leg ending past the band fell onto the mixed curve, whose 3Y-q/4Y-s splice books the ~26bp 3s6s basis as a forward cliff - H30-1Y read +48bp vs FWCM). ADSWAP10Q and beyond are ALIASES of the SA (VS 6M) quotes (NAME says so) - never wire them."
+}

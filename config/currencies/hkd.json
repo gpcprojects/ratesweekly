@@ -1,0 +1,92 @@
+{
+  "ccy": "HKD",
+  "name": "Hong Kong Dollar — 3M HIBOR IRS",
+  "enabled": true,
+  "calendar": "HKD",
+  "spotLag": 0,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "IRS",
+  "discounting": "SELF",
+  "ccps": [
+    "LCH",
+    "CME",
+    "HKEX"
+  ],
+  "irs": {
+    "bdc": "ModifiedFollowing",
+    "legs": [
+      {
+        "maxTenor": null,
+        "fixedFreq": "Quarterly",
+        "fixedDcc": "ACT/365F",
+        "floatIndex": "HIBOR",
+        "floatTenor": "3M",
+        "floatFreq": "Quarterly",
+        "floatDcc": "ACT/365F",
+        "fixingDays": 0,
+        "fixingTicker": "HIHD03M Index"
+      }
+    ],
+    "curve": [
+      {
+        "tenor": "3M",
+        "type": "DEPO",
+        "ticker": "HIHD03M Index"
+      },
+      {
+        "tenor": "1Y",
+        "type": "SWAP",
+        "ticker": "HDSW1"
+      },
+      {
+        "tenor": "2Y",
+        "type": "SWAP",
+        "ticker": "HDSW2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "SWAP",
+        "ticker": "HDSW3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "SWAP",
+        "ticker": "HDSW4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "SWAP",
+        "ticker": "HDSW5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "SWAP",
+        "ticker": "HDSW6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "SWAP",
+        "ticker": "HDSW7"
+      },
+      {
+        "tenor": "10Y",
+        "type": "SWAP",
+        "ticker": "HDSW10"
+      },
+      {
+        "tenor": "12Y",
+        "type": "SWAP",
+        "ticker": "HDSW12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "SWAP",
+        "ticker": "HDSW15"
+      }
+    ]
+  },
+  "notes": "T+0 settle confirmed off terminal. HONIA OIS exists (HDSO family) but published no API prices on this terminal. fwdCurveId REMOVED 2026-07: S0311 was +19bp off the quoted ladder at 5y5y and no better id exists (S0001-S0800 swept); HDFS calc family publishes no API px. FWCM cross blank by design."
+}

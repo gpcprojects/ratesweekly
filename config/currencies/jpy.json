@@ -1,0 +1,202 @@
+{
+  "ccy": "JPY",
+  "name": "Japanese Yen — TONA OIS",
+  "enabled": true,
+  "calendar": "JPY",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "OIS",
+  "discounting": "OIS",
+  "ccps": [
+    "LCH",
+    "CME",
+    "JSCC"
+  ],
+  "ois": {
+    "indexName": "TONA",
+    "onFixingTicker": "MUTKCALM Index",
+    "indexDcc": "ACT/365F",
+    "fixedFreq": "Annual",
+    "fixedDcc": "ACT/365F",
+    "bdc": "ModifiedFollowing",
+    "payLag": 2,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      {
+        "tenor": "1W",
+        "type": "OIS",
+        "ticker": "JYSO1Z"
+      },
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "JYSOA"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "JYSOC"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "JYSOF"
+      },
+      {
+        "tenor": "9M",
+        "type": "OIS",
+        "ticker": "JYSOI"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "JYSO1"
+      },
+      {
+        "tenor": "18M",
+        "type": "OIS",
+        "ticker": "JYSO1F"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "JYSO2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "JYSO3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "JYSO4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "JYSO5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "JYSO6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "JYSO7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "JYSO8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "JYSO9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "JYSO10"
+      },
+      {
+        "tenor": "11Y",
+        "type": "OIS",
+        "ticker": "JYSO11"
+      },
+      {
+        "tenor": "12Y",
+        "type": "OIS",
+        "ticker": "JYSO12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "OIS",
+        "ticker": "JYSO15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "OIS",
+        "ticker": "JYSO20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "OIS",
+        "ticker": "JYSO25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "OIS",
+        "ticker": "JYSO30"
+      },
+      {
+        "tenor": "35Y",
+        "type": "OIS",
+        "ticker": "JYSO35"
+      },
+      {
+        "tenor": "40Y",
+        "type": "OIS",
+        "ticker": "JYSO40"
+      }
+    ],
+    "fwdCurveId": "S0195",
+    "variants": [
+      {
+        "name": "JSCC",
+        "sign": -1,
+        "pillars": [
+          {
+            "tenor": "1Y",
+            "ticker": "JYJLO1"
+          },
+          {
+            "tenor": "2Y",
+            "ticker": "JYJLO2"
+          },
+          {
+            "tenor": "3Y",
+            "ticker": "JYJLO3"
+          },
+          {
+            "tenor": "5Y",
+            "ticker": "JYJLO5"
+          },
+          {
+            "tenor": "7Y",
+            "ticker": "JYJLO7"
+          },
+          {
+            "tenor": "10Y",
+            "ticker": "JYJLO10"
+          },
+          {
+            "tenor": "15Y",
+            "ticker": "JYJLO15"
+          },
+          {
+            "tenor": "20Y",
+            "ticker": "JYJLO20"
+          },
+          {
+            "tenor": "30Y",
+            "ticker": "JYJLO30"
+          },
+          {
+            "tenor": "40Y",
+            "ticker": "JYJLO40"
+          }
+        ],
+        "notes": "JYJLO = 'JPY LCH-JSCC Spread OIS' quoted in bp; assumed quote = LCH minus JSCC (sign -1 => JSCC = LCH - quote). Flip sign if your desk quotes JSCC-LCH."
+      }
+    ]
+  },
+  "notes": "TONA (uncollateralized overnight call rate, MUTKCALM). Fixed Act/365F per ISDA/JSCC standard (Bloomberg DES field shows ACT/360 on JYSO — ISDA convention used here). Base curve = LCH standard; JSCC variant built from the JYJLO basis ladder. Tokyo calendar."
+}

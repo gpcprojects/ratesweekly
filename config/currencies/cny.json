@@ -1,0 +1,88 @@
+{
+  "ccy": "CNY",
+  "name": "Chinese Yuan — FR007 repo IRS (NDIRS)",
+  "enabled": true,
+  "calendar": "CNY",
+  "spotLag": 1,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "OIS",
+  "discounting": "OIS",
+  "ccps": [
+    "LCH",
+    "CME",
+    "SHCH"
+  ],
+  "ois": {
+    "indexName": "FR007",
+    "onFixingTicker": "CNRR007 Index",
+    "indexDcc": "ACT/365F",
+    "fixedFreq": "Quarterly",
+    "fixedDcc": "ACT/365F",
+    "bdc": "ModifiedFollowing",
+    "payLag": 0,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "6M",
+    "curve": [
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "CCSWNIC"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "CCSWNIF"
+      },
+      {
+        "tenor": "9M",
+        "type": "OIS",
+        "ticker": "CCSWNII"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "CCSWNI1"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "CCSWNI2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "CCSWNI3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "CCSWNI4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "CCSWNI5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "CCSWNI6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "CCSWNI7"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "CCSWNI10"
+      }
+    ],
+    "fwdCurveId": "S0204"
+  },
+  "notes": "MODEL APPROXIMATION: float leg is 7-day repo (FR007) reset weekly and compounded; modelled here as daily-compounded overnight on the FR007 fixing. Par-rate impact is negligible for curve building/risk; document for audit. Quoted non-deliverable (CCSWNI)."
+}

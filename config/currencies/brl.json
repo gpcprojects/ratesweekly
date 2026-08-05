@@ -1,0 +1,29 @@
+{
+  "ccy": "BRL",
+  "name": "Brazilian Real — CDI (Pre x DI) curve",
+  "enabled": true,
+  "calendar": "BRL",
+  "spotLag": 0,
+  "defaultSource": "",
+  "altSources": ["CMPN"],
+  "defaultProduct": "OIS",
+  "discounting": "SELF",
+  "ccps": ["CME", "B3"],
+  "ladders": [
+    {
+      "name": "DI", "kind": "RATE", "aliases": ["di", "cdi", "predi"],
+      "dcc": "BUS/252", "fixingTicker": "BZDIOVRA Index",
+      "datedPattern": "OD{MY} Comdty",
+      "pillars": [
+        { "tenor": "1M", "ticker": "BCSFAPDV" }, { "tenor": "3M", "ticker": "BCSFCPDV" },
+        { "tenor": "6M", "ticker": "BCSFFPDV" }, { "tenor": "1Y", "ticker": "BCSFLPDV" },
+        { "tenor": "2Y", "ticker": "BCSFPPDV" }, { "tenor": "3Y", "ticker": "BCSFQPDV" },
+        { "tenor": "4Y", "ticker": "BCSFRPDV" }, { "tenor": "5Y", "ticker": "BCSFSPDV" },
+        { "tenor": "6Y", "ticker": "BCSFTPDV" }, { "tenor": "7Y", "ticker": "BCSFUPDV" },
+        { "tenor": "10Y", "ticker": "BCSFXPDV" }
+      ],
+      "notes": "Pre x DI curve from B3 DI-futures (annualized BUS/252 exponential). Live mid/history/roll/z-score on the analytics board. DV01 is exact for a PAR point: a zero-coupon DI swap self-discounts, so dNPV/dr = N*(du/252)/(1+r) with no strip bootstrap. Marking OFF-MARKET/seasoned DI positions (own NPV, traded rate away from the quote) still needs the full BUS/252 zero-coupon engine. Legacy BCSW*PD swaps return no API px."
+    }
+  ],
+  "notes": "BRL exposed via the DI-futures curve (no bootstrapped OIS/IRS - not needed for par points, since a zero-coupon DI swap self-discounts). 'brl 5y' -> 5Y DI level + history + roll + z-score + a real DV01; dated contracts ('brl f28') likewise. Traded offshore USD-settled (CME), where the USD discount factor cancels against the FX forward under CIP, so $01 = BRL DV01 x spot."
+}

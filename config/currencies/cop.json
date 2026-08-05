@@ -1,0 +1,128 @@
+{
+  "ccy": "COP",
+  "name": "Colombian Peso — IBR OIS",
+  "enabled": true,
+  "calendar": "USD",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "OIS",
+  "discounting": "OIS",
+  "ccps": [
+    "LCH",
+    "CME",
+    "CRCC"
+  ],
+  "ois": {
+    "indexName": "IBR",
+    "onFixingTicker": "COOVIBR Index",
+    "indexDcc": "ACT/360",
+    "fixedFreq": "Quarterly",
+    "fixedDcc": "ACT/360",
+    "bdc": "ModifiedFollowing",
+    "payLag": 0,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "18M",
+    "curve": [
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "CLSWIBA"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "CLSWIBC"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "CLSWIBF"
+      },
+      {
+        "tenor": "9M",
+        "type": "OIS",
+        "ticker": "CLSWIBI"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "CLSWIB1"
+      },
+      {
+        "tenor": "18M",
+        "type": "OIS",
+        "ticker": "CLSWIB1F"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "CLSWIB2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "CLSWIB3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "CLSWIB4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "CLSWIB5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "CLSWIB6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "CLSWIB7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "CLSWIB8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "CLSWIB9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "CLSWIB10"
+      },
+      {
+        "tenor": "12Y",
+        "type": "OIS",
+        "ticker": "CLSWIB12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "OIS",
+        "ticker": "CLSWIB15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "OIS",
+        "ticker": "CLSWIB20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "OIS",
+        "ticker": "CLSWIB25"
+      }
+    ],
+    "fwdCurveId": "S0329"
+  },
+  "notes": "IBR overnight OIS: zero-coupon short end, quarterly Act/360 beyond ~18M; quoted non-deliverable. CALENDAR APPROXIMATION: using New York in place of BogotÃ¡. Verify dates vs SWPM for COP."
+}

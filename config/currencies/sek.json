@@ -1,0 +1,328 @@
+{
+  "ccy": "SEK",
+  "name": "Swedish Krona — 3M STIBOR IRS",
+  "enabled": true,
+  "calendar": "SEK",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "IRS",
+  "discounting": "SELF",
+  "ccps": [
+    "LCH",
+    "CME",
+    "EUREX",
+    "NASDAQ"
+  ],
+  "ois": {
+    "indexName": "SWESTR",
+    "onFixingTicker": "SWESTR Index",
+    "indexDcc": "ACT/360",
+    "fixedFreq": "Annual",
+    "fixedDcc": "ACT/360",
+    "bdc": "ModifiedFollowing",
+    "payLag": 1,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      {
+        "tenor": "1W",
+        "type": "OIS",
+        "ticker": "SKSWS1Z"
+      },
+      {
+        "tenor": "2W",
+        "type": "OIS",
+        "ticker": "SKSWS2Z"
+      },
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "SKSWSA"
+      },
+      {
+        "tenor": "2M",
+        "type": "OIS",
+        "ticker": "SKSWSB"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "SKSWSC"
+      },
+      {
+        "tenor": "4M",
+        "type": "OIS",
+        "ticker": "SKSWSD"
+      },
+      {
+        "tenor": "5M",
+        "type": "OIS",
+        "ticker": "SKSWSE"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "SKSWSF"
+      },
+      {
+        "tenor": "7M",
+        "type": "OIS",
+        "ticker": "SKSWSG"
+      },
+      {
+        "tenor": "8M",
+        "type": "OIS",
+        "ticker": "SKSWSH"
+      },
+      {
+        "tenor": "9M",
+        "type": "OIS",
+        "ticker": "SKSWSI"
+      },
+      {
+        "tenor": "10M",
+        "type": "OIS",
+        "ticker": "SKSWSJ"
+      },
+      {
+        "tenor": "11M",
+        "type": "OIS",
+        "ticker": "SKSWSK"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "SKSWS1"
+      },
+      {
+        "tenor": "18M",
+        "type": "OIS",
+        "ticker": "SKSWS1F"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "SKSWS2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "SKSWS3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "SKSWS4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "SKSWS5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "SKSWS6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "SKSWS7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "SKSWS8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "SKSWS9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "SKSWS10"
+      },
+      {
+        "tenor": "12Y",
+        "type": "OIS",
+        "ticker": "SKSWS12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "OIS",
+        "ticker": "SKSWS15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "OIS",
+        "ticker": "SKSWS20"
+      }
+    ]
+  },
+  "irs": {
+    "bdc": "ModifiedFollowing",
+    "legs": [
+      {
+        "maxTenor": null,
+        "fixedFreq": "Annual",
+        "fixedDcc": "30/360",
+        "floatIndex": "STIBOR",
+        "floatTenor": "3M",
+        "floatFreq": "Quarterly",
+        "floatDcc": "ACT/360",
+        "fixingDays": 2,
+        "fixingTicker": "STIB3M Index"
+      }
+    ],
+    "curve": [
+      {
+        "tenor": "3M",
+        "type": "DEPO",
+        "ticker": "STIB3M Index"
+      },
+      {
+        "tenor": "1Y",
+        "type": "SWAP",
+        "ticker": "SKSW1"
+      },
+      {
+        "tenor": "2Y",
+        "type": "SWAP",
+        "ticker": "SKSW2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "SWAP",
+        "ticker": "SKSW3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "SWAP",
+        "ticker": "SKSW4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "SWAP",
+        "ticker": "SKSW5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "SWAP",
+        "ticker": "SKSW6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "SWAP",
+        "ticker": "SKSW7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "SWAP",
+        "ticker": "SKSW8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "SWAP",
+        "ticker": "SKSW9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "SWAP",
+        "ticker": "SKSW10"
+      },
+      {
+        "tenor": "12Y",
+        "type": "SWAP",
+        "ticker": "SKSW12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "SWAP",
+        "ticker": "SKSW15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "SWAP",
+        "ticker": "SKSW20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "SWAP",
+        "ticker": "SKSW25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "SWAP",
+        "ticker": "SKSW30"
+      },
+      {
+        "tenor": "3M",
+        "type": "FRA",
+        "ticker": "SKF30001 Curncy",
+        "band": "3M"
+      },
+      {
+        "tenor": "3M",
+        "type": "FRA",
+        "ticker": "SKF30101 Curncy",
+        "band": "3M"
+      },
+      {
+        "tenor": "3M",
+        "type": "FRA",
+        "ticker": "SKF30201 Curncy",
+        "band": "3M"
+      },
+      {
+        "tenor": "3M",
+        "type": "FRA",
+        "ticker": "SKF30301 Curncy",
+        "band": "3M"
+      },
+      {
+        "tenor": "3M",
+        "type": "FRA",
+        "ticker": "SKF30401 Curncy",
+        "band": "3M"
+      },
+      {
+        "tenor": "3M",
+        "type": "FRA",
+        "ticker": "SKF30501 Curncy",
+        "band": "3M"
+      },
+      {
+        "tenor": "3M",
+        "type": "FRA",
+        "ticker": "SKF30601 Curncy",
+        "band": "3M"
+      },
+      {
+        "tenor": "3M",
+        "type": "FRA",
+        "ticker": "SKF30701 Curncy",
+        "band": "3M"
+      },
+      {
+        "tenor": "3M",
+        "type": "FRA",
+        "ticker": "SKF30801 Curncy",
+        "band": "3M"
+      },
+      {
+        "tenor": "3M",
+        "type": "FRA",
+        "ticker": "SKF30901 Curncy",
+        "band": "3M"
+      }
+    ],
+    "fwdCurveId": "SKFS",
+    "fwdTickerStyle": "yearPair"
+  },
+  "notes": "STIBOR transition to SWESTR was abandoned spring 2025 - 3M STIBOR remains the standard. Single-curve self-discounting default. OIS re-wired 2026-08-03 onto the SKSWS 'SEK SWESTR OIS' family (1W-20Y incl. every month to 11M and 18M) - the old SKSWTN family VERIFIED as legacy T/N (STINA): its 1M printed 1.766 vs SWESTR 1.655 and SKSWS1Z 1.650, ~+11bp of T/N basis, and it had NO sub-1Y quotes wired, so the OIS front extrapolated FLAT at the 1Y rate - the Riksbank meeting run's curve-implied rows read 2.076 for every front period against meeting tickers at 1.65-1.85. SKSWSE (5M, maturing over year-end) prints a real year-turn dip. SKSF4A ('4TH RIKS') publishes a live two-sided misprint (1.387 between 1.848/2.086 neighbours, 2026-08-03) - the meetings board's 20bp curve-sanity guard rejects it, labelled. IMM FRA strip SKF30001-SKF30901 added 2026-07 (SEK FRA 3M, live, dates from MATURITY) - shapes the STIBOR front end; expired/clashing contracts skipped by the bootstrapper. SEK IRS forward reference added 2026-07-30: SKFS year-pair securities (SKFS0505 BLC = 5y5y). Previously SEK had NO forward reference at all, so auditfwd could not see it."
+}

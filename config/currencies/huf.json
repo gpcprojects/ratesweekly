@@ -1,0 +1,143 @@
+{
+  "ccy": "HUF",
+  "name": "Hungarian Forint — 6M BUBOR IRS",
+  "enabled": true,
+  "calendar": "HUF",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "IRS",
+  "discounting": "SELF",
+  "ccps": [
+    "LCH",
+    "CME"
+  ],
+  "irs": {
+    "bdc": "ModifiedFollowing",
+    "legs": [
+      {
+        "maxTenor": null,
+        "fixedFreq": "Annual",
+        "fixedDcc": "ACT/365F",
+        "floatIndex": "BUBOR",
+        "floatTenor": "6M",
+        "floatFreq": "Semiannual",
+        "floatDcc": "ACT/360",
+        "fixingDays": 2,
+        "fixingTicker": "BUBOR06M Index"
+      }
+    ],
+    "curve": [
+      {
+        "tenor": "6M",
+        "type": "DEPO",
+        "ticker": "BUBOR06M Index"
+      },
+      {
+        "tenor": "1Y",
+        "type": "SWAP",
+        "ticker": "HFSW1"
+      },
+      {
+        "tenor": "2Y",
+        "type": "SWAP",
+        "ticker": "HFSW2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "SWAP",
+        "ticker": "HFSW3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "SWAP",
+        "ticker": "HFSW4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "SWAP",
+        "ticker": "HFSW5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "SWAP",
+        "ticker": "HFSW6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "SWAP",
+        "ticker": "HFSW7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "SWAP",
+        "ticker": "HFSW8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "SWAP",
+        "ticker": "HFSW9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "SWAP",
+        "ticker": "HFSW10"
+      },
+      {
+        "tenor": "12Y",
+        "type": "SWAP",
+        "ticker": "HFSW12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "SWAP",
+        "ticker": "HFSW15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "SWAP",
+        "ticker": "HFSW20"
+      },
+      {
+        "tenor": "1X7",
+        "type": "FRA",
+        "ticker": "HFFR0AG Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "2X8",
+        "type": "FRA",
+        "ticker": "HFFR0BH Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "3X9",
+        "type": "FRA",
+        "ticker": "HFFR0CI Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "4X10",
+        "type": "FRA",
+        "ticker": "HFFR0DJ Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "5X11",
+        "type": "FRA",
+        "ticker": "HFFR0EK Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "12X18",
+        "type": "FRA",
+        "ticker": "HFFR011F Curncy",
+        "band": "6M"
+      }
+    ],
+    "fwdCurveId": "S0325"
+  },
+  "notes": "Fixed Act/365F per OpenGamma (Bloomberg DES shows ACT/360 - likely float leg). Verify vs SWPM. Probed 2026-07: HFSO{n} 'HUF SWAP OIS' family resolves but carries NO composite prices at any tenor - no OIS curve configurable. FRA strip added 2026-07 (composite-only full securities) to shape the front end between swap pillars; FRAs whose maturity clashes with a quoted pillar are skipped by the bootstrapper. FWCM S0325 cross unreliable >=10Y fwd (audit 2026-07: +14..+35bp AND inverted bid/ask on S0325FS 10Y10Y - garbage prints; trust the HFSW ladder)."
+}

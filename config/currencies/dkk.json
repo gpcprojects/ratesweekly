@@ -1,0 +1,239 @@
+{
+  "ccy": "DKK",
+  "name": "Danish Krone — 6M CIBOR IRS",
+  "enabled": true,
+  "calendar": "DKK",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "IRS",
+  "discounting": "SELF",
+  "ccps": [
+    "LCH",
+    "CME"
+  ],
+  "irs": {
+    "bdc": "ModifiedFollowing",
+    "legs": [
+      {
+        "maxTenor": null,
+        "fixedFreq": "Annual",
+        "fixedDcc": "30/360",
+        "floatIndex": "CIBOR",
+        "floatTenor": "6M",
+        "floatFreq": "Semiannual",
+        "floatDcc": "ACT/360",
+        "fixingDays": 2,
+        "fixingTicker": "CIBO06M Index"
+      }
+    ],
+    "curve": [
+      {
+        "tenor": "6M",
+        "type": "DEPO",
+        "ticker": "CIBO06M Index"
+      },
+      {
+        "tenor": "6M",
+        "type": "FRA",
+        "ticker": "DKF60101 Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "6M",
+        "type": "FRA",
+        "ticker": "DKF60201 Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "1Y",
+        "type": "SWAP",
+        "ticker": "DKSW1",
+        "enabled": false
+      },
+      {
+        "tenor": "18M",
+        "type": "SWAP",
+        "ticker": "DKSW1F",
+        "enabled": false
+      },
+      {
+        "tenor": "2Y",
+        "type": "SWAP",
+        "ticker": "DKSW2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "SWAP",
+        "ticker": "DKSW3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "SWAP",
+        "ticker": "DKSW4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "SWAP",
+        "ticker": "DKSW5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "SWAP",
+        "ticker": "DKSW6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "SWAP",
+        "ticker": "DKSW7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "SWAP",
+        "ticker": "DKSW8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "SWAP",
+        "ticker": "DKSW9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "SWAP",
+        "ticker": "DKSW10"
+      },
+      {
+        "tenor": "11Y",
+        "type": "SWAP",
+        "ticker": "DKSW11"
+      },
+      {
+        "tenor": "12Y",
+        "type": "SWAP",
+        "ticker": "DKSW12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "SWAP",
+        "ticker": "DKSW15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "SWAP",
+        "ticker": "DKSW20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "SWAP",
+        "ticker": "DKSW25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "SWAP",
+        "ticker": "DKSW30"
+      }
+    ],
+    "fwdCurveId": "S0339"
+  },
+  "notes": "Derivative FRO is CIBOR2 (fixing T-2). LCH/Eurex switched DKK PAI/discounting to DESTR flat on 22-Nov-2025 - DESTR OIS swap family not yet configured here, so SELF-discounting is an approximation for cleared DKK. CITA T/N swaps dead since 1-Jan-2026. Probed 2026-07: DKSO{n}/DKSWTN{n} resolve as DKK SWAP OIS / T/N INDEXED but carry NO composite/BGN prices; DESTR Index and DETNT/N Index fixings ARE live. Par DESTR OIS is dealer-run only for now. Front end 2026-08-03: direct 6M IMM FRAs DKF60101/DKF60201 (live; 0301+ resolve but no px) — exactly what Bloomberg's YCSW0339 builds from (CIBO06M + DKF60201 + DKSW2..). Replaced the 3M-strip+DKBFVC-basis frontFromOis synthesis, which sat -10 to -16bp off S0339 sub-1y (the basis model, not the strip, was the error term). If the DKF6 quotes die, the old frontFromOis block (3M strip DKF30001-0701 + DKBFVC basis) is in git history pre-6.2.6. DKSW1/DKSW1F DISABLED same day: both print live-looking composites but sit ~+17bp RICH vs the FRA-implied 6-12M path (DKSW1 2.936 vs CIBOR + DKF6 strip ~2.9-3.0 window), which kinked 6M6M +12bp — Bloomberg's own curve omits them for the same reason (its 12M point is the 2nd IMM FRA). Re-enable only if their contributors come back in line with the strip. DESTR OIS added 2026-07: DKSWD{x} family (user-supplied root; 1M-30Y live, composite-only full securities). Discounting stays SELF off CIBOR - NOTE LCH/Eurex PAI is DESTR flat since Nov-2025, so switching discounting to OIS is the correct next step for cleared DKK but is a deliberate re-marking.",
+  "ois": {
+    "indexName": "DESTR",
+    "onFixingTicker": "DESTR Index",
+    "indexDcc": "ACT/360",
+    "fixedFreq": "Annual",
+    "fixedDcc": "ACT/360",
+    "bdc": "ModifiedFollowing",
+    "payLag": 1,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "DKSWDA Curncy"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "DKSWDC Curncy"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "DKSWDF Curncy"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "DKSWD1 Curncy"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "DKSWD2 Curncy"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "DKSWD3 Curncy"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "DKSWD4 Curncy"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "DKSWD5 Curncy"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "DKSWD6 Curncy"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "DKSWD7 Curncy"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "DKSWD8 Curncy"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "DKSWD9 Curncy"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "DKSWD10 Curncy"
+      },
+      {
+        "tenor": "12Y",
+        "type": "OIS",
+        "ticker": "DKSWD12 Curncy"
+      },
+      {
+        "tenor": "15Y",
+        "type": "OIS",
+        "ticker": "DKSWD15 Curncy"
+      },
+      {
+        "tenor": "20Y",
+        "type": "OIS",
+        "ticker": "DKSWD20 Curncy"
+      },
+      {
+        "tenor": "30Y",
+        "type": "OIS",
+        "ticker": "DKSWD30 Curncy"
+      }
+    ]
+  }
+}

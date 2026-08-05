@@ -1,0 +1,98 @@
+{
+  "ccy": "INR",
+  "name": "Indian Rupee — MIBOR OIS (NDOIS)",
+  "enabled": true,
+  "calendar": "INR",
+  "spotLag": 1,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "OIS",
+  "discounting": "OIS",
+  "ccps": [
+    "LCH",
+    "CME",
+    "CCIL"
+  ],
+  "ois": {
+    "indexName": "MIBOR",
+    "onFixingTicker": "IN00O/N Index",
+    "indexDcc": "ACT/365F",
+    "fixedFreq": "Semiannual",
+    "fixedDcc": "ACT/365F",
+    "bdc": "ModifiedFollowing",
+    "payLag": 0,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "13M",
+    "curve": [
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "IRSWNIA"
+      },
+      {
+        "tenor": "2M",
+        "type": "OIS",
+        "ticker": "IRSWNIB"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "IRSWNIC"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "IRSWNIF"
+      },
+      {
+        "tenor": "9M",
+        "type": "OIS",
+        "ticker": "IRSWNII"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "IRSWNI1"
+      },
+      {
+        "tenor": "18M",
+        "type": "OIS",
+        "ticker": "IRSWNI1F"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "IRSWNI2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "IRSWNI3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "IRSWNI4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "IRSWNI5"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "IRSWNI7"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "IRSWNI10"
+      }
+    ],
+    "fwdCurveId": "S0266"
+  },
+  "notes": "Overnight FBIL MIBOR OIS, fixed semi-annual Act/365F, quoted non-deliverable (IRSWNI, T+1). Mumbai calendar. 1Y1Y mystery RESOLVED 2026-08-03: shortZeroCouponUnder was '1Y' and the rule is STRICTLY under, so the 1Y pillar bootstrapped as a 2-period semi swap while the market quotes IRSWNI1 single-payment — that treats a semi par as the zero and books the compounding (r^2/4 ~ 8.3bp at 5.75%) into the 1Y node. Every flagged point told the same story (9M3M +35, 6M6M +18, 1Y6M -24, 1Y1Y -8.4 = one +8bp 1Y-node error diffused over each window). szcu now '13M': <=1Y single-pay, 18M+ semi. The 2026-07-30 Semiannual->Annual test moved nothing because it changed pillar AND audit-trade conventions together, which cancels. 1M/2M pillars (IRSWNIA/B) added same day — Bloomberg's YCSW0266 carries them (its members sit on BGNL; our BGN mids matched BGNL to 0.0 when probed). S0266 has no data past ~7y (5Y5Y/7Y3Y read \"no FWCM\")."
+}

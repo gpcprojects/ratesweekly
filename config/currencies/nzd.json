@@ -1,0 +1,209 @@
+{
+  "ccy": "NZD",
+  "name": "New Zealand Dollar — BKBM IRS / NZD OIS",
+  "enabled": true,
+  "calendar": "NZD",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN",
+    "NABZ"
+  ],
+  "defaultProduct": "IRS",
+  "discounting": "OIS",
+  "ccps": [
+    "LCH",
+    "CME"
+  ],
+  "ois": {
+    "indexName": "NZONIA",
+    "onFixingTicker": "NZOCRS Index",
+    "indexDcc": "ACT/365F",
+    "fixedFreq": "Annual",
+    "fixedDcc": "ACT/365F",
+    "bdc": "ModifiedFollowing",
+    "payLag": 1,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "NDSOA"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "NDSOC"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "NDSOF"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "NDSO1"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "NDSO2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "NDSO3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "NDSO4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "NDSO5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "NDSO6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "NDSO7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "NDSO8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "NDSO9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "NDSO10"
+      }
+    ]
+  },
+  "irs": {
+    "bdc": "ModifiedFollowing",
+    "legs": [
+      {
+        "maxTenor": null,
+        "fixedFreq": "Semiannual",
+        "fixedDcc": "ACT/365F",
+        "floatIndex": "BKBM",
+        "floatTenor": "3M",
+        "floatFreq": "Quarterly",
+        "floatDcc": "ACT/365F",
+        "fixingDays": 0,
+        "fixingTicker": "NDBB3M Index"
+      }
+    ],
+    "curve": [
+      {
+        "tenor": "3M",
+        "type": "DEPO",
+        "ticker": "NDBB3M Index"
+      },
+      {
+        "tenor": "1Y",
+        "type": "SWAP",
+        "ticker": "NDSWAP1"
+      },
+      {
+        "tenor": "2Y",
+        "type": "SWAP",
+        "ticker": "NDSWAP2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "SWAP",
+        "ticker": "NDSWAP3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "SWAP",
+        "ticker": "NDSWAP4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "SWAP",
+        "ticker": "NDSWAP5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "SWAP",
+        "ticker": "NDSWAP6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "SWAP",
+        "ticker": "NDSWAP7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "SWAP",
+        "ticker": "NDSWAP8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "SWAP",
+        "ticker": "NDSWAP9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "SWAP",
+        "ticker": "NDSWAP10"
+      },
+      {
+        "tenor": "12Y",
+        "type": "SWAP",
+        "ticker": "NDSWAP12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "SWAP",
+        "ticker": "NDSWAP15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "SWAP",
+        "ticker": "NDSWAP20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "SWAP",
+        "ticker": "NDSWAP25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "SWAP",
+        "ticker": "NDSWAP30"
+      },
+      {
+        "tenor": "3X6",
+        "type": "FRA",
+        "ticker": "NDFR0CF Curncy",
+        "band": "3M"
+      },
+      {
+        "tenor": "6X9",
+        "type": "FRA",
+        "ticker": "NDFR0FI Curncy",
+        "band": "3M"
+      }
+    ],
+    "fwdCurveId": "NDFS",
+    "fwdTickerStyle": "yearPair"
+  },
+  "notes": "Fixed semi-annual Act/365F vs 3M BKBM quarterly. T+2 (2026-07-08 probe settled Jul-13 across the Matariki holiday). OIS = OCR-linked overnight. FRA strip added 2026-07 (composite-only full securities) to shape the front end between swap pillars; FRAs whose maturity clashes with a quoted pillar are skipped by the bootstrapper. Forward reference switched S0484,S0485 -> NDFS year-pair securities 2026-07-29: NDFS0505 BLC = 4.7858 against our 4.7858 (exact), where the S0484/S0485 average sat -1.4bp out and tilted to -6.0bp by 20y10y; auditfwd went from 7 flags to 0. The BLC qualifier is REQUIRED - plain and BGN forms resolve by name with no price and no history at all. Field order is start-then-tenor despite Bloomberg naming them \"5YX1Y\" (verified against the Forward Curve Matrix). Grid is the sparse {1-10,12,15,20,25,30} - NDFS1103 does not exist - and it goes flat past 25y, so 15y15y and 20y10y now read \"no FWCM\" in auditfwd rather than a fake error."
+}

@@ -1,0 +1,149 @@
+{
+  "ccy": "MYR",
+  "name": "Malaysian Ringgit — 3M KLIBOR IRS (NDIRS)",
+  "enabled": true,
+  "calendar": "MYR",
+  "spotLag": 0,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "IRS",
+  "discounting": "SELF",
+  "ccps": [
+    "LCH"
+  ],
+  "ois": {
+    "indexName": "MYOR",
+    "onFixingTicker": "",
+    "indexDcc": "ACT/365F",
+    "fixedFreq": "Quarterly",
+    "fixedDcc": "ACT/365F",
+    "bdc": "ModifiedFollowing",
+    "payLag": 1,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "MRSO1 Curncy"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "MRSO2 Curncy"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "MRSO3 Curncy"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "MRSO4 Curncy"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "MRSO5 Curncy"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "MRSO6 Curncy"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "MRSO7 Curncy"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "MRSO8 Curncy"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "MRSO9 Curncy"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "MRSO10 Curncy"
+      }
+    ]
+  },
+  "irs": {
+    "bdc": "ModifiedFollowing",
+    "legs": [
+      {
+        "maxTenor": null,
+        "fixedFreq": "Quarterly",
+        "fixedDcc": "ACT/365F",
+        "floatIndex": "KLIBOR",
+        "floatTenor": "3M",
+        "floatFreq": "Quarterly",
+        "floatDcc": "ACT/365F",
+        "fixingDays": 0,
+        "fixingTicker": "KLIB3M Index"
+      }
+    ],
+    "curve": [
+      {
+        "tenor": "3M",
+        "type": "DEPO",
+        "ticker": "KLIB3M Index"
+      },
+      {
+        "tenor": "6M",
+        "type": "SWAP",
+        "ticker": "MRSWNIF"
+      },
+      {
+        "tenor": "9M",
+        "type": "SWAP",
+        "ticker": "MRSWNII"
+      },
+      {
+        "tenor": "1Y",
+        "type": "SWAP",
+        "ticker": "MRSWNI1"
+      },
+      {
+        "tenor": "2Y",
+        "type": "SWAP",
+        "ticker": "MRSWNI2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "SWAP",
+        "ticker": "MRSWNI3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "SWAP",
+        "ticker": "MRSWNI4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "SWAP",
+        "ticker": "MRSWNI5"
+      },
+      {
+        "tenor": "7Y",
+        "type": "SWAP",
+        "ticker": "MRSWNI7"
+      },
+      {
+        "tenor": "10Y",
+        "type": "SWAP",
+        "ticker": "MRSWNI10"
+      }
+    ],
+    "fwdCurveId": "S0209"
+  },
+  "notes": "LCH added MYR NDIRS ~Feb-2025 (LCH-only, USD-settled, max ~11Y). Bloomberg MRSWNI template settles T+0 (probed; research assumed T+2 - follow the quote template). BNM roadmap: no new KLIBOR from Jul-2027, cessation Jan-2029. MYOR OIS quotes live on MRSO{n} 1-10Y ('MYR ONSH OIS (V MYOR)', found 2026-07) — ONSHORE market while the IRS here is offshore NDIRS; conventions assumed Quarterly ACT/365F payLag 1 matching onshore KLIBOR template; 'MYOR Index' fixing ticker does NOT exist on API. Verify vs SWPM."
+}

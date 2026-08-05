@@ -1,0 +1,163 @@
+{
+  "ccy": "CAD",
+  "name": "Canadian Dollar — CORRA OIS",
+  "enabled": true,
+  "calendar": "CAD",
+  "spotLag": 1,
+  "defaultSource": "BGN",
+  "altSources": [
+    "BMOD",
+    "CMPN"
+  ],
+  "defaultProduct": "OIS",
+  "discounting": "OIS",
+  "ccps": [
+    "LCH",
+    "CME"
+  ],
+  "ois": {
+    "indexName": "CORRA",
+    "onFixingTicker": "CAONREPO Index",
+    "indexDcc": "ACT/365F",
+    "fixedFreq": "Semiannual",
+    "fixedDcc": "ACT/365F",
+    "bdc": "ModifiedFollowing",
+    "payLag": 1,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "13M",
+    "curve": [
+      {
+        "tenor": "1W",
+        "type": "OIS",
+        "ticker": "CDSO1Z"
+      },
+      {
+        "tenor": "2W",
+        "type": "OIS",
+        "ticker": "CDSO2Z"
+      },
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "CDSOA"
+      },
+      {
+        "tenor": "2M",
+        "type": "OIS",
+        "ticker": "CDSOB"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "CDSOC"
+      },
+      {
+        "tenor": "4M",
+        "type": "OIS",
+        "ticker": "CDSOD"
+      },
+      {
+        "tenor": "5M",
+        "type": "OIS",
+        "ticker": "CDSOE"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "CDSOF"
+      },
+      {
+        "tenor": "9M",
+        "type": "OIS",
+        "ticker": "CDSOI"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "CDSO1"
+      },
+      {
+        "tenor": "18M",
+        "type": "OIS",
+        "ticker": "CDSO1F"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "CDSO2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "CDSO3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "CDSO4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "CDSO5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "CDSO6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "CDSO7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "CDSO8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "CDSO9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "CDSO10"
+      },
+      {
+        "tenor": "12Y",
+        "type": "OIS",
+        "ticker": "CDSO12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "OIS",
+        "ticker": "CDSO15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "OIS",
+        "ticker": "CDSO20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "OIS",
+        "ticker": "CDSO25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "OIS",
+        "ticker": "CDSO30"
+      },
+      {
+        "tenor": "40Y",
+        "type": "OIS",
+        "ticker": "CDSO40"
+      }
+    ],
+    "fwdCurveId": "S0147"
+  },
+  "notes": "CDOR ceased Jun-2024; CORRA OIS is the only cleared CAD product. SEMI-ANNUAL fixed leg (the G10 OIS exception - CARR kept the legacy CAD semi convention), 1d pay lag. Spot T+1 confirmed off terminal (TP ICAP quotes T+0 - both trade). BMO (BMOD) publishes a full CDSO source."
+}

@@ -1,0 +1,222 @@
+{
+  "ccy": "GBP",
+  "name": "British Pound — SONIA OIS",
+  "enabled": true,
+  "calendar": "GBP",
+  "spotLag": 0,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "OIS",
+  "discounting": "OIS",
+  "ccps": [
+    "LCH",
+    "CME"
+  ],
+  "ois": {
+    "indexName": "SONIA",
+    "onFixingTicker": "SONIO/N Index",
+    "indexDcc": "ACT/365F",
+    "fixedFreq": "Annual",
+    "fixedDcc": "ACT/365F",
+    "bdc": "ModifiedFollowing",
+    "payLag": 0,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      {
+        "tenor": "1W",
+        "type": "OIS",
+        "ticker": "BPSWS1Z"
+      },
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "BPSWSA"
+      },
+      {
+        "tenor": "2W",
+        "type": "OIS",
+        "ticker": "BPSWS2Z"
+      },
+      {
+        "tenor": "2M",
+        "type": "OIS",
+        "ticker": "BPSWSB"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "BPSWSC"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "BPSWSF"
+      },
+      {
+        "tenor": "9M",
+        "type": "OIS",
+        "ticker": "BPSWSI"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "BPSWS1"
+      },
+      {
+        "tenor": "18M",
+        "type": "OIS",
+        "ticker": "BPSWS1F"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "BPSWS2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "BPSWS3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "BPSWS4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "BPSWS5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "BPSWS6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "BPSWS7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "BPSWS8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "BPSWS9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "BPSWS10"
+      },
+      {
+        "tenor": "11Y",
+        "type": "OIS",
+        "ticker": "BPSWS11"
+      },
+      {
+        "tenor": "12Y",
+        "type": "OIS",
+        "ticker": "BPSWS12"
+      },
+      {
+        "tenor": "13Y",
+        "type": "OIS",
+        "ticker": "BPSWS13"
+      },
+      {
+        "tenor": "14Y",
+        "type": "OIS",
+        "ticker": "BPSWS14"
+      },
+      {
+        "tenor": "15Y",
+        "type": "OIS",
+        "ticker": "BPSWS15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "OIS",
+        "ticker": "BPSWS20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "OIS",
+        "ticker": "BPSWS25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "OIS",
+        "ticker": "BPSWS30"
+      },
+      {
+        "tenor": "35Y",
+        "type": "OIS",
+        "ticker": "BPSWS35"
+      },
+      {
+        "tenor": "40Y",
+        "type": "OIS",
+        "ticker": "BPSWS40"
+      },
+      {
+        "tenor": "50Y",
+        "type": "OIS",
+        "ticker": "BPSWS50"
+      }
+    ],
+    "fwdCurveId": "S0141"
+  },
+  "ladders": [
+    {
+      "name": "RPI",
+      "kind": "INFLATION",
+      "fwdTickerPattern": "FWISBP{A}{B} Index",
+      "aliases": [
+        "rpi",
+        "ukrpi",
+        "breakeven"
+      ],
+      "dcc": "ACT/365",
+      "fixingTicker": "UKRPI Index",
+      "pillars": [
+        {
+          "tenor": "1Y",
+          "ticker": "BPSWIT1"
+        },
+        {
+          "tenor": "2Y",
+          "ticker": "BPSWIT2"
+        },
+        {
+          "tenor": "5Y",
+          "ticker": "BPSWIT5"
+        },
+        {
+          "tenor": "10Y",
+          "ticker": "BPSWIT10"
+        },
+        {
+          "tenor": "15Y",
+          "ticker": "BPSWIT15"
+        },
+        {
+          "tenor": "20Y",
+          "ticker": "BPSWIT20"
+        },
+        {
+          "tenor": "30Y",
+          "ticker": "BPSWIT30"
+        }
+      ],
+      "notes": "UK RPI zero-coupon inflation breakeven. 1Y is Act/ACT, longer Act/365."
+    }
+  ],
+  "notes": "T+0 spot start, no payment lag, Act/365F both legs. RPI breakevens as analytics ladder. London calendar."
+}

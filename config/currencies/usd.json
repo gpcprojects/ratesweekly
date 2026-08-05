@@ -1,0 +1,327 @@
+{
+  "ccy": "USD",
+  "name": "US Dollar — SOFR OIS",
+  "enabled": true,
+  "calendar": "USD",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "OIS",
+  "discounting": "OIS",
+  "ccps": [
+    "LCH",
+    "CME"
+  ],
+  "ois": {
+    "indexName": "SOFR",
+    "onFixingTicker": "SOFRRATE Index",
+    "indexDcc": "ACT/360",
+    "fixedFreq": "Annual",
+    "fixedDcc": "ACT/360",
+    "bdc": "ModifiedFollowing",
+    "payLag": 2,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      {
+        "tenor": "1W",
+        "type": "OIS",
+        "ticker": "USOSFR1Z"
+      },
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "USOSFRA"
+      },
+      {
+        "tenor": "2W",
+        "type": "OIS",
+        "ticker": "USOSFR2Z"
+      },
+      {
+        "tenor": "2M",
+        "type": "OIS",
+        "ticker": "USOSFRB"
+      },
+      {
+        "tenor": "3W",
+        "type": "OIS",
+        "ticker": "USOSFR3Z"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "USOSFRC"
+      },
+      {
+        "tenor": "4M",
+        "type": "OIS",
+        "ticker": "USOSFRD"
+      },
+      {
+        "tenor": "5M",
+        "type": "OIS",
+        "ticker": "USOSFRE"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "USOSFRF"
+      },
+      {
+        "tenor": "9M",
+        "type": "OIS",
+        "ticker": "USOSFRI"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "USOSFR1"
+      },
+      {
+        "tenor": "18M",
+        "type": "OIS",
+        "ticker": "USOSFR1F"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "USOSFR2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "USOSFR3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "USOSFR4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "USOSFR5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "USOSFR6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "USOSFR7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "USOSFR8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "USOSFR9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "USOSFR10"
+      },
+      {
+        "tenor": "11Y",
+        "type": "OIS",
+        "ticker": "USOSFR11"
+      },
+      {
+        "tenor": "12Y",
+        "type": "OIS",
+        "ticker": "USOSFR12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "OIS",
+        "ticker": "USOSFR15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "OIS",
+        "ticker": "USOSFR20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "OIS",
+        "ticker": "USOSFR25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "OIS",
+        "ticker": "USOSFR30"
+      },
+      {
+        "tenor": "35Y",
+        "type": "OIS",
+        "ticker": "USOSFR35"
+      },
+      {
+        "tenor": "40Y",
+        "type": "OIS",
+        "ticker": "USOSFR40"
+      },
+      {
+        "tenor": "45Y",
+        "type": "OIS",
+        "ticker": "USOSFR45"
+      },
+      {
+        "tenor": "50Y",
+        "type": "OIS",
+        "ticker": "USOSFR50"
+      }
+    ],
+    "fwdCurveId": "S0490"
+  },
+  "ladders": [
+    {
+      "name": "FedFunds",
+      "kind": "RATE",
+      "aliases": [
+        "ff",
+        "fedfunds",
+        "effr"
+      ],
+      "dcc": "ACT/360",
+      "fixingTicker": "FEDL01 Index",
+      "pillars": [
+        {
+          "tenor": "1M",
+          "ticker": "USSOA"
+        },
+        {
+          "tenor": "2M",
+          "ticker": "USSOB"
+        },
+        {
+          "tenor": "3M",
+          "ticker": "USSOC"
+        },
+        {
+          "tenor": "6M",
+          "ticker": "USSOF"
+        },
+        {
+          "tenor": "9M",
+          "ticker": "USSOI"
+        },
+        {
+          "tenor": "1Y",
+          "ticker": "USSO1"
+        },
+        {
+          "tenor": "18M",
+          "ticker": "USSO1F"
+        },
+        {
+          "tenor": "2Y",
+          "ticker": "USSO2"
+        },
+        {
+          "tenor": "3Y",
+          "ticker": "USSO3"
+        },
+        {
+          "tenor": "4Y",
+          "ticker": "USSO4"
+        },
+        {
+          "tenor": "5Y",
+          "ticker": "USSO5"
+        },
+        {
+          "tenor": "7Y",
+          "ticker": "USSO7"
+        },
+        {
+          "tenor": "10Y",
+          "ticker": "USSO10"
+        },
+        {
+          "tenor": "15Y",
+          "ticker": "USSO15"
+        },
+        {
+          "tenor": "20Y",
+          "ticker": "USSO20"
+        },
+        {
+          "tenor": "30Y",
+          "ticker": "USSO30"
+        }
+      ],
+      "notes": "Fed Funds (EFFR) OIS, Act/360. Used for SOFR/FF basis and Fed-dated trades.",
+      "fwdCurveId": "S0042"
+    },
+    {
+      "name": "CPI",
+      "kind": "INFLATION",
+      "fwdTickerPattern": "FWISUS{A}{B} Index",
+      "aliases": [
+        "cpi",
+        "uscpi",
+        "breakeven"
+      ],
+      "dcc": "ACT/360",
+      "fixingTicker": "CPURNSA Index",
+      "pillars": [
+        {
+          "tenor": "1Y",
+          "ticker": "USSWIT1"
+        },
+        {
+          "tenor": "2Y",
+          "ticker": "USSWIT2"
+        },
+        {
+          "tenor": "3Y",
+          "ticker": "USSWIT3"
+        },
+        {
+          "tenor": "4Y",
+          "ticker": "USSWIT4"
+        },
+        {
+          "tenor": "5Y",
+          "ticker": "USSWIT5"
+        },
+        {
+          "tenor": "7Y",
+          "ticker": "USSWIT7"
+        },
+        {
+          "tenor": "10Y",
+          "ticker": "USSWIT10"
+        },
+        {
+          "tenor": "12Y",
+          "ticker": "USSWIT12"
+        },
+        {
+          "tenor": "15Y",
+          "ticker": "USSWIT15"
+        },
+        {
+          "tenor": "20Y",
+          "ticker": "USSWIT20"
+        },
+        {
+          "tenor": "30Y",
+          "ticker": "USSWIT30"
+        }
+      ],
+      "notes": "US CPI (Urban NSA) zero-coupon inflation breakeven, Act/360."
+    }
+  ],
+  "notes": "Cleared standard since LIBOR cessation. Fed Funds OIS and CPI breakevens exposed as analytics ladders. US government securities calendar."
+}

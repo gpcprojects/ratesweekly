@@ -1,0 +1,403 @@
+{
+  "ccy": "EUR",
+  "name": "Euro — 6M EURIBOR IRS / â‚¬STR OIS",
+  "enabled": true,
+  "calendar": "EUR",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "IRS",
+  "discounting": "OIS",
+  "ccps": [
+    "LCH",
+    "CME",
+    "EUREX"
+  ],
+  "ois": {
+    "indexName": "ESTR",
+    "onFixingTicker": "ESTRON Index",
+    "indexDcc": "ACT/360",
+    "fixedFreq": "Annual",
+    "fixedDcc": "ACT/360",
+    "bdc": "ModifiedFollowing",
+    "payLag": 1,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      {
+        "tenor": "1W",
+        "type": "OIS",
+        "ticker": "EESWE1Z"
+      },
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "EESWEA"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "EESWEC"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "EESWEF"
+      },
+      {
+        "tenor": "9M",
+        "type": "OIS",
+        "ticker": "EESWEI"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "EESWE1"
+      },
+      {
+        "tenor": "18M",
+        "type": "OIS",
+        "ticker": "EESWE1F"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "EESWE2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "EESWE3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "EESWE4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "EESWE5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "EESWE6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "EESWE7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "EESWE8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "EESWE9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "EESWE10"
+      },
+      {
+        "tenor": "11Y",
+        "type": "OIS",
+        "ticker": "EESWE11"
+      },
+      {
+        "tenor": "12Y",
+        "type": "OIS",
+        "ticker": "EESWE12"
+      },
+      {
+        "tenor": "13Y",
+        "type": "OIS",
+        "ticker": "EESWE13"
+      },
+      {
+        "tenor": "14Y",
+        "type": "OIS",
+        "ticker": "EESWE14"
+      },
+      {
+        "tenor": "15Y",
+        "type": "OIS",
+        "ticker": "EESWE15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "OIS",
+        "ticker": "EESWE20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "OIS",
+        "ticker": "EESWE25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "OIS",
+        "ticker": "EESWE30"
+      },
+      {
+        "tenor": "35Y",
+        "type": "OIS",
+        "ticker": "EESWE35"
+      },
+      {
+        "tenor": "40Y",
+        "type": "OIS",
+        "ticker": "EESWE40"
+      },
+      {
+        "tenor": "45Y",
+        "type": "OIS",
+        "ticker": "EESWE45"
+      },
+      {
+        "tenor": "50Y",
+        "type": "OIS",
+        "ticker": "EESWE50"
+      }
+    ],
+    "fwdCurveId": "S0514"
+  },
+  "irs": {
+    "bdc": "ModifiedFollowing",
+    "legs": [
+      {
+        "maxTenor": "1Y",
+        "fixedFreq": "Annual",
+        "fixedDcc": "30/360",
+        "floatIndex": "EURIBOR",
+        "floatTenor": "3M",
+        "floatFreq": "Quarterly",
+        "floatDcc": "ACT/360",
+        "fixingDays": 2,
+        "fixingTicker": "EUR003M Index"
+      },
+      {
+        "maxTenor": null,
+        "fixedFreq": "Annual",
+        "fixedDcc": "30/360",
+        "floatIndex": "EURIBOR",
+        "floatTenor": "6M",
+        "floatFreq": "Semiannual",
+        "floatDcc": "ACT/360",
+        "fixingDays": 2,
+        "fixingTicker": "EUR006M Index"
+      }
+    ],
+    "curve": [
+      {
+        "tenor": "6M",
+        "type": "DEPO",
+        "ticker": "EUR006M Index"
+      },
+      {
+        "tenor": "1X7",
+        "type": "FRA",
+        "ticker": "EUFR0AG Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "2X8",
+        "type": "FRA",
+        "ticker": "EUFR0BH Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "3X9",
+        "type": "FRA",
+        "ticker": "EUFR0CI Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "4X10",
+        "type": "FRA",
+        "ticker": "EUFR0DJ Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "5X11",
+        "type": "FRA",
+        "ticker": "EUFR0EK Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "1Y",
+        "type": "SWAP",
+        "ticker": "EUSA1",
+        "band": "6M"
+      },
+      {
+        "tenor": "2Y",
+        "type": "SWAP",
+        "ticker": "EUSA2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "SWAP",
+        "ticker": "EUSA3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "SWAP",
+        "ticker": "EUSA4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "SWAP",
+        "ticker": "EUSA5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "SWAP",
+        "ticker": "EUSA6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "SWAP",
+        "ticker": "EUSA7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "SWAP",
+        "ticker": "EUSA8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "SWAP",
+        "ticker": "EUSA9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "SWAP",
+        "ticker": "EUSA10"
+      },
+      {
+        "tenor": "11Y",
+        "type": "SWAP",
+        "ticker": "EUSA11"
+      },
+      {
+        "tenor": "12Y",
+        "type": "SWAP",
+        "ticker": "EUSA12"
+      },
+      {
+        "tenor": "13Y",
+        "type": "SWAP",
+        "ticker": "EUSA13"
+      },
+      {
+        "tenor": "14Y",
+        "type": "SWAP",
+        "ticker": "EUSA14"
+      },
+      {
+        "tenor": "15Y",
+        "type": "SWAP",
+        "ticker": "EUSA15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "SWAP",
+        "ticker": "EUSA20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "SWAP",
+        "ticker": "EUSA25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "SWAP",
+        "ticker": "EUSA30"
+      },
+      {
+        "tenor": "35Y",
+        "type": "SWAP",
+        "ticker": "EUSA35"
+      },
+      {
+        "tenor": "40Y",
+        "type": "SWAP",
+        "ticker": "EUSA40"
+      },
+      {
+        "tenor": "45Y",
+        "type": "SWAP",
+        "ticker": "EUSA45"
+      },
+      {
+        "tenor": "50Y",
+        "type": "SWAP",
+        "ticker": "EUSA50"
+      }
+    ],
+    "fwdCurveId": "EUSA",
+    "fwdTickerStyle": "yearPair"
+  },
+  "ladders": [
+    {
+      "name": "HICP",
+      "kind": "INFLATION",
+      "fwdTickerPattern": "FWISEU{A}{B} Index",
+      "aliases": [
+        "hicp",
+        "euhicp",
+        "breakeven"
+      ],
+      "dcc": "ACT/ACT",
+      "fixingTicker": "CPTFEMU Index",
+      "pillars": [
+        {
+          "tenor": "1Y",
+          "ticker": "EUSWI1"
+        },
+        {
+          "tenor": "2Y",
+          "ticker": "EUSWI2"
+        },
+        {
+          "tenor": "3Y",
+          "ticker": "EUSWI3"
+        },
+        {
+          "tenor": "5Y",
+          "ticker": "EUSWI5"
+        },
+        {
+          "tenor": "7Y",
+          "ticker": "EUSWI7"
+        },
+        {
+          "tenor": "10Y",
+          "ticker": "EUSWI10"
+        },
+        {
+          "tenor": "15Y",
+          "ticker": "EUSWI15"
+        },
+        {
+          "tenor": "20Y",
+          "ticker": "EUSWI20"
+        },
+        {
+          "tenor": "30Y",
+          "ticker": "EUSWI30"
+        }
+      ],
+      "notes": "Euro HICP (ex-tobacco) zero-coupon inflation breakeven. EUSWI root is API-live here (EUSWIT ZC root returns no API px)."
+    }
+  ],
+  "notes": "Dual curve: EURIBOR projection discounted on â‚¬STR. ISDA standard: 1Y swap vs 3M Euribor, >1Y vs 6M. Fixed leg 30/360 bond basis. HICP breakevens as analytics ladder. TARGET calendar. FRA strip added 2026-07 (composite-only full securities) to shape the front end between swap pillars; FRAs whose maturity clashes with a quoted pillar are skipped by the bootstrapper. EUR FRA pillars REMOVED 2026-07: EUFR0I1C/011F prints sit ~10bp above the (far more liquid) EUSA-implied forwards and sawtooth the curve - 1y2y went +11bp vs FWCM. EUR front end stays swap-pillar based; do not re-add without checking the FRA source quality. S0201 FWCM drift RESOLVED 2026-07-29: it was never our curve. The IRS pillars are EUSA composites, which Bloomberg names EUR SWAP ANN (VS 6M), while S0201 is the vs-3M-EURIBOR surface - so the audit was booking the 3s6s basis as our error (+12.2bp at 1y1y tilting to -6.9bp at 20y10y). Forwards now read the EUSA year-pair securities (fwdTickerStyle yearPair: EUSA0101 = 1y1y, EUSA1515 = 15y15y), which price our curve to under 1bp: 1y1y -0.75, 5y5y -0.75, 10y10y +0.48. EUSA is better on three counts - right index, fewer stale days than S0201 (1-5 vs 9-15 over 2y), and EVERY year combination quoted with history where S0201 has a sparse start grid (S0201FS 11Y3Y has no data at all; EUSA1103 has 539 points). CAVEAT: EUSA liquidity varies - the round points are tight but odd long combinations can be very wide (EUSA1205 ~277bp) or have no market (EUSA0812, EUSA0930); unquoted points are bracket-interpolated, wide ones are used as-is. Do NOT revert to S0201. EUR OIS stays on S0514 (ESTR), which was always correct."
+}

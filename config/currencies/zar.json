@@ -1,0 +1,222 @@
+{
+  "ccy": "ZAR",
+  "name": "South African Rand — ZARONIA OIS / 3M JIBAR IRS (legacy)",
+  "enabled": true,
+  "calendar": "ZAR",
+  "spotLag": 0,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "IRS",
+  "discounting": "SELF",
+  "ccps": [
+    "LCH",
+    "CME"
+  ],
+  "ois": {
+    "indexName": "ZARONIA",
+    "onFixingTicker": "ZARONIA Index",
+    "indexDcc": "ACT/365F",
+    "fixedFreq": "Annual",
+    "fixedDcc": "ACT/365F",
+    "bdc": "ModifiedFollowing",
+    "payLag": 2,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "SAOIAAA"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "SAOIAAC"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "SAOIAAF"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "SAOIAA1"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "SAOIAA2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "SAOIAA3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "SAOIAA4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "SAOIAA5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "SAOIAA6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "SAOIAA7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "SAOIAA8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "SAOIAA9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "SAOIAA10"
+      },
+      {
+        "tenor": "12Y",
+        "type": "OIS",
+        "ticker": "SAOIAA12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "OIS",
+        "ticker": "SAOIAA15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "OIS",
+        "ticker": "SAOIAA20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "OIS",
+        "ticker": "SAOIAA25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "OIS",
+        "ticker": "SAOIAA30"
+      }
+    ],
+    "fwdCurveId": "S0584"
+  },
+  "irs": {
+    "bdc": "ModifiedFollowing",
+    "legs": [
+      {
+        "maxTenor": null,
+        "fixedFreq": "Quarterly",
+        "fixedDcc": "ACT/365F",
+        "floatIndex": "JIBAR",
+        "floatTenor": "3M",
+        "floatFreq": "Quarterly",
+        "floatDcc": "ACT/365F",
+        "fixingDays": 0,
+        "fixingTicker": "JIBA3M Index"
+      }
+    ],
+    "curve": [
+      {
+        "tenor": "3M",
+        "type": "DEPO",
+        "ticker": "JIBA3M Index"
+      },
+      {
+        "tenor": "1Y",
+        "type": "SWAP",
+        "ticker": "SASW1"
+      },
+      {
+        "tenor": "2Y",
+        "type": "SWAP",
+        "ticker": "SASW2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "SWAP",
+        "ticker": "SASW3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "SWAP",
+        "ticker": "SASW4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "SWAP",
+        "ticker": "SASW5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "SWAP",
+        "ticker": "SASW6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "SWAP",
+        "ticker": "SASW7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "SWAP",
+        "ticker": "SASW8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "SWAP",
+        "ticker": "SASW9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "SWAP",
+        "ticker": "SASW10"
+      },
+      {
+        "tenor": "12Y",
+        "type": "SWAP",
+        "ticker": "SASW12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "SWAP",
+        "ticker": "SASW15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "SWAP",
+        "ticker": "SASW20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "SWAP",
+        "ticker": "SASW25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "SWAP",
+        "ticker": "SASW30"
+      }
+    ],
+    "fwdCurveId": "SAFS",
+    "fwdTickerStyle": "yearPair"
+  },
+  "notes": "JIBAR ceases 31-Dec-2026 (no-new-JIBAR since 1-May-2026); ZARONIA OIS (SAOIAA family, T+0, annual Act/365F, 2d pay lag) is the new-trade standard. CCP discounting moved to ZARONIA Apr-2026. If SAOIAA quotes are live on your terminal, set defaultProduct=OIS and discounting=OIS. ZAR IRS forward reference added 2026-07-30: SAFS year-pair securities (SAFS0505 BLC = 5y5y), which are the 3M-JIBAR forwards matching these vs-3M pillars. Previously the IRS curve had NO forward reference at all. ZAR OIS keeps S0584 (ZARONIA) - a different index, do not cross them."
+}

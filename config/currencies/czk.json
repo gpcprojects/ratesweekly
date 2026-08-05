@@ -1,0 +1,257 @@
+{
+  "ccy": "CZK",
+  "name": "Czech Koruna — 6M PRIBOR IRS",
+  "enabled": true,
+  "calendar": "CZK",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "IRS",
+  "discounting": "SELF",
+  "ccps": [
+    "LCH",
+    "CME"
+  ],
+  "ois": {
+    "indexName": "CZEONIA",
+    "onFixingTicker": "",
+    "indexDcc": "ACT/360",
+    "fixedFreq": "Annual",
+    "fixedDcc": "ACT/360",
+    "bdc": "ModifiedFollowing",
+    "payLag": 1,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "CKSO1 Curncy"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "CKSO2 Curncy"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "CKSO3 Curncy"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "CKSO4 Curncy"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "CKSO5 Curncy"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "CKSO6 Curncy"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "CKSO7 Curncy"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "CKSO8 Curncy"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "CKSO9 Curncy"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "CKSO10 Curncy"
+      }
+    ]
+  },
+  "irs": {
+    "bdc": "ModifiedFollowing",
+    "legs": [
+      {
+        "maxTenor": "23M",
+        "fixedFreq": "Annual",
+        "fixedDcc": "ACT/360",
+        "floatIndex": "PRIBOR",
+        "floatTenor": "3M",
+        "floatFreq": "Quarterly",
+        "floatDcc": "ACT/360",
+        "fixingDays": 2,
+        "fixingTicker": "PRIB03M Index"
+      },
+      {
+        "maxTenor": null,
+        "fixedFreq": "Annual",
+        "fixedDcc": "ACT/360",
+        "floatIndex": "PRIBOR",
+        "floatTenor": "6M",
+        "floatFreq": "Semiannual",
+        "floatDcc": "ACT/360",
+        "fixingDays": 2,
+        "fixingTicker": "PRIB06M Index"
+      }
+    ],
+    "curve": [
+      {
+        "tenor": "3M",
+        "type": "DEPO",
+        "ticker": "PRIB03M Index",
+        "band": "3M"
+      },
+      {
+        "tenor": "6M",
+        "type": "DEPO",
+        "ticker": "PRIB06M Index"
+      },
+      {
+        "tenor": "1Y",
+        "type": "SWAP",
+        "ticker": "CKSW1",
+        "band": "3M"
+      },
+      {
+        "tenor": "2Y",
+        "type": "SWAP",
+        "ticker": "CKSW2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "SWAP",
+        "ticker": "CKSW3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "SWAP",
+        "ticker": "CKSW4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "SWAP",
+        "ticker": "CKSW5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "SWAP",
+        "ticker": "CKSW6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "SWAP",
+        "ticker": "CKSW7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "SWAP",
+        "ticker": "CKSW8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "SWAP",
+        "ticker": "CKSW9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "SWAP",
+        "ticker": "CKSW10"
+      },
+      {
+        "tenor": "11Y",
+        "type": "SWAP",
+        "ticker": "CKSW11"
+      },
+      {
+        "tenor": "12Y",
+        "type": "SWAP",
+        "ticker": "CKSW12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "SWAP",
+        "ticker": "CKSW15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "SWAP",
+        "ticker": "CKSW20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "SWAP",
+        "ticker": "CKSW25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "SWAP",
+        "ticker": "CKSW30"
+      },
+      {
+        "tenor": "1X7",
+        "type": "FRA",
+        "ticker": "CKFR0AG Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "2X8",
+        "type": "FRA",
+        "ticker": "CKFR0BH Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "3X9",
+        "type": "FRA",
+        "ticker": "CKFR0CI Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "4X10",
+        "type": "FRA",
+        "ticker": "CKFR0DJ Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "5X11",
+        "type": "FRA",
+        "ticker": "CKFR0EK Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "6X12",
+        "type": "FRA",
+        "ticker": "CKFR0F1 Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "3X6",
+        "type": "FRA",
+        "ticker": "CKFR0CF Curncy",
+        "band": "3M"
+      },
+      {
+        "tenor": "6X9",
+        "type": "FRA",
+        "ticker": "CKFR0FI Curncy",
+        "band": "3M"
+      },
+      {
+        "tenor": "12X18",
+        "type": "FRA",
+        "ticker": "CKFR011F Curncy",
+        "band": "6M"
+      }
+    ],
+    "fwdCurveId": "S0320"
+  },
+  "notes": "ISDA CZK annual swap rate: vs 3M PRIBOR below 2Y, 6M PRIBOR from 2Y — and Bloomberg's quotes AGREE per their NAMEs: CKSW1 is 'ANN (VS 3M)', CKSW2+ 'ANN (VS 6M)'. Re-banded 2026-08-03: CKSW1 was feeding the 6M band, booking the 1y 3s6s into the 6M curve; it now sits on the 3M band with a PRIB03M depo and the 3X6/6X9 FRAs (sub-2y desk queries stop pricing off a 2-FRA extrapolation). 6M band front = monthly 6M FRA strip CKFR0AG..0F1 (1X7..6X12) + 12X18, mirroring YCSW0320 exactly (PRIB06M + 0AG..0F1 + 011F + CKSW2..15 — Bloomberg uses NO 1Y swap, the 6X12 FRA is its 12M point). CZEONIA OIS quotes live on CKSO{n} 1-10Y (found 2026-07; 15Y/20Y resolve but no px) — bilateral market, not cleared. OIS conventions assumed Annual ACT/360 payLag 1; 'CZEONIA Index' fixing ticker does NOT exist on API — onFixingTicker left empty. Verify vs SWPM. FRA strip added 2026-07 (composite-only full securities) to shape the front end between swap pillars; FRAs whose maturity clashes with a quoted pillar are skipped by the bootstrapper. FWCM S0320 cross unreliable >10y (audit 2026-07: +29/+64/-32bp at 10Y10Y+; our curve reprices the quoted CKSW ladder exactly - trust pillars over FWCM at the long end)."
+}

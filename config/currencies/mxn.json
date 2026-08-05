@@ -1,0 +1,103 @@
+{
+    "ccy":  "MXN",
+    "name":  "Mexican Peso — F-TIIE OIS (28-day coupons)",
+    "enabled":  true,
+    "calendar":  "MXN",
+    "spotLag":  1,
+    "defaultSource":  "BGN",
+    "altSources":  [
+                       "CMPN"
+                   ],
+    "defaultProduct":  "OIS",
+    "discounting":  "OIS",
+    "ccps":  [
+                 "CME",
+                 "LCH",
+                 "ASIGNA"
+             ],
+    "ois":  {
+                "indexName":  "F-TIIE",
+                "onFixingTicker":  "",
+                "indexDcc":  "ACT/360",
+                "fixedFreq":  "Every28Days",
+                "fixedDcc":  "ACT/360",
+                "bdc":  "Following",
+                "payLag":  2,
+                "fixingDays":  0,
+                "shortZeroCouponUnder":  "2P",
+                "curve":  [
+                              {
+                                  "tenor":  "1P",
+                                  "type":  "OIS",
+                                  "ticker":  "MPSWFA"
+                              },
+                              {
+                                  "tenor":  "3P",
+                                  "type":  "OIS",
+                                  "ticker":  "MPSWFC"
+                              },
+                              {
+                                  "tenor":  "6P",
+                                  "type":  "OIS",
+                                  "ticker":  "MPSWFF"
+                              },
+                              {
+                                  "tenor":  "9P",
+                                  "type":  "OIS",
+                                  "ticker":  "MPSWFI"
+                              },
+                              {
+                                  "tenor":  "13P",
+                                  "type":  "OIS",
+                                  "ticker":  "MPSWF1A"
+                              },
+                              {
+                                  "tenor":  "26P",
+                                  "type":  "OIS",
+                                  "ticker":  "MPSWF2B"
+                              },
+                              {
+                                  "tenor":  "39P",
+                                  "type":  "OIS",
+                                  "ticker":  "MPSWF3C"
+                              },
+                              {
+                                  "tenor":  "52P",
+                                  "type":  "OIS",
+                                  "ticker":  "MPSWF4D"
+                              },
+                              {
+                                  "tenor":  "65P",
+                                  "type":  "OIS",
+                                  "ticker":  "MPSWF5E"
+                              },
+                              {
+                                  "tenor":  "91P",
+                                  "type":  "OIS",
+                                  "ticker":  "MPSWF7G"
+                              },
+                              {
+                                  "tenor":  "130P",
+                                  "type":  "OIS",
+                                  "ticker":  "MPSWF10J"
+                              },
+                              {
+                                  "tenor":  "195P",
+                                  "type":  "OIS",
+                                  "ticker":  "MPSWF16C"
+                              },
+                              {
+                                  "tenor":  "260P",
+                                  "type":  "OIS",
+                                  "ticker":  "MPSWF21H"
+                              },
+                              {
+                                  "tenor":  "390P",
+                                  "type":  "OIS",
+                                  "ticker":  "MPSWF32F"
+                              }
+                          ],
+                "fwdCurveId":  "S0583"
+            },
+    "notes":  "F-TIIE (TIIE de Fondeo) OIS: both legs pay every 28 days, Act/360, Following, 2d pay lag both legs, maturity = settle + Nx28 days exactly. \u0027P\u0027 tenors = 28-day periods (13P ~ 1Y, 65P ~ 5Y). SPOT FLAG: Bloomberg MPSWF template settles T+1 (probed) while CME attributes doc says T+2 - config follows the quote template (T+1). Legacy 28D TIIE (MPSW) banned in new trades since 2025 and delisted at CCPs; fallback = compounded F-TIIE + 24bp."
+}

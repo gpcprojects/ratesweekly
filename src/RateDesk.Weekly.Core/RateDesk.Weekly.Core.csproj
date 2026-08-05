@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RateDesk.Core\RateDesk.Core.csproj" />
+    <ProjectReference Include="..\RateDesk.Bloomberg\RateDesk.Bloomberg.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- embedded engine, single native e_sqlite3 — bundles into a single-file publish -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+  </ItemGroup>
+
+</Project>

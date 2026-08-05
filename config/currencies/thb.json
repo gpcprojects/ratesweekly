@@ -1,0 +1,41 @@
+{
+  "ccy": "THB",
+  "name": "Thai Baht — THOR OIS",
+  "enabled": true,
+  "calendar": "THB",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": ["CMPN", "CMPT"],
+  "defaultProduct": "OIS",
+  "discounting": "OIS",
+  "ccps": ["LCH", "TCH"],
+  "ois": {
+    "indexName": "THOR",
+    "onFixingTicker": "TTHORON Index",
+    "indexDcc": "ACT/365F",
+    "fixedFreq": "Quarterly",
+    "fixedDcc": "ACT/365F",
+    "bdc": "ModifiedFollowing",
+    "payLag": 2,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      { "tenor": "1M", "type": "OIS", "ticker": "TBSWHA Curncy" },
+      { "tenor": "2M", "type": "OIS", "ticker": "TBSWHB Curncy" },
+      { "tenor": "3M", "type": "OIS", "ticker": "TBSWHC Curncy" },
+      { "tenor": "6M", "type": "OIS", "ticker": "TBSWHF Curncy" },
+      { "tenor": "9M", "type": "OIS", "ticker": "TBSWHI Curncy" },
+      { "tenor": "1Y", "type": "OIS", "ticker": "TBSWH1 Curncy" },
+      { "tenor": "2Y", "type": "OIS", "ticker": "TBSWH2 Curncy" },
+      { "tenor": "3Y", "type": "OIS", "ticker": "TBSWH3 Curncy" },
+      { "tenor": "4Y", "type": "OIS", "ticker": "TBSWH4 Curncy" },
+      { "tenor": "5Y", "type": "OIS", "ticker": "TBSWH5 Curncy" },
+      { "tenor": "7Y", "type": "OIS", "ticker": "TBSWH7 Curncy" },
+      { "tenor": "10Y", "type": "OIS", "ticker": "TBSWH10 Curncy" },
+      { "tenor": "12Y", "type": "OIS", "ticker": "TBSWH12 Curncy" },
+      { "tenor": "15Y", "type": "OIS", "ticker": "TBSWH15 Curncy" },
+      { "tenor": "20Y", "type": "OIS", "ticker": "TBSWH20 Curncy" }
+    ]
+  },
+  "notes": "THOR OIS prices via the OFFSHORE family TBSWH{x} ('THB SWAP OIS OFFSH', found 2026-07: 1M-20Y live on COMPOSITE only, hence full-security tickers; 6Y resolves but no px, 8Y/9Y/18M absent). Old TBISXB THOR NDD family resolves but publishes no API prices. THBFIX legacy in run-off. Conventions assumed Quarterly ACT/365F payLag 2 (offshore template) - verify vs BOT/SWPM. Onshore vs offshore basis exists; this curve is the offshore market."
+}

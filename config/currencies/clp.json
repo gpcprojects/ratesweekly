@@ -1,0 +1,128 @@
+{
+  "ccy": "CLP",
+  "name": "Chilean Peso — CÃ¡mara (ICP) OIS",
+  "enabled": true,
+  "calendar": "USD",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "OIS",
+  "discounting": "USD-OIS",
+  "ccps": [
+    "LCH",
+    "CME",
+    "COMDER"
+  ],
+  "ois": {
+    "indexName": "ICP-CAMARA",
+    "onFixingTicker": "CLICP Index",
+    "indexDcc": "ACT/360",
+    "fixedFreq": "Semiannual",
+    "fixedDcc": "ACT/360",
+    "bdc": "ModifiedFollowing",
+    "payLag": 0,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "18M",
+    "curve": [
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "CHSWPC"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "CHSWPF"
+      },
+      {
+        "tenor": "9M",
+        "type": "OIS",
+        "ticker": "CHSWPI"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "CHSWP1"
+      },
+      {
+        "tenor": "18M",
+        "type": "OIS",
+        "ticker": "CHSWP1F"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "CHSWP2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "CHSWP3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "CHSWP4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "CHSWP5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "CHSWP6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "CHSWP7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "CHSWP8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "CHSWP9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "CHSWP10"
+      },
+      {
+        "tenor": "12Y",
+        "type": "OIS",
+        "ticker": "CHSWP12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "OIS",
+        "ticker": "CHSWP15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "OIS",
+        "ticker": "CHSWP20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "OIS",
+        "ticker": "CHSWP25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "OIS",
+        "ticker": "CHSWP30"
+      }
+    ],
+    "fwdCurveId": ""
+  },
+  "notes": "FWCM WARNING: Bloomberg S0521 forwards differ 25-100bp from this curve - their CLP curve uses a different quote set/method than the live BGN CHSWP par quotes this curve is built from (verified: their implied 10y ~5.1 vs CHSWP10 5.21). Both values shown per leg; reconcile with ICVS 521 members before trading CLP forwards. CÃ¡mara Promedio (ICP) swaps: zero-coupon below 18M, semi-annual Act/360 beyond; quoted non-deliverable (USD-settled). CLICP is an index LEVEL, not a rate. CALENDAR APPROXIMATION: QLNet has no Santiago calendar; using New York (market fixes on NY+Santiago). Verify dates vs SWPM for CLP. fwdCurveId S0521 REMOVED 2026-07: it is NOT the Camara curve (5y5y 5.65 vs real CHFS0505/Coremont 5.92-5.94; ours 5.898). CHFS{aa}{bb} FORWARD SWAP family exists but is terminal-calculated - publishes NO px on API (all fields/sources probed). FWCM cross blank by design; history = anchored approx."
+}

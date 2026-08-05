@@ -1,0 +1,394 @@
+{
+  // Central-bank meeting runs + IMM FRA runs.
+  // Meeting runs: dates/mids from the meeting-dated OIS tickers (N=0 run-down matures at the next
+  // meeting); SNB mids from the SARON futures strip; hardcoded dates are the last-resort fallback.
+  // kind="fra" runs: quoted 3M IMM FRA strips (tickers matched to rows by MATURITY — the numbers
+  // are rolling generics), curve-implied only when no tickers are listed. NOK MUST stay on the
+  // quoted strip: its curve has no 3M band, so curve-implied rows read the 6M curve, ~3s6s high.
+  // pastDates = trailing-year decisions, used only to stitch meeting-ticker HISTORY across rolls.
+  // decisionTimeLondon = announcement time on the London clock.
+  // A config\meetings.json next to the exe overrides this file.
+  "runs": [
+    {
+      "name": "FOMC",
+      "ccy": "USD",
+      "header": "{US} Indic FOMC Run",
+      "tickers": [
+        "USSOFED{N}"
+      ],
+      "refTicker": "FEDL01 Index",
+      // USD tenor swaps and forwards are SOFR, but everything MEETING-DATED is Fed Funds - including
+      // the USSOFED{N} tickers above and the FEDL01 reference. So a trade struck on FOMC dates must
+      // price on the FedFunds strip, not on the SOFR curve the rest of USD uses.
+      "policyLadder": "FedFunds",
+      "dates": [
+        "2026-07-29",
+        "2026-09-16",
+        "2026-10-28",
+        "2026-12-09",
+        "2027-01-27",
+        "2027-03-17",
+        "2027-04-28",
+        "2027-06-09",
+        "2027-07-28",
+        "2027-09-15",
+        "2027-10-27",
+        "2027-12-08",
+        "2028-01-26",
+        "2028-03-15",
+        "2028-04-26",
+        "2028-06-14",
+        "2028-07-26",
+        "2028-09-20",
+        "2028-11-01",
+        "2028-12-13"
+      ],
+      "decisionTimeLondon": "19:00",
+      "pastDates": [
+        "2025-07-30",
+        "2025-09-17",
+        "2025-10-29",
+        "2025-12-10",
+        "2026-01-28",
+        "2026-03-18",
+        "2026-04-29",
+        "2026-06-17"
+      ]
+    },
+    {
+      "name": "ECB",
+      "ccy": "EUR",
+      "header": "{EU} Indic ECB Run",
+      "tickers": [
+        "EESF{N}A"
+      ],
+      "dates": [
+        "2026-07-29",
+        "2026-09-16",
+        "2026-11-04",
+        "2026-12-23",
+        "2027-02-10",
+        "2027-03-24",
+        "2027-05-05",
+        "2027-06-16",
+        "2027-07-28",
+        "2027-09-15",
+        "2027-10-27",
+        "2027-12-08"
+      ],
+      "decisionTimeLondon": "13:15",
+      "pastDates": [
+        "2025-07-24",
+        "2025-09-11",
+        "2025-10-30",
+        "2025-12-18",
+        "2026-02-05",
+        "2026-03-19",
+        "2026-04-30",
+        "2026-06-11"
+      ]
+    },
+    {
+      "name": "MPC",
+      "ccy": "GBP",
+      "header": "{GB} Indic MPC Run",
+      "tickers": [
+        "GPSF{N}A"
+      ],
+      "dates": [
+        "2026-07-30",
+        "2026-09-17",
+        "2026-11-05",
+        "2026-12-17",
+        "2027-02-04",
+        "2027-03-18",
+        "2027-04-29",
+        "2027-06-17",
+        "2027-07-29",
+        "2027-09-16",
+        "2027-11-04",
+        "2027-12-16"
+      ],
+      "decisionTimeLondon": "12:00",
+      "pastDates": [
+        "2025-08-07",
+        "2025-09-18",
+        "2025-11-06",
+        "2025-12-18",
+        "2026-02-05",
+        "2026-03-19",
+        "2026-05-07",
+        "2026-06-18"
+      ]
+    },
+    {
+      "name": "BOC",
+      "ccy": "CAD",
+      "header": "{CA} Indic BOC Run",
+      "source": "BMOD",
+      "tickers": [
+        "CDSF{N}A"
+      ],
+      "dates": [
+        "2026-07-16",
+        "2026-09-03",
+        "2026-10-29",
+        "2026-12-10",
+        "2027-01-28",
+        "2027-03-11",
+        "2027-04-22",
+        "2027-06-03",
+        "2027-07-15",
+        "2027-09-02",
+        "2027-10-28",
+        "2027-12-09"
+      ],
+      "decisionTimeLondon": "14:45",
+      "pastDates": [
+        "2025-07-30",
+        "2025-09-17",
+        "2025-10-29",
+        "2025-12-10",
+        "2026-01-28",
+        "2026-03-11",
+        "2026-04-22",
+        "2026-06-03"
+      ]
+    },
+    {
+      "name": "RBA",
+      "ccy": "AUD",
+      "header": "{AU} Indic RBA Run",
+      "source": "NABZ",
+      "tickers": [
+        "ADSF{N}A"
+      ],
+      "dates": [
+        "2026-08-12",
+        "2026-09-30",
+        "2026-11-04",
+        "2026-12-09",
+        "2027-02-10",
+        "2027-03-24",
+        "2027-05-05",
+        "2027-06-23",
+        "2027-08-11",
+        "2027-09-29",
+        "2027-11-03",
+        "2027-12-08"
+      ],
+      "decisionTimeLondon": "05:30",
+      "pastDates": [
+        "2025-08-12",
+        "2025-09-30",
+        "2025-11-04",
+        "2025-12-09",
+        "2026-02-10",
+        "2026-03-31",
+        "2026-05-05",
+        "2026-06-16"
+      ]
+    },
+    {
+      "name": "RBNZ",
+      "ccy": "NZD",
+      "header": "{NZ} Indic RBNZ Run",
+      "source": "NABZ",
+      "tickers": [
+        "NDSF{N}A"
+      ],
+      "dates": [
+        "2026-09-03",
+        "2026-10-29",
+        "2026-12-10",
+        "2027-02-11",
+        "2027-03-18",
+        "2027-05-06",
+        "2027-06-17",
+        "2027-08-05",
+        "2027-09-16",
+        "2027-10-28",
+        "2027-12-09"
+      ],
+      "decisionTimeLondon": "03:00",
+      "pastDates": [
+        "2025-08-20",
+        "2025-10-08",
+        "2025-11-26",
+        "2026-02-18",
+        "2026-04-08",
+        "2026-05-27",
+        "2026-07-08"
+      ]
+    },
+    {
+      "name": "SNB",
+      "ccy": "CHF",
+      "header": "{SZ} Indic SNB Run",
+      "tickers": [
+        "SFSF{N}A"
+      ],
+      "futuresPattern": "SSY{MY} Comdty",
+      "dates": [
+        "2026-09-25",
+        "2026-12-11",
+        "2027-03-19",
+        "2027-06-18",
+        "2027-09-24",
+        "2027-12-17",
+        "2028-03-24",
+        "2028-06-23",
+        "2028-09-22",
+        "2028-12-15"
+      ],
+      "decisionTimeLondon": "08:30",
+      "pastDates": [
+        "2025-09-25",
+        "2025-12-11",
+        "2026-03-19",
+        "2026-06-19"
+      ]
+    },
+    {
+      "name": "BOJ",
+      "ccy": "JPY",
+      "header": "{JN} Indic BOJ Run",
+      "tickers": [
+        "JYSOMPM{N}",
+        "JYOMPM{N}"
+      ],
+      "dates": [
+        "2026-08-03",
+        "2026-09-24",
+        "2026-11-02",
+        "2026-12-21",
+        "2027-01-25",
+        "2027-03-22",
+        "2027-05-06",
+        "2027-06-21",
+        "2027-08-02",
+        "2027-09-27",
+        "2027-11-01",
+        "2027-12-20"
+      ],
+      "decisionTimeLondon": "04:00",
+      "pastDates": [
+        "2025-07-31",
+        "2025-09-19",
+        "2025-10-30",
+        "2025-12-19",
+        "2026-01-23",
+        "2026-03-19",
+        "2026-05-01",
+        "2026-06-17"
+      ]
+    },
+    {
+      "name": "RIKSBANK",
+      "ccy": "SEK",
+      "header": "{SW} Indic Riksbank Run",
+      "tickers": [
+        "SKSF{N}A"
+      ],
+      "dates": [
+        "2026-08-26",
+        "2026-09-30",
+        "2026-11-11",
+        "2026-12-23",
+        "2027-02-10",
+        "2027-03-24",
+        "2027-05-05",
+        "2027-06-30",
+        "2027-08-25",
+        "2027-09-29",
+        "2027-11-10",
+        "2027-12-22"
+      ],
+      "decisionTimeLondon": "08:30",
+      "pastDates": [
+        "2025-08-20",
+        "2025-09-23",
+        "2025-11-05",
+        "2025-12-17",
+        "2026-01-28",
+        "2026-03-18",
+        "2026-05-06",
+        "2026-06-24"
+      ]
+    },
+    {
+      "name": "NORGES",
+      "ccy": "NOK",
+      "header": "{NO} Indic Norges Run",
+      "refTicker": "NOWA Index",
+      "tickers": [
+        "NKSF{N}A"
+      ],
+      "dates": [
+        "2026-08-14",
+        "2026-09-25",
+        "2026-11-06",
+        "2026-12-18",
+        "2027-01-22",
+        "2027-03-19",
+        "2027-05-07",
+        "2027-06-18",
+        "2027-08-13",
+        "2027-09-24",
+        "2027-11-05",
+        "2027-12-17"
+      ],
+      "decisionTimeLondon": "09:00",
+      "pastDates": [
+        "2025-08-14",
+        "2025-09-18",
+        "2025-11-06",
+        "2025-12-18",
+        "2026-01-23",
+        "2026-03-26",
+        "2026-05-08",
+        "2026-06-19"
+      ]
+    },
+    {
+      "name": "SEK-FRA",
+      "ccy": "SEK",
+      "header": "{SW} Indic SEK FRA Run",
+      "kind": "fra",
+      "refTicker": "STIB3M Index",
+      "decisionTimeLondon": "",
+      "tickers": [
+        "SKF30001",
+        "SKF30101",
+        "SKF30201",
+        "SKF30301",
+        "SKF30401",
+        "SKF30501",
+        "SKF30601",
+        "SKF30701",
+        "SKF30801",
+        "SKF30901"
+      ],
+      "dates": []
+    },
+    {
+      "name": "NOK-FRA",
+      "ccy": "NOK",
+      "header": "{NO} Indic NOK FRA Run",
+      "kind": "fra",
+      "refTicker": "NIBOR3M Index",
+      "decisionTimeLondon": "",
+      "tickers": [
+        "NKF30001",
+        "NKF30101",
+        "NKF30201",
+        "NKF30301",
+        "NKF30401",
+        "NKF30501",
+        "NKF30601",
+        "NKF30701"
+      ],
+      "dates": []
+    }
+  ]
+}

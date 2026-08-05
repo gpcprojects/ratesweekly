@@ -1,0 +1,273 @@
+{
+  "ccy": "NOK",
+  "name": "Norwegian Krone — 6M NIBOR IRS",
+  "enabled": true,
+  "calendar": "NOK",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "IRS",
+  "discounting": "SELF",
+  "ccps": [
+    "LCH",
+    "CME",
+    "EUREX"
+  ],
+  "ois": {
+    "indexName": "NOWA",
+    "onFixingTicker": "NOWA Index",
+    "indexDcc": "ACT/365F",
+    "fixedFreq": "Annual",
+    "fixedDcc": "ACT/365F",
+    "bdc": "ModifiedFollowing",
+    "payLag": 1,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "NKS1M"
+      },
+      {
+        "tenor": "2M",
+        "type": "OIS",
+        "ticker": "NKS2M"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "NKS3M"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "NKS6M"
+      },
+      {
+        "tenor": "9M",
+        "type": "OIS",
+        "ticker": "NKS9M"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "NKS1Y"
+      },
+      {
+        "tenor": "18M",
+        "type": "OIS",
+        "ticker": "NKS18M"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "NKS2Y"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "NKS3Y"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "NKS4Y"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "NKS5Y"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "NKS6Y"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "NKS7Y"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "NKS8Y"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "NKS9Y"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "NKS10Y"
+      },
+      {
+        "tenor": "12Y",
+        "type": "OIS",
+        "ticker": "NKS12Y"
+      },
+      {
+        "tenor": "15Y",
+        "type": "OIS",
+        "ticker": "NKS15Y"
+      },
+      {
+        "tenor": "20Y",
+        "type": "OIS",
+        "ticker": "NKS20Y"
+      },
+      {
+        "tenor": "25Y",
+        "type": "OIS",
+        "ticker": "NKS25Y"
+      },
+      {
+        "tenor": "30Y",
+        "type": "OIS",
+        "ticker": "NKS30Y"
+      }
+    ]
+  },
+  "irs": {
+    "bdc": "ModifiedFollowing",
+    "legs": [
+      {
+        "maxTenor": "23M",
+        "fixedFreq": "Annual",
+        "fixedDcc": "30/360",
+        "floatIndex": "NIBOR",
+        "floatTenor": "3M",
+        "floatFreq": "Quarterly",
+        "floatDcc": "ACT/360",
+        "fixingDays": 2,
+        "fixingTicker": "NIBOR3M Index"
+      },
+      {
+        "maxTenor": null,
+        "fixedFreq": "Annual",
+        "fixedDcc": "30/360",
+        "floatIndex": "NIBOR",
+        "floatTenor": "6M",
+        "floatFreq": "Semiannual",
+        "floatDcc": "ACT/360",
+        "fixingDays": 2,
+        "fixingTicker": "NIBOR6M Index"
+      }
+    ],
+    "curve": [
+      {
+        "tenor": "6M",
+        "type": "DEPO",
+        "ticker": "NIBOR6M Index"
+      },
+      {
+        "tenor": "6M",
+        "type": "FRA",
+        "ticker": "NKF60101 BGNL Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "6M",
+        "type": "FRA",
+        "ticker": "NKF60201 BGNL Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "6M",
+        "type": "FRA",
+        "ticker": "NKF60301 BGNL Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "6M",
+        "type": "FRA",
+        "ticker": "NKF60401 BGNL Curncy",
+        "band": "6M"
+      },
+      {
+        "tenor": "1Y",
+        "type": "SWAP",
+        "ticker": "NKSW1",
+        "band": "6M",
+        "enabled": false
+      },
+      {
+        "tenor": "2Y",
+        "type": "SWAP",
+        "ticker": "NKSW2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "SWAP",
+        "ticker": "NKSW3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "SWAP",
+        "ticker": "NKSW4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "SWAP",
+        "ticker": "NKSW5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "SWAP",
+        "ticker": "NKSW6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "SWAP",
+        "ticker": "NKSW7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "SWAP",
+        "ticker": "NKSW8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "SWAP",
+        "ticker": "NKSW9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "SWAP",
+        "ticker": "NKSW10"
+      },
+      {
+        "tenor": "12Y",
+        "type": "SWAP",
+        "ticker": "NKSW12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "SWAP",
+        "ticker": "NKSW15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "SWAP",
+        "ticker": "NKSW20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "SWAP",
+        "ticker": "NKSW25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "SWAP",
+        "ticker": "NKSW30"
+      }
+    ],
+    "fwdCurveId": "S0313"
+  },
+  "notes": "NIBOR has no cessation plan. Norges Bank ARR convention: 3M NIBOR below 2Y, 6M NIBOR from 2Y. Front end also trades as 3M IMM FRA strips. NOWA OIS par family is NKS{n}Y / NKS{n}M ('NOK SWAP OIS', live 1M-30Y, found 2026-07 — earlier probe of NKSWTN/NKSO/NKSN/NKOIS missed the short root). Beware NKSF{n}Y which LOOKS right but is CHF-NOK FX FORWARDS. OIS conventions assumed Annual ACT/365F payLag 1 (NOWA is a 365-basis rate) — verify vs SWPM. Discounting stays SELF off NIBOR; NOWA discounting for LCH-cleared would be a pricing change. Front end 2026-08-03: direct 6M IMM FRAs NKF60101-0401 at the BGNL source (the plain/BGN forms carry no px — same qualifier lesson as NDFS/BLC), exactly what Bloomberg's YCSW0313 builds from. Replaced the NKF3-3M-strip + NKBFVC-basis frontFromOis synthesis, which sat -3 to -11bp off S0313 sub-18M (the modeled basis, not the strip, was the error term). History of the old path: NOK FRAs published no API px on plain sources (NKFR0CF etc dead), so the front was OIS-shaped (fwd NIBOR = NOWA fwd + NIBOR3M-OIS spread + NKBFVC 3s6s, identity check 2026-07: 13.8 vs 12.2bp), later upgraded to the real NKF3 strip + basis. If BGNL dies, that frontFromOis block is in git history pre-6.2.6. NKSW1 (1Y) DISABLED same day: its 5.05 print implies a Feb-Aug27 forward ~12bp above what the NKF6 strip trades (2x5.053-4.85=5.26 vs FRAs 5.01), and Bloomberg's YCSW0313 omits NKSW1 for the same reason — in Scandinavia the strip IS the front-end market. Re-enable only if its contributors re-align with the strip."
+}

@@ -1,0 +1,163 @@
+{
+  "ccy": "CHF",
+  "name": "Swiss Franc — SARON OIS",
+  "enabled": true,
+  "calendar": "CHF",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "OIS",
+  "discounting": "OIS",
+  "ccps": [
+    "LCH",
+    "CME",
+    "EUREX"
+  ],
+  "ois": {
+    "indexName": "SARON",
+    "onFixingTicker": "SSARON Index",
+    "indexDcc": "ACT/360",
+    "fixedFreq": "Annual",
+    "fixedDcc": "ACT/360",
+    "bdc": "ModifiedFollowing",
+    "payLag": 2,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      {
+        "tenor": "1W",
+        "type": "OIS",
+        "ticker": "SFSNT1Z"
+      },
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "SFSNTA"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "SFSNTC"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "SFSNTF"
+      },
+      {
+        "tenor": "9M",
+        "type": "OIS",
+        "ticker": "SFSNTI"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "SFSNT1"
+      },
+      {
+        "tenor": "18M",
+        "type": "OIS",
+        "ticker": "SFSNT1F"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "SFSNT2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "SFSNT3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "SFSNT4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "SFSNT5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "SFSNT6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "SFSNT7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "SFSNT8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "SFSNT9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "SFSNT10"
+      },
+      {
+        "tenor": "11Y",
+        "type": "OIS",
+        "ticker": "SFSNT11"
+      },
+      {
+        "tenor": "12Y",
+        "type": "OIS",
+        "ticker": "SFSNT12"
+      },
+      {
+        "tenor": "13Y",
+        "type": "OIS",
+        "ticker": "SFSNT13"
+      },
+      {
+        "tenor": "14Y",
+        "type": "OIS",
+        "ticker": "SFSNT14"
+      },
+      {
+        "tenor": "15Y",
+        "type": "OIS",
+        "ticker": "SFSNT15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "OIS",
+        "ticker": "SFSNT20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "OIS",
+        "ticker": "SFSNT25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "OIS",
+        "ticker": "SFSNT30"
+      },
+      {
+        "tenor": "40Y",
+        "type": "OIS",
+        "ticker": "SFSNT40"
+      },
+      {
+        "tenor": "50Y",
+        "type": "OIS",
+        "ticker": "SFSNT50"
+      }
+    ],
+    "fwdCurveId": "S0234"
+  },
+  "notes": "Zurich calendar."
+}

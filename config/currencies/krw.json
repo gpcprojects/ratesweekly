@@ -1,0 +1,134 @@
+{
+  "ccy": "KRW",
+  "name": "Korean Won — 91D CD IRS",
+  "enabled": true,
+  "calendar": "KRW",
+  "spotLag": 1,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "IRS",
+  "discounting": "SELF",
+  "ccps": [
+    "LCH",
+    "CME",
+    "KRX"
+  ],
+  "irs": {
+    "bdc": "ModifiedFollowing",
+    "legs": [
+      {
+        "maxTenor": null,
+        "fixedFreq": "Quarterly",
+        "fixedDcc": "ACT/365F",
+        "floatIndex": "CD91",
+        "floatTenor": "3M",
+        "floatFreq": "Quarterly",
+        "floatDcc": "ACT/365F",
+        "fixingDays": 1,
+        "fixingTicker": "KWCDC Curncy"
+      }
+    ],
+    "curve": [
+      {
+        "tenor": "3M",
+        "type": "DEPO",
+        "ticker": "KWCDC Curncy"
+      },
+      {
+        "tenor": "6M",
+        "type": "SWAP",
+        "ticker": "KWSWNIF"
+      },
+      {
+        "tenor": "9M",
+        "type": "SWAP",
+        "ticker": "KWSWNII"
+      },
+      {
+        "tenor": "1Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI1"
+      },
+      {
+        "tenor": "2Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI10"
+      },
+      {
+        "tenor": "11Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI11"
+      },
+      {
+        "tenor": "12Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI12"
+      },
+      {
+        "tenor": "15Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI15"
+      },
+      {
+        "tenor": "20Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI20"
+      },
+      {
+        "tenor": "25Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI25"
+      },
+      {
+        "tenor": "30Y",
+        "type": "SWAP",
+        "ticker": "KWSWNI30"
+      }
+    ],
+    "fwdCurveId": "KWFS",
+    "fwdTickerStyle": "yearPair"
+  },
+  "notes": "Quoted non-deliverable (KWSWNI = NDIRS family, T+1). KOFR OIS transition in progress but CD IRS remains the quoted standard. Probed 2026-07: no KOFR par OIS family found on API (KWSO*/KOFR*/KOSO* all unknown; KOFR Index itself unknown). Front end (2026-08-03): 6M/9M = KWSWNIF/KWSWNII, exactly what Bloomberg's YCSW0205 (S0205) builds from (CD + F + I + 1Y..); without them 3m3m printed +25bp vs FWCM. Onshore FRA strip KWFRO{AD..I1} confirms the same forwards (3x6 3.30 vs FWCM 3M3M 3.3015) but is 10bp wide/indicative and onshore basis in principle — NDIRS pillars preferred. KWFRI{M,J,S,D}C IMM FRAs exist by name, no API price. Forward reference switched S0205 -> KWFS year-pair family 2026-08-04 (KRW FORWARD SWAP, BLC mandatory): live 20/20 points probed incl 1505/2010, 1.4-3.2bp wide, agrees with our curve -0.1..-1.7bp where S0205 drifted -2.6 at 15Y5Y. Sub-1y audit points print n/a on a year-pair surface (NZD/NDFS precedent) - the front stays anchored by the 2026-08-03 letter pillars."
+}

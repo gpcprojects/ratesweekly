@@ -1,0 +1,96 @@
+{
+  "ccy": "ILS",
+  "name": "Israeli Shekel — SHIR OIS",
+  "enabled": true,
+  "calendar": "ILS",
+  "spotLag": 2,
+  "defaultSource": "BGN",
+  "altSources": [
+    "CMPN"
+  ],
+  "defaultProduct": "OIS",
+  "discounting": "OIS",
+  "ccps": [
+    "LCH"
+  ],
+  "ois": {
+    "indexName": "SHIR",
+    "onFixingTicker": "",
+    "indexDcc": "ACT/365F",
+    "fixedFreq": "Annual",
+    "fixedDcc": "ACT/365F",
+    "bdc": "ModifiedFollowing",
+    "payLag": 2,
+    "fixingDays": 0,
+    "shortZeroCouponUnder": "1Y",
+    "curve": [
+      {
+        "tenor": "1M",
+        "type": "OIS",
+        "ticker": "ISOISA"
+      },
+      {
+        "tenor": "3M",
+        "type": "OIS",
+        "ticker": "ISOISC"
+      },
+      {
+        "tenor": "6M",
+        "type": "OIS",
+        "ticker": "ISOISF"
+      },
+      {
+        "tenor": "1Y",
+        "type": "OIS",
+        "ticker": "ISOIS1"
+      },
+      {
+        "tenor": "2Y",
+        "type": "OIS",
+        "ticker": "ISOIS2"
+      },
+      {
+        "tenor": "3Y",
+        "type": "OIS",
+        "ticker": "ISOIS3"
+      },
+      {
+        "tenor": "4Y",
+        "type": "OIS",
+        "ticker": "ISOIS4"
+      },
+      {
+        "tenor": "5Y",
+        "type": "OIS",
+        "ticker": "ISOIS5"
+      },
+      {
+        "tenor": "6Y",
+        "type": "OIS",
+        "ticker": "ISOIS6"
+      },
+      {
+        "tenor": "7Y",
+        "type": "OIS",
+        "ticker": "ISOIS7"
+      },
+      {
+        "tenor": "8Y",
+        "type": "OIS",
+        "ticker": "ISOIS8"
+      },
+      {
+        "tenor": "9Y",
+        "type": "OIS",
+        "ticker": "ISOIS9"
+      },
+      {
+        "tenor": "10Y",
+        "type": "OIS",
+        "ticker": "ISOIS10"
+      }
+    ],
+    "fwdCurveId": "S0585"
+  },
+  "notes": "TELBOR ceased 30-Jun-2025; legacy ISSW swaps no longer publish. SHIR = BOI policy rate (steps on MPC decisions). SHIR OIS: annual Act/365F, T+2, 2d pay lag; LCH clears to ~11Y. SHIR fixing ticker not yet configured - set onFixingTicker when identified."
+}
