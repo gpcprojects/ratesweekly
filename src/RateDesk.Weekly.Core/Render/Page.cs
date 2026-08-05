@@ -72,14 +72,18 @@ namespace RateDesk.Weekly.Core.Render
                 *{box-sizing:border-box}
                 body{margin:0;background:var(--rw-plane);color:var(--rw-ink);
                   font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
-                .rw-wrap{max-width:1180px;margin:0 auto;padding:20px 18px 56px}
-                header.rw-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
-                header.rw-head h1{font-size:22px;margin:0;letter-spacing:-.01em}
+                /* Sized for a full 1920x1080 desk display: the wrap runs near the full width and
+                   panels tile two-up, so a currency's whole story fits without hunting. Narrower
+                   screens collapse to one column through the same auto-fit rule. */
+                .rw-wrap{max-width:1860px;margin:0 auto;padding:18px 22px 48px}
+                header.rw-head{position:relative;display:flex;align-items:baseline;justify-content:center;
+                  gap:12px;flex-wrap:wrap;margin-bottom:2px;text-align:center}
+                header.rw-head h1{font-size:24px;margin:0;letter-spacing:-.01em}
                 .rw-asof{color:var(--rw-muted);font-size:12px}
                 .rw-sub{color:var(--rw-ink2);font-size:12px;margin:2px 0 0}
-                .rw-nav{display:flex;flex-direction:column;gap:8px;margin:14px 0 20px;
-                  padding:10px 12px;background:var(--rw-surface);border:1px solid var(--rw-border);border-radius:10px}
-                .rw-navrow{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+                .rw-nav{display:flex;flex-direction:column;gap:8px;margin:14px 0 18px;
+                  padding:10px 14px;background:var(--rw-surface);border:1px solid var(--rw-border);border-radius:10px}
+                .rw-navrow{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;justify-content:center}
                 .rw-navrow+.rw-navrow{border-top:1px solid var(--rw-border);padding-top:8px}
                 .rw-grp{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
                 .rw-grp b{font-size:10px;letter-spacing:.08em;color:var(--rw-muted);text-transform:uppercase;margin-right:2px}
@@ -87,13 +91,16 @@ namespace RateDesk.Weekly.Core.Render
                 .rw-nav a:hover{background:var(--rw-plane);color:var(--rw-ink)}
                 .rw-nav a.on{background:var(--rw-today);color:var(--rw-surface);font-weight:600}
                 .rw-hub{font-weight:600}
-                .rw-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:16px}
+                /* Two panels per row on a widescreen; one on anything narrower. 820px is the point
+                   below which a panel's table+chart split stops being readable. */
+                .rw-panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(820px,1fr));
+                  gap:16px;align-items:start}
                 .rw-panel{background:var(--rw-surface);border:1px solid var(--rw-border);border-radius:12px;
-                  padding:14px 16px 12px;margin-bottom:16px}
+                  padding:14px 16px 12px}
                 .rw-panel-head h3{margin:0;font-size:14px;font-weight:600}
-                .rw-panel-body{display:grid;grid-template-columns:minmax(210px,300px) 1fr;gap:18px;
+                .rw-panel-body{display:grid;grid-template-columns:minmax(230px,320px) 1fr;gap:18px;
                   align-items:start;margin-top:10px}
-                .rw-tblwrap{overflow-x:auto;max-height:340px;overflow-y:auto}
+                .rw-tblwrap{overflow-x:auto;max-height:330px;overflow-y:auto}
                 table.rw-lvl{border-collapse:collapse;width:100%;font-size:12px}
                 table.rw-lvl th{position:sticky;top:0;background:var(--rw-surface);text-align:right;
                   font-weight:500;font-size:10px;letter-spacing:.04em;text-transform:uppercase;
@@ -112,16 +119,11 @@ namespace RateDesk.Weekly.Core.Render
                 .rw-chartwrap{position:relative;min-width:0}
                 circle.rw-pt{opacity:0;transition:opacity .08s}
                 circle.rw-pt.on{opacity:1}
-                .rw-card{margin:0;background:var(--rw-surface);border:1px solid var(--rw-border);
-                  border-radius:12px;padding:14px 16px 12px;position:relative}
-                .rw-card h3{margin:0;font-size:14px;font-weight:600}
                 .rw-svg{width:100%;height:auto;display:block;overflow:visible;margin-top:6px}
                 .rw-grid{stroke:var(--rw-grid);stroke-width:1}
                 .rw-axis{stroke:var(--rw-axis);stroke-width:1}
                 .rw-tick{fill:var(--rw-muted);font-size:10px;font-variant-numeric:tabular-nums}
                 .rw-tick-y{text-anchor:end}.rw-tick-x{text-anchor:middle}
-                .rw-endlab{fill:var(--rw-ink);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
-                .rw-cross{stroke:var(--rw-axis);stroke-width:1}
                 .rw-legend{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 0}
                 .rw-key{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--rw-ink2)}
                 .rw-key i{width:14px;height:3px;border-radius:2px;display:inline-block}
@@ -132,20 +134,14 @@ namespace RateDesk.Weekly.Core.Render
                 .rw-tip .r{display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}
                 .rw-tip .r i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px}
                 .rw-empty{color:var(--rw-muted);font-size:12px;padding:26px 0;text-align:center;font-style:italic}
-                .rw-table{margin-top:8px}
-                .rw-table summary{cursor:pointer;font-size:11px;color:var(--rw-muted)}
-                .rw-table table{border-collapse:collapse;margin-top:8px;font-size:11px;width:100%}
-                .rw-table th,.rw-table td{text-align:right;padding:2px 8px;border-bottom:1px solid var(--rw-grid);
-                  font-variant-numeric:tabular-nums}
-                .rw-table th:first-child,.rw-table td:first-child{text-align:left}
                 .rw-note{color:var(--rw-muted);font-size:11px;margin:6px 0 0}
                 .rw-pending{background:var(--rw-surface);border:1px dashed var(--rw-axis);border-radius:12px;
                   padding:20px;color:var(--rw-muted);font-size:12px}
-                .rw-toggle{margin-left:auto;background:var(--rw-surface);color:var(--rw-ink2);cursor:pointer;
-                  border:1px solid var(--rw-border);border-radius:8px;padding:5px 10px;font-size:12px}
+                .rw-toggle{position:absolute;right:0;top:0;background:var(--rw-surface);color:var(--rw-ink2);
+                  cursor:pointer;border:1px solid var(--rw-border);border-radius:8px;padding:5px 10px;font-size:12px}
                 footer.rw-foot{margin-top:30px;color:var(--rw-muted);font-size:11px;
                   border-top:1px solid var(--rw-border);padding-top:12px}
-                @media (max-width:520px){.rw-grid2{grid-template-columns:1fr}}
+                @media (max-width:900px){.rw-panel-body{grid-template-columns:1fr}}
                 </style>
                 </head>
                 <body>
@@ -156,7 +152,7 @@ namespace RateDesk.Weekly.Core.Render
                   <button class="rw-toggle" id="rwTheme" type="button">◑ theme</button>
                 </header>
                 %%NAV%%
-                %%BODY%%
+                <div class="rw-panels">%%BODY%%</div>
                 <footer class="rw-foot">
                   Source: Bloomberg / RATESWEEKLY · levels are close-to-close; 1w and 1m lookbacks are the
                   last close at or before 7 and 31 calendar days back. Generated %%ASOF%%.
