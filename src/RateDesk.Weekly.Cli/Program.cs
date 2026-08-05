@@ -2,6 +2,7 @@ using System.Globalization;
 using RateDesk.Core;
 using RateDesk.Core.Market;
 using RateDesk.Weekly.Core;
+using RateDesk.Weekly.Core.Series;
 
 // RatesWeekly CLI — scriptable history maintenance, same code path as the app's UPDATE button.
 // Exists so the store can be topped up (and later DEEPENED gradually/overnight) from a scheduled
@@ -53,14 +54,20 @@ switch (cmd)
         Console.WriteLine($"rows:    {store.RowCount():N0}");
         Console.WriteLine($"depths:  seed {UpdateEngine.SeedDays}d / corr {UpdateEngine.CorrSeedDays}d / " +
                           $"maintain {UpdateEngine.MaintainDays}d");
-        foreach (var probe in new[] { "USOSFR10 Curncy", "EUSA5 Curncy", "USSOFED2 Curncy", "CO1 Comdty" })
+        // Probe the tickers the app actually stores — curve pillars carry a contributor suffix
+        // ("USOSFR10 BGN Curncy"), so probing the bare name reports a false absence.
+        foreach (var probe in new[]
+                 { "USOSFR10 BGN Curncy", "EUSA5 BGN Curncy", "USSOFED2 Curncy",
+                   "USSWIF7 Curncy", ".US1010IN G Index", "CO1 Comdty" })
         {
             var h = store.GetDaily(probe, 4000);
             Console.WriteLine(h.Count == 0
-                ? $"  {probe,-18} (absent)"
-                : $"  {probe,-18} {h.Count,5} closes  {h[0].Date:yyyy-MM-dd} .. {h[^1].Date:yyyy-MM-dd}  " +
+                ? $"  {probe,-22} (absent)"
+                : $"  {probe,-22} {h.Count,5} closes  {h[0].Date:yyyy-MM-dd} .. {h[^1].Date:yyyy-MM-dd}  " +
                   $"last {h[^1].Value.ToString("F4", CultureInfo.InvariantCulture)}");
         }
+        var covered = store.TickersCoveringDate(DateTime.Today.AddDays(-WeeklyCurves.MonthDays));
+        Console.WriteLine($"1m lookback resolvable for {covered:N0} of {store.TickerCount():N0} tickers");
         return 0;
     }
 
