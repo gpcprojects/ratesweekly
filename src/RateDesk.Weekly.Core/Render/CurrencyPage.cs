@@ -16,7 +16,10 @@ namespace RateDesk.Weekly.Core.Render
         {
             var body = new StringBuilder();
             var par = WeeklyCurves.ParCurve(cfg, src, store, asOf);
-            var ladder = ForwardLadder.Build(cfg, src, store, asOf, par);
+            // The ladder's fallback interpolates off the par curve, so give it every quoted pillar
+            // rather than the trimmed display set.
+            var parFull = WeeklyCurves.ParCurve(cfg, src, store, asOf, standardOnly: false);
+            var ladder = ForwardLadder.Build(cfg, src, store, asOf, parFull);
 
             body.Append(Panels.Linked("levels", $"{cfg.Ccy} par swaps",
                 "quoted par rate by tenor · level, and change in bp vs 1 week and 1 month ago",
@@ -55,7 +58,7 @@ namespace RateDesk.Weekly.Core.Render
                     body.Append(Panels.Linked("infpar", $"{cfg.Ccy} {lad.Name} zero-coupon curve",
                         "quoted breakeven by tenor", infPar, new List<string>()));
 
-                var infFwd = Inflation.Forwards(lad, store, asOf);
+                var infFwd = Inflation.Forwards(cfg.Ccy, store, asOf);
                 if (infFwd.Count > 0)
                     body.Append(Panels.Linked("inffwd", $"{cfg.Ccy} {lad.Name} forwards",
                         "quoted inflation forwards", infFwd, new List<string>()));

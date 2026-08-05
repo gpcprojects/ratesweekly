@@ -74,19 +74,51 @@ namespace RateDesk.Weekly.Core.Series
             return rows;
         }
 
-        /// <summary>Quoted inflation FORWARDS (FWISUS/FWISBP/FWISEU). Same ladder shape the desk
-        /// reads the nominal forwards on, so the two sit side by side comparably.</summary>
-        public static List<LadderPoint> Forwards(Ladder lad, HistoryStore store, DateTime asOf)
+        /// <summary>Inflation forward code: US / EU / UK (not the currency code).</summary>
+        public static string? FwdCode(string ccy) => ccy.ToUpperInvariant() switch
         {
-            if (string.IsNullOrWhiteSpace(lad.FwdTickerPattern)) return new();
+            "USD" => "US",
+            "EUR" => "EU",
+            "GBP" => "UK",
+            _ => null,
+        };
+
+        /// <summary>The quoted inflation forward ladder, `.{CC}{start}{tenor}IN G Index` — desk
+        /// convention (2026-08-05), e.g. `.US1010IN G Index` is 10y10y and `.US22IN G Index` is
+        /// 2y2y. Start and tenor are concatenated as bare integers.
+        ///
+        /// The grid below is the intersection of what the desk reads and what actually resolves:
+        /// every point was probed by NAME against the terminal, and all three markets carry the
+        /// same set. It deliberately mirrors the NOMINAL forward ladder wherever the family quotes
+        /// it (1y1y, 2y1y, 3y1y, 4y1y, 5y2y, 10y2y, 15y5y, 20y10y) so the two panels can be read
+        /// against each other, plus the market's own benchmarks (2y2y, 5y5y, 10y10y). Probed and
+        /// NOT available in any of the three: 7y3y, 12y3y, 30y20y, 3y3y, 5y10y, 30y10y.
+        ///
+        /// These are calculated indices: price-only, no bid/ask and no maturity.</summary>
+        public static readonly (int Start, int Tenor)[] FwdGrid =
+        {
+            (1, 1), (2, 1), (2, 2), (3, 1), (4, 1), (5, 2), (5, 5),
+            (10, 2), (10, 10), (15, 5), (20, 10),
+        };
+
+        public static string Ticker(string code, int start, int tenor) => $".{code}{start}{tenor}IN G Index";
+
+        public static IEnumerable<string> ForwardTickers(string ccy)
+        {
+            if (FwdCode(ccy) is not { } code) yield break;
+            foreach (var (s, t) in FwdGrid) yield return Ticker(code, s, t);
+        }
+
+        public static List<LadderPoint> Forwards(string ccy, HistoryStore store, DateTime asOf)
+        {
+            if (FwdCode(ccy) is not { } code) return new();
             var rows = new List<LadderPoint>();
-            foreach (var (a, b) in new[] { (1, 1), (2, 1), (3, 1), (4, 1), (5, 2), (7, 3), (2, 2), (3, 3), (5, 5), (9, 9) }
-                         .OrderBy(x => x.Item1).ThenBy(x => x.Item2))
+            foreach (var (s, t) in FwdGrid)
             {
-                var tk = lad.FwdTickerPattern.Replace("{A}", a.ToString()).Replace("{B}", b.ToString());
+                var tk = Ticker(code, s, t);
                 var now = store.ValueAsOf(tk, asOf);
                 if (now is null) continue;
-                rows.Add(new LadderPoint($"{a}y{b}y", now,
+                rows.Add(new LadderPoint($"{s}y{t}y", now,
                     store.ValueAsOf(tk, asOf.AddDays(-WeeklyCurves.WeekDays)),
                     store.ValueAsOf(tk, asOf.AddDays(-WeeklyCurves.MonthDays))));
             }

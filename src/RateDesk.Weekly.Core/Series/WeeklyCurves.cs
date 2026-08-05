@@ -74,23 +74,52 @@ namespace RateDesk.Weekly.Core.Series
             return list;
         }
 
-        /// <summary>Par curve from <paramref name="minYears"/> out, at asOf / -1w / -1m.</summary>
+        /// <summary>The tenors the desk reads a curve on. Config carries every quoted pillar —
+        /// 21 of them for USD, including 6/8/9/11-14Y added to keep forward ends landing on real
+        /// quotes — but a weekly is read at a glance, and a table you have to scroll is a table
+        /// nobody reads. Interpolation is never used to invent a row here: a tenor absent from the
+        /// currency's own ladder simply doesn't appear.</summary>
+        public static readonly double[] StandardTenorsY = { 1, 2, 3, 5, 7, 10, 12, 15, 20, 30, 50 };
+
+        /// <summary>Par curve at asOf / -1w / -1m. <paramref name="standardOnly"/> trims to the
+        /// display tenors; pass false when the caller needs every quoted pillar (the forward
+        /// ladder's par-approximation fallback interpolates off the full ladder, so trimming it
+        /// there would cost real accuracy for the currencies that have no quoted forwards).</summary>
         public static CurveTriple ParCurve(
-            CurrencyConfig cfg, string src, HistoryStore store, DateTime asOf, double minYears = 1.0)
+            CurrencyConfig cfg, string src, HistoryStore store, DateTime asOf,
+            double minYears = 1.0, bool standardOnly = true)
         {
-            var pillars = Pillars(cfg, src)
-                .Where(p => p.Natural && p.Months >= minYears * 12.0 - 0.5)
+            var all = Pillars(cfg, src)
+                .Where(p => p.Natural && p.Months >= minYears * 12.0 - 0.5);
+            var pillars = (standardOnly
+                    ? all.Where(p => StandardTenorsY.Any(t => Math.Abs(p.Months / 12.0 - t) < 0.12))
+                         .GroupBy(p => StandardTenorsY.First(t => Math.Abs(p.Months / 12.0 - t) < 0.12))
+                         .Select(g => g.OrderBy(p => Math.Abs(p.Months / 12.0 - g.Key)).First())
+                    : all)
                 .OrderBy(p => p.Months)
                 .ToList();
 
             var res = new CurveTriple { Title = $"{cfg.Ccy} par curve", AsOf = asOf };
+            bool renamed = false;
             foreach (var p in pillars)
             {
                 double years = p.Months / 12.0;
-                Add(res.Today, store, p.Ticker, asOf, years, p.Label);
-                Add(res.Week, store, p.Ticker, asOf.AddDays(-WeekDays), years, p.Label);
-                Add(res.Month, store, p.Ticker, asOf.AddDays(-MonthDays), years, p.Label);
+                // Label by the standard tenor, not the raw config tenor, so every currency's rows
+                // line up when read across the desk. MXN quotes in 28-DAY PERIODS (13P = 1Y), which
+                // is correct for pricing but unreadable in a cross-currency weekly.
+                string label = p.Label;
+                if (standardOnly && StandardTenorsY.FirstOrDefault(t => Math.Abs(years - t) < 0.12) is var std && std > 0)
+                {
+                    var pretty = $"{std:0}Y";
+                    if (!pretty.Equals(p.Label, StringComparison.OrdinalIgnoreCase)) renamed = true;
+                    label = pretty;
+                }
+                Add(res.Today, store, p.Ticker, asOf, years, label);
+                Add(res.Week, store, p.Ticker, asOf.AddDays(-WeekDays), years, label);
+                Add(res.Month, store, p.Ticker, asOf.AddDays(-MonthDays), years, label);
             }
+            if (renamed)
+                res.Notes.Add($"{cfg.Ccy} quotes in 28-day periods (13P = 1Y); rows are labelled by year equivalent");
             if (pillars.Count > 0 && res.Today.Count < pillars.Count)
                 res.Notes.Add($"{pillars.Count - res.Today.Count} of {pillars.Count} pillars had no stored close");
             return res;

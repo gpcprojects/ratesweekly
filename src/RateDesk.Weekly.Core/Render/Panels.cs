@@ -75,8 +75,12 @@ namespace RateDesk.Weekly.Core.Render
 
         private static string Chart(string id, IReadOnlyList<LadderPoint> pts, int dp, string suffix)
         {
-            const int W = 560, H = 260, ml = 48, mr = 58, mt = 12, mb = 40;
-            int pw = W - ml - mr, ph = H - mt - mb;
+            const int W = 560, ml = 48, mr = 58, mt = 12, mb = 38;
+            const int phL = 168, gap = 32, phC = 84;
+            bool anyChange = pts.Any(p => p.W1Bp.HasValue || p.M1Bp.HasValue);
+            int H = mt + phL + (anyChange ? gap + phC : 0) + mb;
+            int pw = W - ml - mr;
+            int cTop = mt + phL + gap;
 
             var vals = pts.SelectMany(p => new[] { p.Now, p.Week, p.Month })
                           .Where(v => v.HasValue).Select(v => v!.Value).ToList();
@@ -85,7 +89,17 @@ namespace RateDesk.Weekly.Core.Render
             yMin -= pad; yMax += pad;
             int n = pts.Count;
             double SX(int i) => n <= 1 ? ml + pw / 2.0 : ml + (double)i / (n - 1) * pw;
-            double SY(double v) => mt + (yMax - v) / (yMax - yMin) * ph;
+            double SY(double v) => mt + (yMax - v) / (yMax - yMin) * phL;
+
+            // The change axis is independent and always contains zero, so the baseline reads as
+            // "unchanged" and a 2bp move is as legible as a 60bp one.
+            var chg = pts.SelectMany(p => new[] { p.W1Bp, p.M1Bp })
+                         .Where(v => v.HasValue).Select(v => v!.Value).ToList();
+            double cMin = chg.Count > 0 ? Math.Min(0, chg.Min()) : -1;
+            double cMax = chg.Count > 0 ? Math.Max(0, chg.Max()) : 1;
+            double cPad = Math.Max((cMax - cMin) * 0.18, 0.5);
+            cMin -= cPad; cMax += cPad;
+            double CY(double v) => cTop + (cMax - v) / (cMax - cMin) * phC;
 
             var sb = new StringBuilder();
             sb.Append("<div class=\"rw-chartwrap\">");
@@ -96,19 +110,15 @@ namespace RateDesk.Weekly.Core.Render
               .Append("</div>");
             sb.Append($"<svg class=\"rw-svg\" viewBox=\"0 0 {W} {H}\" preserveAspectRatio=\"xMidYMid meet\" role=\"img\">");
 
+            // ---- upper plot: levels ------------------------------------------------------
             foreach (var t in Viz.Ticks(yMin, yMax, 4))
             {
                 double y = SY(t);
                 sb.Append($"<line x1=\"{ml}\" y1=\"{Viz.F(y, 1)}\" x2=\"{ml + pw}\" y2=\"{Viz.F(y, 1)}\" class=\"rw-grid\"/>")
                   .Append($"<text x=\"{ml - 8}\" y=\"{Viz.F(y + 3.5, 1)}\" class=\"rw-tick rw-tick-y\">{Viz.F(t, dp == 3 ? 2 : dp)}</text>");
             }
-            sb.Append($"<line x1=\"{ml}\" y1=\"{mt + ph}\" x2=\"{ml + pw}\" y2=\"{mt + ph}\" class=\"rw-axis\"/>");
+            sb.Append($"<line x1=\"{ml}\" y1=\"{mt + phL}\" x2=\"{ml + pw}\" y2=\"{mt + phL}\" class=\"rw-axis\"/>");
 
-            int stride = Math.Max(1, (int)Math.Ceiling(n / 7.0));
-            for (int i = 0; i < n; i += stride)
-                sb.Append($"<text x=\"{Viz.F(SX(i), 1)}\" y=\"{H - mb + 16}\" class=\"rw-tick rw-tick-x\">{Viz.Esc(pts[i].Label)}</text>");
-
-            // oldest first so the latest line sits on top
             foreach (var (sel, colour) in new (Func<LadderPoint, double?>, string)[]
                      { (p => p.Month, Viz.SeriesMonth), (p => p.Week, Viz.SeriesWeek), (p => p.Now, Viz.SeriesToday) })
             {
@@ -126,14 +136,56 @@ namespace RateDesk.Weekly.Core.Render
                       .Append("stroke-linejoin=\"round\" stroke-linecap=\"round\"/>");
             }
 
-            // one marker per point on the latest line — the cross-highlight target
+            // ---- lower plot: change in bp, own scale -------------------------------------
+            if (anyChange)
+            {
+                foreach (var t in Viz.Ticks(cMin, cMax, 3))
+                {
+                    double y = CY(t);
+                    sb.Append($"<line x1=\"{ml}\" y1=\"{Viz.F(y, 1)}\" x2=\"{ml + pw}\" y2=\"{Viz.F(y, 1)}\" class=\"rw-grid\"/>")
+                      .Append($"<text x=\"{ml - 8}\" y=\"{Viz.F(y + 3.5, 1)}\" class=\"rw-tick rw-tick-y\">{Viz.F(t, 0)}</text>");
+                }
+                sb.Append($"<line x1=\"{ml}\" y1=\"{Viz.F(CY(0), 1)}\" x2=\"{ml + pw}\" y2=\"{Viz.F(CY(0), 1)}\" class=\"rw-zero\"/>");
+                sb.Append($"<text x=\"{ml - 8}\" y=\"{cTop - 4}\" class=\"rw-tick rw-tick-y rw-axlab\">bp</text>");
+
+                foreach (var (sel, colour) in new (Func<LadderPoint, double?>, string)[]
+                         { (p => p.M1Bp, Viz.SeriesMonth), (p => p.W1Bp, Viz.SeriesWeek) })
+                {
+                    var d = new StringBuilder();
+                    bool open = false;
+                    for (int i = 0; i < n; i++)
+                    {
+                        var v = sel(pts[i]);
+                        if (v is null) { open = false; continue; }
+                        d.Append(open ? "L" : "M").Append(Viz.F(SX(i), 1)).Append(' ').Append(Viz.F(CY(v.Value), 1)).Append(' ');
+                        open = true;
+                    }
+                    if (d.Length > 0)
+                        sb.Append($"<path d=\"{d.ToString().Trim()}\" fill=\"none\" stroke=\"{colour}\" stroke-width=\"2\" ")
+                          .Append("stroke-linejoin=\"round\" stroke-linecap=\"round\"/>");
+                }
+                for (int i = 0; i < n; i++)
+                {
+                    if (pts[i].W1Bp is not { } v) continue;
+                    sb.Append($"<circle class=\"rw-cpt\" data-i=\"{i}\" cx=\"{Viz.F(SX(i), 1)}\" cy=\"{Viz.F(CY(v), 1)}\" ")
+                      .Append($"r=\"3.5\" fill=\"{Viz.SeriesWeek}\" stroke=\"var(--rw-surface)\" stroke-width=\"2\"/>");
+                }
+            }
+
+            int stride = Math.Max(1, (int)Math.Ceiling(n / 8.0));
+            for (int i = 0; i < n; i += stride)
+                sb.Append($"<text x=\"{Viz.F(SX(i), 1)}\" y=\"{H - mb + 16}\" class=\"rw-tick rw-tick-x\">{Viz.Esc(pts[i].Label)}</text>");
+
+            // markers on the level line — the cross-highlight target
             for (int i = 0; i < n; i++)
             {
                 if (pts[i].Now is not { } v) continue;
                 sb.Append($"<circle class=\"rw-pt\" data-i=\"{i}\" cx=\"{Viz.F(SX(i), 1)}\" cy=\"{Viz.F(SY(v), 1)}\" ")
                   .Append($"r=\"4\" fill=\"{Viz.SeriesToday}\" stroke=\"var(--rw-surface)\" stroke-width=\"2\"/>");
             }
-            sb.Append($"<rect class=\"rw-hit\" x=\"{ml}\" y=\"{mt}\" width=\"{pw}\" height=\"{ph}\" fill=\"transparent\"/>");
+            int bottom = anyChange ? cTop + phC : mt + phL;
+            sb.Append($"<line class=\"rw-cross\" x1=\"0\" y1=\"{mt}\" x2=\"0\" y2=\"{bottom}\" style=\"display:none\"/>");
+            sb.Append($"<rect class=\"rw-hit\" x=\"{ml}\" y=\"{mt}\" width=\"{pw}\" height=\"{bottom - mt}\" fill=\"transparent\"/>");
             sb.Append("</svg>");
 
             var payload = new
@@ -143,6 +195,8 @@ namespace RateDesk.Weekly.Core.Render
                 now = pts.Select(p => p.Now),
                 week = pts.Select(p => p.Week),
                 month = pts.Select(p => p.Month),
+                w1 = pts.Select(p => p.W1Bp),
+                m1 = pts.Select(p => p.M1Bp),
                 dp,
                 suffix,
             };

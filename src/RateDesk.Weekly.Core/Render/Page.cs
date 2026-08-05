@@ -117,8 +117,12 @@ namespace RateDesk.Weekly.Core.Render
                 tr.rw-row:hover,tr.rw-row.on,tr.rw-row:focus{background:var(--rw-plane);outline:none}
                 tr.rw-row.on td.rw-lab{color:var(--rw-ink);font-weight:600}
                 .rw-chartwrap{position:relative;min-width:0}
-                circle.rw-pt{opacity:0;transition:opacity .08s}
-                circle.rw-pt.on{opacity:1}
+                circle.rw-pt,circle.rw-cpt{opacity:0;transition:opacity .08s}
+                circle.rw-pt.on,circle.rw-cpt.on{opacity:1}
+                .rw-zero{stroke:var(--rw-ink2);stroke-width:1.25}
+                .rw-cross{stroke:var(--rw-axis);stroke-width:1}
+                .rw-axlab{fill:var(--rw-muted);font-size:9px;letter-spacing:.04em}
+                .rw-tip .r.sep{border-top:1px solid var(--rw-border);margin-top:4px;padding-top:4px}
                 .rw-svg{width:100%;height:auto;display:block;overflow:visible;margin-top:6px}
                 .rw-grid{stroke:var(--rw-grid);stroke-width:1}
                 .rw-axis{stroke:var(--rw-axis);stroke-width:1}
@@ -182,31 +186,42 @@ namespace RateDesk.Weekly.Core.Render
                         tip=panel.querySelector('.rw-tip'), wrap=panel.querySelector('.rw-chartwrap');
                     if(!svg||!hit||!tip||!wrap)return;
                     var pts=[].slice.call(panel.querySelectorAll('circle.rw-pt'));
+                    var cpts=[].slice.call(panel.querySelectorAll('circle.rw-cpt'));
                     var rows=[].slice.call(panel.querySelectorAll('tr.rw-row'));
+                    var cross=panel.querySelector('.rw-cross');
                     var pw=d.W-d.ml-d.mr;
                     function sx(i){return d.n<=1?d.ml+pw/2:d.ml+i/(d.n-1)*pw}
                     function fmt(v){return v===null||v===undefined?'--':v.toFixed(d.dp)+d.suffix}
+                    function bp(v){return (v>0?'+':'')+v.toFixed(1)+'bp'}
 
                     function show(i,clientY){
                       pts.forEach(function(c){c.classList.toggle('on',+c.dataset.i===i)});
+                      cpts.forEach(function(c){c.classList.toggle('on',+c.dataset.i===i)});
                       rows.forEach(function(r){r.classList.toggle('on',+r.dataset.i===i)});
+                      if(cross){var px=sx(i); cross.setAttribute('x1',px); cross.setAttribute('x2',px); cross.style.display='';}
                       var h='<b>'+d.labels[i]+'</b>';
                       h+='<div class="r"><span><i style="background:var(--rw-today)"></i>latest</span><span>'+fmt(d.now[i])+'</span></div>';
                       if(d.week[i]!==null&&d.week[i]!==undefined)
                         h+='<div class="r"><span><i style="background:var(--rw-week)"></i>1w ago</span><span>'+fmt(d.week[i])+'</span></div>';
                       if(d.month[i]!==null&&d.month[i]!==undefined)
                         h+='<div class="r"><span><i style="background:var(--rw-month)"></i>1m ago</span><span>'+fmt(d.month[i])+'</span></div>';
+                      if(d.w1&&d.w1[i]!==null&&d.w1[i]!==undefined)
+                        h+='<div class="r sep"><span>1w change</span><span>'+bp(d.w1[i])+'</span></div>';
+                      if(d.m1&&d.m1[i]!==null&&d.m1[i]!==undefined)
+                        h+='<div class="r"><span>1m change</span><span>'+bp(d.m1[i])+'</span></div>';
                       tip.innerHTML=h; tip.hidden=false;
                       var wr=wrap.getBoundingClientRect(), tw=tip.offsetWidth;
-                      var px=sx(i)/d.W*wr.width;
-                      var left=px+12; if(left+tw>wr.width-6)left=px-tw-12;
+                      var px2=sx(i)/d.W*wr.width;
+                      var left=px2+12; if(left+tw>wr.width-6)left=px2-tw-12;
                       tip.style.left=Math.max(2,left)+'px';
                       var top=(clientY===undefined?wr.top+wr.height/2:clientY)-wr.top+12;
                       tip.style.top=Math.max(2,Math.min(top,wr.height-10))+'px';
                     }
                     function clear(){
                       pts.forEach(function(c){c.classList.remove('on')});
+                      cpts.forEach(function(c){c.classList.remove('on')});
                       rows.forEach(function(r){r.classList.remove('on')});
+                      if(cross)cross.style.display='none';
                       tip.hidden=true;
                     }
 

@@ -20,16 +20,6 @@ namespace RateDesk.Weekly.Core
         /// enumeration, so the stored set has to reach that far too.</summary>
         private const int MeetingMaxN = 13;
 
-        /// <summary>Inflation forward grid: the annual strip (1y1y..9y1y, matching the nominal
-        /// forward charts) plus the equal-tenor diagonals including the 5y5y benchmark. Whole
-        /// single digits only — the pattern substitutes bare integers, so 10 would render
-        /// ambiguously (FWISUS105 reads as both 10y5y and 1y05y).
-        /// ⚠ grid choice pending desk sign-off (DESIGN.md §10 backlog).</summary>
-        private static readonly (int A, int B)[] InflationForwards =
-            Enumerable.Range(1, 9).Select(a => (a, 1))
-                .Concat(new[] { (2, 2), (3, 3), (4, 4), (5, 5), (7, 7), (9, 9) })
-                .Distinct().ToArray();
-
         public static List<string> Build(ConfigStore configs, PricingService svc)
         {
             var all = new List<string>();
@@ -57,13 +47,12 @@ namespace RateDesk.Weekly.Core
                     // assembly). Without these the inflation pages have no fixings history at all.
                     if (!string.IsNullOrWhiteSpace(lad.FixingTicker)) all.Add(lad.FixingTicker);
 
-                    // Quoted inflation forwards (FWISUS{A}{B} etc). Unlike nominal forwards, these
-                    // cannot be derived here — an inflation forward off the ZC ladder needs a
-                    // bootstrapped curve this app does not build, so the quote is the only source.
-                    if (!string.IsNullOrWhiteSpace(lad.FwdTickerPattern))
-                        foreach (var (a, b) in InflationForwards)
-                            all.Add(lad.FwdTickerPattern.Replace("{A}", a.ToString())
-                                                        .Replace("{B}", b.ToString()));
+                    // Quoted inflation forwards, `.{US|EU|UK}{start}{tenor}IN G Index` (desk
+                    // convention). Unlike nominal forwards these cannot be derived here — an
+                    // inflation forward off the ZC ladder needs a bootstrapped curve this app does
+                    // not build — so the quote is the only source.
+                    if (lad.Kind.Equals("INFLATION", StringComparison.OrdinalIgnoreCase))
+                        all.AddRange(Inflation.ForwardTickers(cfg.Ccy));
                 }
             }
 
