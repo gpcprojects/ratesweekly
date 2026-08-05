@@ -46,7 +46,7 @@ namespace RateDesk.Weekly.Core.Render
             return sb.Append("</span>").ToString();
         }
 
-        public static string Shell(string title, string current, string heading, string sub, string body, string asOf)
+        public static string Shell(string title, string current, string heading, string body)
         {
             // Token replacement, not interpolation: the CSS and JS below are full of braces, which
             // fight every raw-string interpolation form.
@@ -54,10 +54,8 @@ namespace RateDesk.Weekly.Core.Render
                 .Replace("%%TITLE%%", Viz.Esc(title))
                 .Replace("%%THEMECSS%%", Viz.ThemeCss)
                 .Replace("%%HEADING%%", Viz.Esc(heading))
-                .Replace("%%SUB%%", Viz.Esc(sub))
                 .Replace("%%NAV%%", Nav(current))
-                .Replace("%%BODY%%", body)
-                .Replace("%%ASOF%%", Viz.Esc(asOf));
+                .Replace("%%BODY%%", body);
         }
 
         private const string Template = """
@@ -79,7 +77,6 @@ namespace RateDesk.Weekly.Core.Render
                 header.rw-head{position:relative;display:flex;align-items:baseline;justify-content:center;
                   gap:12px;flex-wrap:wrap;margin-bottom:2px;text-align:center}
                 header.rw-head h1{font-size:24px;margin:0;letter-spacing:-.01em}
-                .rw-asof{color:var(--rw-muted);font-size:12px}
                 .rw-sub{color:var(--rw-ink2);font-size:12px;margin:2px 0 0}
                 .rw-nav{display:flex;flex-direction:column;gap:8px;margin:14px 0 18px;
                   padding:10px 14px;background:var(--rw-surface);border:1px solid var(--rw-border);border-radius:10px}
@@ -102,8 +99,8 @@ namespace RateDesk.Weekly.Core.Render
                    and fills the panel's height, so panels in a row end up the same size. */
                 .rw-panel{display:flex;flex-direction:column}
                 .rw-panel-body{display:grid;grid-template-columns:auto 1fr;gap:14px;
-                  align-items:stretch;margin-top:8px;flex:1;min-height:300px}
-                .rw-tblwrap{overflow-x:hidden;overflow-y:auto;max-height:330px}
+                  align-items:stretch;margin-top:8px;flex:1;min-height:400px}
+                .rw-tblwrap{overflow-x:hidden;overflow-y:auto;max-height:420px}
                 table.rw-lvl{border-collapse:collapse;width:auto;font-size:11.5px;white-space:nowrap}
                 table.rw-lvl th{position:sticky;top:0;background:var(--rw-surface);text-align:right;
                   font-weight:500;font-size:9.5px;letter-spacing:.03em;text-transform:uppercase;
@@ -125,7 +122,7 @@ namespace RateDesk.Weekly.Core.Render
                 .rw-cross{stroke:var(--rw-axis);stroke-width:1}
                 .rw-klab{fill:var(--rw-ink2);font-size:10px}
                 .rw-tip .r.sep{border-top:1px solid var(--rw-border);margin-top:4px;padding-top:4px}
-                .rw-svg{width:100%;height:100%;min-height:270px;display:block;overflow:visible}
+                .rw-svg{width:100%;height:100%;min-height:380px;display:block;overflow:visible}
                 .rw-grid{stroke:var(--rw-grid);stroke-width:1}
                 .rw-axis{stroke:var(--rw-axis);stroke-width:1}
                 .rw-tick{fill:var(--rw-muted);font-size:10px;font-variant-numeric:tabular-nums}
@@ -148,7 +145,6 @@ namespace RateDesk.Weekly.Core.Render
                 <div class="rw-wrap">
                 <header class="rw-head">
                   <h1>%%HEADING%%</h1>
-                  <span class="rw-asof">%%SUB%%</span>
                   <button class="rw-toggle" id="rwTheme" type="button">◑ theme</button>
                 </header>
                 %%NAV%%

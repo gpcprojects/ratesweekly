@@ -26,13 +26,9 @@ namespace RateDesk.Weekly.Core.Render
             var parFull = WeeklyCurves.ParCurve(cfg, src, store, asOf, standardOnly: false);
             var ladder = ForwardLadder.Build(cfg, src, store, asOf, parFull);
 
-            body.Append(Panels.Linked("levels", $"{cfg.Ccy} par swaps",
-                "quoted par rate by tenor · level, and change in bp vs 1 week and 1 month ago",
-                Panels.From(par)));
+            body.Append(Panels.Linked("levels", $"{cfg.Ccy} par swaps", Panels.From(par)));
 
-            body.Append(Panels.Linked("fwd", $"{cfg.Ccy} forward ladder",
-                "spot 1y and the quoted forward grid out to 30y20y",
-                Panels.From(ladder)));
+            body.Append(Panels.Linked("fwd", $"{cfg.Ccy} forward ladder", Panels.From(ladder)));
 
             foreach (var sched in MeetingsStore.Schedules)
             {
@@ -41,17 +37,14 @@ namespace RateDesk.Weekly.Core.Render
                 var rows = Panels.From(RollingStrip.ForMeetings(sched, store, asOf));
                 if (rows.Count == 0) continue;
                 body.Append(Panels.Linked($"mtg-{sched.Name.ToLowerInvariant()}",
-                    $"{sched.Name} meeting-dated OIS",
-                    "one row per scheduled decision · changes follow the meeting through ticker rolls",
-                    rows));
+                    $"{sched.Name} meeting-dated OIS", rows));
             }
 
             if (!NoFraPanel.Contains(cfg.Ccy))
             {
                 var (fraRows, _) = FraRun.Build(cfg, src, store, asOf);
                 if (fraRows.Count > 0)
-                    body.Append(Panels.Linked("fra", $"{cfg.Ccy} FRA run",
-                        "quoted forward rate agreements", fraRows));
+                    body.Append(Panels.Linked("fra", $"{cfg.Ccy} FRA run", fraRows));
             }
 
             foreach (var lad in cfg.Ladders.Where(l =>
@@ -59,19 +52,17 @@ namespace RateDesk.Weekly.Core.Render
             {
                 var infPar = Inflation.ParCurve(lad, store, asOf);
                 if (infPar.Count > 0)
-                    body.Append(Panels.Linked("infpar", $"{cfg.Ccy} {lad.Name} zero-coupon curve",
-                        "quoted breakeven by tenor", infPar));
+                    body.Append(Panels.Linked("infpar", $"{cfg.Ccy} {lad.Name} zero-coupon curve", infPar));
 
                 var infFwd = Inflation.Forwards(cfg.Ccy, store, asOf);
                 if (infFwd.Count > 0)
-                    body.Append(Panels.Linked("inffwd", $"{cfg.Ccy} {lad.Name} forwards",
-                        "quoted inflation forwards", infFwd));
+                    body.Append(Panels.Linked("inffwd", $"{cfg.Ccy} {lad.Name} forwards", infFwd));
 
                 if (CpiFixings.For(cfg.Ccy) is { } fam)
                 {
                     var fx = CpiFixings.Build(fam, store, asOf);
-                    body.Append(Panels.Linked("inffix", $"{cfg.Ccy} {fam.Name} monthly fixings",
-                        $"market-implied {fx.ValueLabel} for each upcoming print · next to fix first",
+                    body.Append(Panels.Linked("inffix",
+                        $"{cfg.Ccy} {fam.Name} monthly fixings ({fx.ValueLabel})",
                         fx.Rows, valueDp: fx.Dp,
                         valueSuffix: fam.Unit == CpiFixings.FixUnit.YoYBp ? "%" : ""));
                 }
@@ -79,23 +70,20 @@ namespace RateDesk.Weekly.Core.Render
                 var pub = Inflation.Fixings(lad, cfg.Ccy, store, asOf);
                 if (pub.Count > 0)
                     body.Append(Panels.Linked("infpub", $"{cfg.Ccy} {lad.Name} published prints",
-                        "the index itself, as released", pub, valueDp: 2, valueSuffix: ""));
+                        pub, valueDp: 2, valueSuffix: ""));
             }
 
             body.Append(Pending("Rolling correlations",
-                "2y vs oil, and 10y vs US 10y and DXY, on a 63-day window over ~2 years",
                 "needs ~2.5 years of history; the store currently holds about a month. " +
                 "This section fills itself in once the history is deepened — no code change."));
 
             return Page.Shell(
-                $"{cfg.Ccy} — RatesWeekly", cfg.Ccy, cfg.Ccy,
-                $"close of {asOf:dddd d MMMM yyyy}", body.ToString(),
-                DateTime.Now.ToString("d MMM yyyy HH:mm", CultureInfo.InvariantCulture));
+                $"DRAX Swaps — Weekly Rates Analysis — {cfg.Ccy}", cfg.Ccy,
+                $"DRAX Swaps - Weekly Rates Analysis - {cfg.Ccy}", body.ToString());
         }
 
-        private static string Pending(string title, string sub, string why) =>
-            $"<section class=\"rw-panel\"><header class=\"rw-panel-head\"><h3>{Viz.Esc(title)}</h3>"
-          + $"<p class=\"rw-sub\">{Viz.Esc(sub)}</p></header>"
+        private static string Pending(string title, string why) =>
+            $"<section class=\"rw-panel\"><header class=\"rw-panel-head\"><h3>{Viz.Esc(title)}</h3></header>"
           + $"<div class=\"rw-pending\">{Viz.Esc(why)}</div></section>";
     }
 }

@@ -21,15 +21,13 @@ namespace RateDesk.Weekly.Core.Render
     public static class Panels
     {
         public static string Linked(
-            string id, string title, string subtitle,
+            string id, string title,
             IReadOnlyList<LadderPoint> pts,
             int valueDp = 3, string valueSuffix = "%")
         {
             var sb = new StringBuilder();
             sb.Append($"<section class=\"rw-panel\" id=\"{Viz.Esc(id)}\" data-panel=\"{Viz.Esc(id)}\">");
-            sb.Append($"<header class=\"rw-panel-head\"><h3>{Viz.Esc(title)}</h3>");
-            if (!string.IsNullOrEmpty(subtitle)) sb.Append($"<p class=\"rw-sub\">{Viz.Esc(subtitle)}</p>");
-            sb.Append("</header>");
+            sb.Append($"<header class=\"rw-panel-head\"><h3>{Viz.Esc(title)}</h3></header>");
 
             var live = pts.Where(p => p.Now.HasValue).ToList();
             if (live.Count == 0)
@@ -72,13 +70,13 @@ namespace RateDesk.Weekly.Core.Render
         /// lines readable — no second plot needed.</summary>
         private static string Chart(IReadOnlyList<LadderPoint> pts, int dp, string suffix)
         {
-            const int W = 760, H = 330, ml = 46, mr = 14, mt = 26, mb = 28;
+            const int W = 760, H = 430, ml = 46, mr = 14, mt = 24, mb = 26;
             int pw = W - ml - mr, ph = H - mt - mb;
 
             var vals = pts.SelectMany(p => new[] { p.Now, p.Week, p.Month })
                           .Where(v => v.HasValue).Select(v => v!.Value).ToList();
             double lo = vals.Min(), hi = vals.Max();
-            double pad = Math.Max((hi - lo) * 0.04, 0.002);
+            double pad = Math.Max((hi - lo) * 0.02, 0.001);
             double yMin = lo - pad, yMax = hi + pad;
 
             int n = pts.Count;
@@ -102,9 +100,10 @@ namespace RateDesk.Weekly.Core.Render
             for (int i = 0; i < n; i += stride)
                 sb.Append($"<text x=\"{Viz.F(SX(i), 1)}\" y=\"{H - mb + 15}\" class=\"rw-tick rw-tick-x\">{Viz.Esc(pts[i].Label)}</text>");
 
-            // legend rides in the top margin so it costs no plot height
+            // legend rides in the top margin so it costs no plot height; ordered most-recent
+            // first, which is the order the desk reads them
             var keys = new (string Name, string Colour)[]
-                { ("1m ago", Viz.SeriesMonth), ("1w ago", Viz.SeriesWeek), ("today", Viz.SeriesToday) };
+                { ("today", Viz.SeriesToday), ("1w ago", Viz.SeriesWeek), ("1m ago", Viz.SeriesMonth) };
             double kx = ml + 2;
             foreach (var (name, colour) in keys)
             {
