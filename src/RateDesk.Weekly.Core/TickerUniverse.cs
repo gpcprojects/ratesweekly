@@ -67,6 +67,13 @@ namespace RateDesk.Weekly.Core
                 }
             }
 
+            // Monthly CPI fixing swaps (USSWIF/BPSWIF/EUSWIF 1..12) — the market's forecast of each
+            // upcoming print. Calendar-month indexed and roll once a year, which is why the store
+            // keeps their maturities.
+            foreach (var f in CpiFixings.Families)
+                if (configs.Enabled.Any(c => c.Ccy.Equals(f.Ccy, StringComparison.OrdinalIgnoreCase)))
+                    all.AddRange(CpiFixings.Tickers(f));
+
             all.AddRange(svc.MeetingTickers());
 
             // MeetingTickers qualifies by the schedule's contributor (BOC=BMOD, RBA/RBNZ=NABZ), but

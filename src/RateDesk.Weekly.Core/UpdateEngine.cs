@@ -57,6 +57,7 @@ namespace RateDesk.Weekly.Core
             var sw = Stopwatch.StartNew();
             var warnings = new List<string>();
 
+            var today0 = DateTime.Today;
             var configs = ConfigStore.LoadDefault();
             var svc = new PricingService(configs, snap);
             var universe = TickerUniverse.Build(configs, svc);
@@ -82,10 +83,21 @@ namespace RateDesk.Weekly.Core
             var absent = new HashSet<string>(
                 status.Where(s => !s.Exists).Select(s => s.Ticker), StringComparer.OrdinalIgnoreCase);
 
+            // Persist today's maturities. For rolling generics (CPI fixing swaps, meeting OIS, IMM
+            // FRAs) this is the only record of WHICH contract a ticker meant on a given day, and it
+            // is what lets a later build order them and spot a roll inside a lookback window.
+            int mats = 0;
+            foreach (var t in universe)
+            {
+                if (absent.Contains(t)) continue;
+                if (snap.Get(t)?.Maturity is { } mat) { store.SetMaturity(t, today0, mat); mats++; }
+            }
+            if (mats > 0) Log($"  recorded {mats} maturities");
+
             var seed = new List<string>();
             var seedDeep = new List<string>();
             var maintain = new Dictionary<int, List<string>>();
-            var today = DateTime.Today;
+            var today = today0;
             foreach (var t in universe)
             {
                 if (absent.Contains(t)) continue;

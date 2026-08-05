@@ -60,14 +60,25 @@ namespace RateDesk.Weekly.Core.Render
                     body.Append(Panels.Linked("inffwd", $"{cfg.Ccy} {lad.Name} forwards",
                         "quoted inflation forwards", infFwd, new List<string>()));
 
-                var fix = Inflation.Fixings(lad, cfg.Ccy, store, asOf);
-                body.Append(Panels.Linked("inffix", $"{cfg.Ccy} {lad.Name} fixings",
-                    $"published index prints · {Inflation.LagNote(cfg.Ccy, asOf)}",
-                    fix, new List<string>
-                    {
-                        "index prints monthly, so this section fills in as the stored history deepens",
-                        "⚠ lag convention pending desk confirmation",
-                    }, valueDp: 2, valueSuffix: ""));
+                // Market-implied monthly fixings, ordered from the next one still to print.
+                if (CpiFixings.For(cfg.Ccy) is { } fam)
+                {
+                    var fx = CpiFixings.Build(fam, store, asOf);
+                    if (CpiFixings.SanityNote(fam, store, asOf, fx.Rows) is { } warn) fx.Notes.Add(warn);
+                    body.Append(Panels.Linked("inffix", $"{cfg.Ccy} {fam.Name} monthly fixings",
+                        $"market-implied {fx.ValueLabel} for each upcoming print · next to fix first",
+                        fx.Rows, fx.Notes, valueDp: fx.Dp,
+                        valueSuffix: fam.Unit == CpiFixings.FixUnit.YoYBp ? "%" : ""));
+                }
+
+                var pub = Inflation.Fixings(lad, cfg.Ccy, store, asOf);
+                if (pub.Count > 0)
+                    body.Append(Panels.Linked("infpub", $"{cfg.Ccy} {lad.Name} published prints",
+                        "the index itself, as released",
+                        pub, new List<string>
+                        {
+                            "publishes monthly, so this fills in as the stored history deepens",
+                        }, valueDp: 2, valueSuffix: ""));
             }
 
             body.Append(Pending("Rolling correlations",

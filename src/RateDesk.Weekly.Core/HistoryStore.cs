@@ -51,9 +51,68 @@ namespace RateDesk.Weekly.Core
                     seed_days INTEGER NOT NULL   -- deepest BDH window successfully fetched
                 ) WITHOUT ROWID;
                 """);
+            Exec("""
+                CREATE TABLE IF NOT EXISTS maturity(
+                    ticker   TEXT NOT NULL,
+                    date     TEXT NOT NULL,      -- observation day, yyyy-MM-dd
+                    maturity TEXT NOT NULL,      -- what the ticker meant that day
+                    PRIMARY KEY(ticker, date)
+                ) WITHOUT ROWID;
+                """);
         }
 
-        /// <summary>Deepest BDH window already fetched for a ticker; 0 when never seeded.
+        /// <summary>A security's MATURITY as observed on a given day. Rolling generics re-point
+        /// without warning — a CPI fixing ticker jumps a whole year the day its month publishes —
+        /// and the maturity is the only field that says which contract a ticker means TODAY.
+        /// Storing it daily lets a later run detect that a roll happened inside a lookback window,
+        /// which is the difference between a real change and a year's worth of nonsense.</summary>
+        public void SetMaturity(string ticker, DateTime asOf, DateTime maturity)
+        {
+            lock (_gate)
+            {
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "INSERT INTO maturity(ticker,date,maturity) VALUES(@t,@d,@m) " +
+                                  "ON CONFLICT(ticker,date) DO UPDATE SET maturity=excluded.maturity;";
+                cmd.Parameters.AddWithValue("@t", ticker);
+                cmd.Parameters.AddWithValue("@d", asOf.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                cmd.Parameters.AddWithValue("@m", maturity.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>What the ticker means NOW — the most recently recorded maturity, whatever day
+        /// that was. Use this to identify and order contracts; use <see cref="MaturityAsOf"/> only
+        /// to ask what it meant on some past date (i.e. to detect a roll).</summary>
+        public DateTime? MaturityLatest(string ticker)
+        {
+            lock (_gate)
+            {
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "SELECT maturity FROM maturity WHERE ticker=@t ORDER BY date DESC LIMIT 1;";
+                cmd.Parameters.AddWithValue("@t", ticker);
+                return cmd.ExecuteScalar() is string s
+                    ? DateTime.ParseExact(s, "yyyy-MM-dd", CultureInfo.InvariantCulture)
+                    : null;
+            }
+        }
+
+        /// <summary>Maturity recorded at or before <paramref name="asOf"/>, or null if never seen.</summary>
+        public DateTime? MaturityAsOf(string ticker, DateTime asOf)
+        {
+            lock (_gate)
+            {
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "SELECT maturity FROM maturity WHERE ticker=@t AND date<=@d " +
+                                  "ORDER BY date DESC LIMIT 1;";
+                cmd.Parameters.AddWithValue("@t", ticker);
+                cmd.Parameters.AddWithValue("@d", asOf.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                return cmd.ExecuteScalar() is string s
+                    ? DateTime.ParseExact(s, "yyyy-MM-dd", CultureInfo.InvariantCulture)
+                    : null;
+            }
+        }
+
+        /// <summary>Deepest BDH window already fetched for a ticker; 0 when never seeded.</summary>
         /// An existing store predating the coverage table reports 0 and simply re-seeds at the
         /// current depth on the next run — which costs the same as a maintain pass at 45d.</summary>
         public int SeededDepth(string ticker)
