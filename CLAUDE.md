@@ -13,8 +13,11 @@ with hardwired links. Investor-facing output: pages are viewable by external peo
 - STANDALONE EXE: configs are EMBEDDED resources; user/market state lives in %APPDATA%\RatesWeekly
   only. Never add external file dependencies.
 - This repo is FULLY SEPARATE from dodgeball. Teammates here may have no dodgeball access.
-- HISTORY DEPTH: seed is 45d by design for now (desk call 2026-08-05 — deepen gradually/overnight
-  later by raising UpdateEngine.SeedDays; upsert-on-overlap deepens in place, no migration).
+- HISTORY DEPTH: seed is 45d by design for now (desk call 2026-08-05). Deepen later by raising
+  UpdateEngine.SeedDays/CorrSeedDays and re-running `update` several times — each run deepens up to
+  MaxSeedPerRun tickers per bucket and defers the rest, which is what makes it "gradual". Bucketing
+  is on the store's per-ticker DEPTH WATERMARK (coverage.seed_days), never on row existence — an
+  existence test makes deepening a silent no-op (audited 2026-08-05; regression tests guard it).
   Do NOT run deep BDH backfills without the desk's say-so — terminal data limits are shared.
 - Get sign-off before building on inferred quantities (tenors/structures/conventions) — the ⚠
   backlog in DESIGN.md §10 is the list.

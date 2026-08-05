@@ -75,6 +75,62 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void ValueAsOf_WalksBackToLastAvailableClose()
+        {
+            using var store = new HistoryStore(DbPath);
+            store.UpsertDaily("T", new[] { P(10, 1.0), P(3, 2.0) });
+
+            Assert.Equal(2.0, store.ValueAsOf("T", DateTime.Today.AddDays(-1))!.Value, 10);
+            Assert.Equal(2.0, store.ValueAsOf("T", DateTime.Today.AddDays(-3))!.Value, 10);
+            // between the two stored closes → the older one, as the desk would read it
+            Assert.Equal(1.0, store.ValueAsOf("T", DateTime.Today.AddDays(-5))!.Value, 10);
+            // before any close → nothing, never an invented value
+            Assert.Null(store.ValueAsOf("T", DateTime.Today.AddDays(-20)));
+        }
+
+        [Fact]
+        public void SeededDepth_IsZeroUntilSet_AndIsMonotone()
+        {
+            using var store = new HistoryStore(DbPath);
+            Assert.Equal(0, store.SeededDepth("T"));
+
+            store.SetSeededDepth("T", 45);
+            Assert.Equal(45, store.SeededDepth("T"));
+
+            store.SetSeededDepth("T", 750);
+            Assert.Equal(750, store.SeededDepth("T"));
+
+            // a shallow maintain pass must never lower a deep seed's watermark, or the ticker
+            // would be re-seeded at depth on every subsequent run
+            store.SetSeededDepth("T", 45);
+            Assert.Equal(750, store.SeededDepth("T"));
+        }
+
+        [Fact]
+        public void SeededDepth_IsWhatDrivesDeepening_NotRowExistence()
+        {
+            // The regression this guards: bucketing on "has any row" made raising the seed depth a
+            // silent no-op, because a shallow-seeded ticker looks identical to a deep one.
+            using var store = new HistoryStore(DbPath);
+            store.UpsertDaily("T", new[] { P(3, 1.0) });
+            store.SetSeededDepth("T", 45);
+
+            Assert.NotNull(store.LastDate("T"));          // has rows...
+            Assert.True(store.SeededDepth("T") < 750);    // ...but is NOT deep enough
+        }
+
+        [Fact]
+        public void TickersCoveringDate_CountsOnlyThoseWithACloseAtOrBefore()
+        {
+            using var store = new HistoryStore(DbPath);
+            store.UpsertDaily("OLD", new[] { P(40, 1.0) });
+            store.UpsertDaily("NEW", new[] { P(2, 1.0) });
+
+            Assert.Equal(2, store.TickersCoveringDate(DateTime.Today));
+            Assert.Equal(1, store.TickersCoveringDate(DateTime.Today.AddDays(-31)));
+        }
+
+        [Fact]
         public void SurvivesReopen()
         {
             using (var store = new HistoryStore(DbPath))

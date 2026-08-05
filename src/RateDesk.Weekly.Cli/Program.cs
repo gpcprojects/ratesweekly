@@ -1,4 +1,5 @@
 using System.Globalization;
+using RateDesk.Core;
 using RateDesk.Core.Market;
 using RateDesk.Weekly.Core;
 
@@ -63,7 +64,46 @@ switch (cmd)
         return 0;
     }
 
+    case "render":
+    {
+        var outDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly", "out");
+        for (int i = 1; i < args.Length - 1; i++)
+            if (args[i].Equals("--out", StringComparison.OrdinalIgnoreCase)) outDir = args[i + 1];
+        var only = args.Skip(1).FirstOrDefault(a => !a.StartsWith("--") &&
+            !a.Equals(outDir, StringComparison.OrdinalIgnoreCase) &&
+            !File.Exists(a) && a.Length == 3);
+
+        Directory.CreateDirectory(outDir);
+        using var store = new HistoryStore(dbPath);
+        if (store.LatestDate() is not { } asOf)
+        {
+            Console.Error.WriteLine("store is empty — run `update` first");
+            return 1;
+        }
+        var configs = RateDesk.Core.Config.ConfigStore.LoadDefault();
+        var svc = new PricingService(configs, new RatesSnapshot());
+        int n = 0;
+        foreach (var cfg in configs.Enabled)
+        {
+            if (only != null && !cfg.Ccy.Equals(only, StringComparison.OrdinalIgnoreCase)) continue;
+            if (cfg.Ois == null && cfg.Irs == null && cfg.Ladders.Count == 0) continue;
+            try
+            {
+                var html = RateDesk.Weekly.Core.Render.CurrencyPage.Build(
+                    cfg, svc.SourceFor(cfg.Ccy), store, asOf);
+                var path = Path.Combine(outDir, cfg.Ccy.ToLowerInvariant() + ".html");
+                File.WriteAllText(path, html);
+                Console.WriteLine($"  {cfg.Ccy}  {new FileInfo(path).Length / 1024.0,6:F0} KB  {path}");
+                n++;
+            }
+            catch (Exception ex) { Console.Error.WriteLine($"  ! {cfg.Ccy}: {ex.Message}"); }
+        }
+        Console.WriteLine($"rendered {n} page(s) as of {asOf:yyyy-MM-dd} into {outDir}");
+        return 0;
+    }
+
     default:
-        Console.WriteLine("RATESWEEKLY CLI — usage: update [--db <path>] | status [--db <path>]");
+        Console.WriteLine("RATESWEEKLY CLI — usage: update [--db <path>] | status [--db <path>] | render [ccy] [--out <dir>]");
         return cmd == "help" ? 0 : 1;
 }

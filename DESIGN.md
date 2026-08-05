@@ -46,10 +46,17 @@ Until then: corr sections render a "pending history depth" placeholder (never fa
 movers rank by RAW bp move with the |z| column blank.
 
 **Deepening procedure** (desk said gradual/overnight): raise `UpdateEngine.SeedDays` (and
-`CorrSeedDays`) and re-run `RatesWeeklyCli update`. Upsert-on-overlap deepens the store in place —
-no wipe, no migration. Do it out of hours: the BDH allowance is shared with the rest of the desk.
-⚠ Confirm the seed/maintain partition actually re-fetches already-seeded tickets at the deeper
-window before trusting this (audit item, 2026-08-05).
+`CorrSeedDays`), rebuild, and re-run `RatesWeeklyCli update` — repeatedly. Each run re-seeds up to
+`MaxSeedPerRun` (250) tickers per bucket at the new depth and defers the rest with a warning, so
+~989 tickers deepen over ~4 runs rather than one burst. Do it out of hours: the BDH allowance is
+shared with the rest of the desk.
+
+This works because the store records a per-ticker DEPTH WATERMARK (`coverage.seed_days`) and the
+engine buckets on it. **The original design — bucketing on "does this ticker have any row" — was
+audited on 2026-08-05 and proved to be a silent no-op**: after the first 45d run every ticker looks
+seeded forever, so raising SeedDays would have fetched nothing, reported success, and left the corr
+charts dark permanently. Fixed, with regression tests (`SeededDepth_IsWhatDrivesDeepening…`).
+Do not reintroduce an existence test there.
 
 ## 1. What it is
 

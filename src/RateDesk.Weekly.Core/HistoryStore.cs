@@ -42,6 +42,57 @@ namespace RateDesk.Weekly.Core
                     note TEXT
                 );
                 """);
+            // Depth watermark. Without this the update engine can only ask "does this ticker have
+            // ANY row", which is true after the first shallow run forever — so raising the seed
+            // depth later would silently fetch nothing and the deepening plan would be a no-op.
+            Exec("""
+                CREATE TABLE IF NOT EXISTS coverage(
+                    ticker    TEXT PRIMARY KEY,
+                    seed_days INTEGER NOT NULL   -- deepest BDH window successfully fetched
+                ) WITHOUT ROWID;
+                """);
+        }
+
+        /// <summary>Deepest BDH window already fetched for a ticker; 0 when never seeded.
+        /// An existing store predating the coverage table reports 0 and simply re-seeds at the
+        /// current depth on the next run — which costs the same as a maintain pass at 45d.</summary>
+        public int SeededDepth(string ticker)
+        {
+            lock (_gate)
+            {
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "SELECT seed_days FROM coverage WHERE ticker=@t;";
+                cmd.Parameters.AddWithValue("@t", ticker);
+                return cmd.ExecuteScalar() is long d ? (int)d : 0;
+            }
+        }
+
+        /// <summary>Record a successful fetch depth. Monotone: a shallow maintain pass can never
+        /// lower the watermark a deep seed established.</summary>
+        public void SetSeededDepth(string ticker, int days)
+        {
+            lock (_gate)
+            {
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "INSERT INTO coverage(ticker,seed_days) VALUES(@t,@d) " +
+                                  "ON CONFLICT(ticker) DO UPDATE SET seed_days=MAX(seed_days,excluded.seed_days);";
+                cmd.Parameters.AddWithValue("@t", ticker);
+                cmd.Parameters.AddWithValue("@d", days);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>How many tickers hold a close at or before <paramref name="asOf"/> — the
+        /// operational health number: it answers "can the 1w/1m lookbacks actually resolve".</summary>
+        public long TickersCoveringDate(DateTime asOf)
+        {
+            lock (_gate)
+            {
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "SELECT COUNT(*) FROM (SELECT ticker FROM daily WHERE date<=@d GROUP BY ticker);";
+                cmd.Parameters.AddWithValue("@d", asOf.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                return (long)(cmd.ExecuteScalar() ?? 0L);
+            }
         }
 
         /// <summary>Insert-or-update daily closes for one ticker. Today's point is excluded by
@@ -91,6 +142,39 @@ namespace RateDesk.Weekly.Core
                         DateTime.ParseExact(r.GetString(0), "yyyy-MM-dd", CultureInfo.InvariantCulture),
                         r.GetDouble(1)));
                 return list;
+            }
+        }
+
+        /// <summary>The close AT OR BEFORE <paramref name="asOf"/> — the primitive every "today /
+        /// 1w ago / 1m ago" line is built from. Walking back to the last available close (rather
+        /// than requiring an exact date) is what makes weekends, holidays and thin markets work:
+        /// a 1w lookback landing on a Saturday reads Friday's close, as the desk would.</summary>
+        public double? ValueAsOf(string ticker, DateTime asOf)
+        {
+            lock (_gate)
+            {
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText =
+                    "SELECT value FROM daily WHERE ticker=@t AND date<=@d ORDER BY date DESC LIMIT 1;";
+                cmd.Parameters.AddWithValue("@t", ticker);
+                cmd.Parameters.AddWithValue("@d", asOf.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                var v = cmd.ExecuteScalar();
+                return v is null or DBNull ? null : Convert.ToDouble(v, CultureInfo.InvariantCulture);
+            }
+        }
+
+        /// <summary>Most recent close date across the whole store — the "as of" a weekly build
+        /// stamps its pages with. Null on an empty store.</summary>
+        public DateTime? LatestDate()
+        {
+            lock (_gate)
+            {
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "SELECT MAX(date) FROM daily;";
+                var v = cmd.ExecuteScalar();
+                return v is string s
+                    ? DateTime.ParseExact(s, "yyyy-MM-dd", CultureInfo.InvariantCulture)
+                    : null;
             }
         }
 
