@@ -62,7 +62,7 @@ namespace RateDesk.Weekly.Core.Series
                 var (label, contract) = contracts[i];
                 string tkNow = ticker(i + 1);
                 if (Guard(mids, i) is not { } mid) continue;
-                if (mids[i] is { } raw && Math.Abs(raw - mid) > 1e-9) { guarded++; label += " (interp)"; }
+                if (mids[i] is { } raw && Math.Abs(raw - mid) > 1e-9) { guarded++; label += "*"; }
 
                 double? w = RolledValue(store, ticker, bounds, contract, asOf.AddDays(-WeeklyCurves.WeekDays), maxIndexProbe);
                 double? m = RolledValue(store, ticker, bounds, contract, asOf.AddDays(-WeeklyCurves.MonthDays), maxIndexProbe);

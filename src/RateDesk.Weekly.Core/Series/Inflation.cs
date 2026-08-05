@@ -52,7 +52,7 @@ namespace RateDesk.Weekly.Core.Series
             {
                 if (prev.HasValue && Math.Abs(p.Value - prev.Value) < 1e-9) continue;
                 bool isBase = p.Date.Year == baseMonth.Year && p.Date.Month == baseMonth.Month;
-                rows.Add(new LadderPoint(p.Date.ToString("MMM yy") + (isBase ? " ◀ base" : ""), p.Value, null, null));
+                rows.Add(new LadderPoint(p.Date.ToString("MMM yy") + (isBase ? "*" : ""), p.Value, null, null));
                 prev = p.Value;
             }
             return rows;

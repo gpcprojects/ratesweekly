@@ -80,7 +80,7 @@ namespace RateDesk.Weekly.Core.Render
         /// lines readable — no second plot needed.</summary>
         private static string Chart(IReadOnlyList<LadderPoint> pts, int dp, string suffix)
         {
-            const int W = 760, H = 430, ml = 46, mr = 14, mt = 24, mb = 26;
+            const int W = 760, H = 470, ml = 58, mr = 16, mt = 30, mb = 38;
             int pw = W - ml - mr, ph = H - mt - mb;
 
             var vals = pts.SelectMany(p => new[] { p.Now, p.Week, p.Month })
@@ -95,20 +95,20 @@ namespace RateDesk.Weekly.Core.Render
 
             var sb = new StringBuilder();
             sb.Append("<div class=\"rw-chartwrap\">");
-            sb.Append($"<svg class=\"rw-svg\" viewBox=\"0 0 {W} {H}\" preserveAspectRatio=\"none\" role=\"img\">");
+            sb.Append($"<svg class=\"rw-svg\" viewBox=\"0 0 {W} {H}\" preserveAspectRatio=\"xMidYMid meet\" role=\"img\">");
 
             foreach (var t in Viz.Ticks(yMin, yMax, 4))
             {
                 double y = SY(t);
                 if (y < mt - 1 || y > mt + ph + 1) continue;
                 sb.Append($"<line x1=\"{ml}\" y1=\"{Viz.F(y, 1)}\" x2=\"{ml + pw}\" y2=\"{Viz.F(y, 1)}\" class=\"rw-grid\"/>")
-                  .Append($"<text x=\"{ml - 7}\" y=\"{Viz.F(y + 3.5, 1)}\" class=\"rw-tick rw-tick-y\">{Viz.F(t, dp == 3 ? 2 : dp)}</text>");
+                  .Append($"<text x=\"{ml - 9}\" y=\"{Viz.F(y + 5, 1)}\" class=\"rw-tick rw-tick-y\">{Viz.F(t, dp == 3 ? 2 : dp)}</text>");
             }
             sb.Append($"<line x1=\"{ml}\" y1=\"{mt + ph}\" x2=\"{ml + pw}\" y2=\"{mt + ph}\" class=\"rw-axis\"/>");
 
             int stride = Math.Max(1, (int)Math.Ceiling(n / 9.0));
             for (int i = 0; i < n; i += stride)
-                sb.Append($"<text x=\"{Viz.F(SX(i), 1)}\" y=\"{H - mb + 15}\" class=\"rw-tick rw-tick-x\">{Viz.Esc(pts[i].Label)}</text>");
+                sb.Append($"<text x=\"{Viz.F(SX(i), 1)}\" y=\"{H - mb + 22}\" class=\"rw-tick rw-tick-x\">{Viz.Esc(pts[i].Label)}</text>");
 
             // legend rides in the top margin so it costs no plot height; ordered most-recent
             // first, which is the order the desk reads them
@@ -117,10 +117,10 @@ namespace RateDesk.Weekly.Core.Render
             double kx = ml + 2;
             foreach (var (name, colour) in keys)
             {
-                sb.Append($"<line x1=\"{Viz.F(kx, 1)}\" y1=\"11\" x2=\"{Viz.F(kx + 14, 1)}\" y2=\"11\" ")
+                sb.Append($"<line x1=\"{Viz.F(kx, 1)}\" y1=\"13\" x2=\"{Viz.F(kx + 18, 1)}\" y2=\"13\" ")
                   .Append($"stroke=\"{colour}\" stroke-width=\"3\" stroke-linecap=\"round\"/>");
-                sb.Append($"<text x=\"{Viz.F(kx + 19, 1)}\" y=\"14.5\" class=\"rw-tick rw-klab\">{Viz.Esc(name)}</text>");
-                kx += 19 + name.Length * 6.0 + 18;
+                sb.Append($"<text x=\"{Viz.F(kx + 24, 1)}\" y=\"18\" class=\"rw-tick rw-klab\">{Viz.Esc(name)}</text>");
+                kx += 24 + name.Length * 8.4 + 22;
             }
 
             // oldest first so today sits on top

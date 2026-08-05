@@ -67,7 +67,7 @@ namespace RateDesk.Tests
                 new[] { ("a", d[0]), ("b", d[1]), ("c", d[2]) }, d, Tk);
 
             Assert.Equal((1.848 + 2.086) / 2, t.Rows[1].Mid!.Value, 10);
-            Assert.Contains("interp", t.Rows[1].Label);
+            Assert.EndsWith("*", t.Rows[1].Label);   // marked inline; hover carries the reason
             Assert.Contains(t.Notes, n => n.Contains("neighbour midpoint"));
         }
 
@@ -84,7 +84,7 @@ namespace RateDesk.Tests
                 new[] { ("a", d[0]), ("b", d[1]), ("c", d[2]) }, d, Tk);
 
             Assert.Equal(1.960, t.Rows[1].Mid!.Value, 10);
-            Assert.DoesNotContain("interp", t.Rows[1].Label);
+            Assert.DoesNotContain("*", t.Rows[1].Label);
         }
 
         [Fact]
