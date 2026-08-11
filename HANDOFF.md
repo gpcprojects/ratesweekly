@@ -34,6 +34,11 @@ Chat transcripts do NOT travel between machines — what matters is written down
   gpcprojects/ratesweekly --target <branch> --title "RatesWeekly v<ver>" --notes "..."
   publish\RatesWeekly.exe publish\RatesWeekly_v<ver>.exe` — asset names must stay
   `RatesWeekly.exe` / `RatesWeekly_v*.exe` (the dodgeball 6.2.6 matcher lesson).
+  **The permanent download link** — always the newest build, never expires, no sign-in:
+  <https://github.com/gpcprojects/ratesweekly/releases/latest/download/RatesWeekly.exe>
+  It works because every release carries the unversioned `RatesWeekly.exe` asset; keep it that
+  way. Version-pinned permalink form (rollbacks):
+  `https://github.com/gpcprojects/ratesweekly/releases/download/v<ver>/RatesWeekly_v<ver>.exe`.
 - **Azure pipeline artifact** (people with Azure): every master push builds, tests, and
   publishes artifact `ratesweekly-exes` (Pipelines → ratesweekly → run → Artifacts).
 - Users need ONLY `RatesWeekly.exe` + a logged-in terminal. State lives in `%APPDATA%\RatesWeekly`
