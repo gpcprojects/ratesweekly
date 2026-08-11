@@ -83,7 +83,7 @@ namespace RateDesk.Core
         // The WIDTH must live ON THE CELL (css + the width attribute): Word ignores colgroup
         // widths and sizes columns from cells, so a widthless 1px-font spacer collapses to
         // nothing — which is why the 16px colgroup separators rendered as no gap at all.
-        string Gap(int w = 16) =>
+        string Gap(int w = 8) =>
             $"<td nowrap width=\"{w}\" style=\"{EmFont}font-size:1px;line-height:1px;border:none;width:{w}px;\">&nbsp;</td>";
         string RowBg(int rI) => rI % 2 == 1 ? "background:#f5f7fa;" : "";
         string ChgTd(double? v, bool topLine = false, bool sep = false, int rI = 0)
@@ -151,7 +151,7 @@ namespace RateDesk.Core
         var runs = rep.Runs;
         for (int i = 0; i < runs.Count; i += 3)
         {
-            sb.Append(TableOpen(new[] { 372, 16, 372, 16, 372 }, "0 0 8px 0"));
+            sb.Append(TableOpen(new[] { 372, 8, 372, 8, 372 }, "0 0 8px 0"));
             sb.Append("<tr>");
             for (int k = 0; k < 3; k++)
             {
@@ -206,13 +206,13 @@ namespace RateDesk.Core
                 if (group.Any(c => rI < c.Cells.Count && c.Cells[rI].Mid != null)) lastRow = rI;
             if (lastRow < 0) continue;
 
-            // 16px separator columns between currency groups (desk 2026-08-11, second pass:
-            // 26px read as holes, 6px read as nothing — 16px is a visible seam)
+            // 8px separator columns between currency groups (desk-tuned 2026-08-11: 26 = holes,
+            // 6 = nothing, 16 = too wide, 8 = the seam)
             var widths = new List<int> { 62 };
             for (int gI = 0; gI < group.Count; gI++)
             {
                 widths.Add(62); widths.Add(50); widths.Add(50);
-                if (gI < group.Count - 1) widths.Add(16);
+                if (gI < group.Count - 1) widths.Add(8);
             }
 
             // section title as a caption ABOVE the table — the CB cards' own pattern, and it
@@ -264,10 +264,13 @@ namespace RateDesk.Core
                 }
                 sb.Append("</tr>");
             }
+            // the air below each grid line lives INSIDE the table as an exact-height row — the
+            // SAME mechanism as the CB cards' bottom padding, so table-bottom→next-title matches
+            // the cards to the pixel (a free-standing Sp() div picks up Word paragraph spacing
+            // and renders fatter than the cards' clean 26px)
+            sb.Append($"<tr><td colspan=\"{widths.Count}\" nowrap height=\"26\" " +
+                      $"style=\"{EmFont}font-size:1px;line-height:1px;border:none;\">&nbsp;</td></tr>");
             sb.Append("</table>");
-            // air between the grid lines: an explicit-height div, because Word half-ignores
-            // table margins (the Sp() lesson) — same 26px unit as the column spacers
-            sb.Append(Sp(26));
         }
 
         if (footerHtml != null) sb.Append(footerHtml);

@@ -41,8 +41,11 @@ namespace RateDesk.Tests
             // must ride on the spacer CELL itself (css + width attribute), or the seam
             // collapses to nothing in the paste (the 2026-08-11 invisible-spacer saga).
             int seps = new System.Text.RegularExpressions.Regex(
-                System.Text.RegularExpressions.Regex.Escape("<td nowrap width=\"16\"")).Matches(html).Count;
+                System.Text.RegularExpressions.Regex.Escape("<td nowrap width=\"8\"")).Matches(html).Count;
             Assert.True(seps >= 2, $"expected >=2 width-carrying separator cells, saw {seps}");
+            // and the air below each grid line is an exact-height IN-TABLE row (the cards'
+            // padding mechanism) so bottom→title matches the CB cards to the pixel
+            Assert.Contains("height=\"26\"", html);
         }
 
         [Fact]
