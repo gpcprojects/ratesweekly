@@ -7,11 +7,17 @@ namespace RateDesk.Core
 {
     /// <summary>The WEEKLY report's email (CF_HTML fragment) and plain-text renderings — pure
     /// string builders over <see cref="WeeklyReport"/>, shared by Dodgeball and the standalone
-    /// weekly app so there is exactly ONE definition of what the email looks like.</summary>
+    /// weekly app so there is exactly ONE definition of what the email looks like.
+    ///
+    /// RATESWEEKLY DIVERGENCE (2026-08-11, deliberate — candidate to cherry-pick back): Html and
+    /// PlainText take optional dashboard-link hooks (<paramref name="ccyHref"/> wraps currency
+    /// header cells in anchors; a footer carries the "dashboards updated" line, DESIGN.md §4).
+    /// Defaults are null, so with no arguments the rendering is byte-identical to dodgeball's.</summary>
     public static class WeeklyEmail
     {
     // fixed light styling: emails are white regardless of the app theme
-    internal const string EmTxt = "#1a1d23", EmMut = "#66707f", EmLine = "#c9cfd8",
+    // (public here, not internal: RatesWeekly's EmailBuilder composes the footer in another assembly)
+    public const string EmTxt = "#1a1d23", EmMut = "#66707f", EmLine = "#c9cfd8",
         EmHead = "#eef1f5", EmAccent = "#8a4a12";
 
     /// <summary>Email heat fill, monitor convention: GREEN = higher yield, RED = lower.
@@ -30,7 +36,7 @@ namespace RateDesk.Core
     // Word/Outlook does NOT inherit font-family into table cells — an outer div's Calibri becomes
     // Times New Roman the moment the content is a table, which is most of why the pasted report
     // looked nothing like the app. Every cell therefore carries the font itself.
-    internal const string EmFont = "font-family:Calibri,'Segoe UI',Arial,sans-serif;";
+    public const string EmFont = "font-family:Calibri,'Segoe UI',Arial,sans-serif;";
 
     /// <summary>At most this many currencies in one forward-grid table. 11 DM currencies x 3
     /// columns was 33 columns across one table: unreadably cramped pasted, and the first thing to
@@ -51,9 +57,14 @@ namespace RateDesk.Core
         return sb.ToString();
     }
 
-    public static string Html(WeeklyReport rep)
+    public static string Html(WeeklyReport rep, Func<string, string?>? ccyHref = null, string? footerHtml = null)
     {
         var sb = new StringBuilder();
+        // Outlook-safe anchor: inherit the cell's ink so the header stays a header; underline is
+        // the only affordance. Absent a URL the cell renders exactly as before.
+        string CcyLabel(string ccy) => ccyHref?.Invoke(ccy) is string u
+            ? $"<a href=\"{u}\" style=\"color:inherit;text-decoration:underline;\">{ccy}</a>"
+            : ccy;
         string Td(string inner, string extra = "") =>
             $"<td style=\"{EmFont}padding:3px 8px;font-size:11.5px;{extra}\">{inner}</td>";
         string Sep() => $"border-right:1px solid {EmLine};";
@@ -99,7 +110,7 @@ namespace RateDesk.Core
                     ? (pv > 0 ? "color:#1e7a3c;font-weight:bold;" : "color:#b3362a;font-weight:bold;")
                     : $"color:{EmMut};";
                 sb.Append("<tr>" +
-                    Td($"<b>{f.Bank}</b> <span style=\"color:{EmMut};font-size:10px;\">{f.Ccy}</span>", rb) +
+                    Td($"<b>{f.Bank}</b> <span style=\"color:{EmMut};font-size:10px;\">{CcyLabel(f.Ccy)}</span>", rb) +
                     Td(f.Decision is { } dd ? Inv(dd) : Inv(f.StartDate) + " *", rb) +
                     Td(Inv(f.StartDate), rb) +
                     Td($"<b>{f.MidPct:0.000}</b>", $"text-align:right;{rb}") +
@@ -179,7 +190,7 @@ namespace RateDesk.Core
                   .Append(Td($"<b>{label}</b>", $"background:{EmHead};font-size:12px;color:{EmTxt};"));
                 foreach (var c in group)
                     sb.Append($"<td colspan=\"3\" style=\"{EmFont}padding:3px 8px;font-size:12px;" +
-                              $"background:{EmHead};text-align:center;font-weight:bold;{Sep()}\">{c.Ccy}</td>");
+                              $"background:{EmHead};text-align:center;font-weight:bold;{Sep()}\">{CcyLabel(c.Ccy)}</td>");
                 sb.Append("</tr>");
 
                 sb.Append("<tr>").Append(Td("&nbsp;", $"background:{EmHead};border-bottom:2px solid {EmAccent};"));
@@ -215,11 +226,12 @@ namespace RateDesk.Core
             }
         }
 
+        if (footerHtml != null) sb.Append(footerHtml);
         sb.Append("</div>");
         return sb.ToString();
     }
 
-    public static string PlainText(WeeklyReport rep)
+    public static string PlainText(WeeklyReport rep, string? footerText = null)
     {
         var inv = System.Globalization.CultureInfo.InvariantCulture;
         var sb = new StringBuilder();
@@ -267,6 +279,7 @@ namespace RateDesk.Core
                 sb.AppendLine();
             }
         }
+        if (footerText != null) { sb.AppendLine(); sb.AppendLine(footerText); }
         return sb.ToString();
     }
 }

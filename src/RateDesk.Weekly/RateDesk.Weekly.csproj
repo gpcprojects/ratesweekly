@@ -12,8 +12,8 @@
     <Description>One-click weekly: Bloomberg pull, maintained history, dashboard publish, desk email</Description>
     <Company>Gabriel Pycroft</Company>
     <Copyright>© 2026 Gabriel Pycroft</Copyright>
-    <Version>0.1.0</Version>
-    <FileVersion>0.1.0.0</FileVersion>
+    <Version>0.2.0</Version>
+    <FileVersion>0.2.0.0</FileVersion>
     <NoWarn>$(NoWarn);NU1701</NoWarn>
     <!-- truly standalone single file, same rationale as Dodgeball: WPF + sqlite natives must bundle -->
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>

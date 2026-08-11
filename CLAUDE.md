@@ -23,12 +23,24 @@ with hardwired links. Investor-facing output: pages are viewable by external peo
   backlog in DESIGN.md §10 is the list.
 
 ## Provenance of src/RateDesk.Core and src/RateDesk.Bloomberg
-Copied VERBATIM from the dodgeball repo at commit 0324397 (v7.0.0, 2026-08-05) for full
-independence. They carry the 28-ccy configs, meeting roll/stitch logic, BDH client, and analytics
-primitives — see dodgeball's CLAUDE.md for the accumulated gotchas (meeting tickers are rolling
-generics; probe new tickers by NAME/SECURITY_DES via tools\BbgSmoke, never by "has price";
-forward families need the BLC qualifier; etc). Improvements flow between the repos by manual
-cherry-pick, deliberately — config drift is acceptable, silent coupling is not.
+Copied VERBATIM from the dodgeball repo at commit 0324397 (v7.0.0, 2026-08-05), REFRESHED to
+9b52693 (v7.1.0 line, 2026-08-11) for full independence. They carry the 28-ccy configs, meeting
+roll/stitch logic, BDH client, and analytics primitives — see dodgeball's CLAUDE.md for the
+accumulated gotchas (meeting tickers are rolling generics; probe new tickers by NAME/SECURITY_DES
+via tools\BbgSmoke, never by "has price"; forward families need the BLC qualifier; etc).
+Improvements flow between the repos by manual cherry-pick, deliberately — config drift is
+acceptable, silent coupling is not. One marked divergence: WeeklyEmail.cs takes optional
+dashboard-link/footer hooks (null = byte-identical to dodgeball's rendering).
+
+## The weekly email lives HERE (consolidation decision, 2026-08-11)
+The desk email (CB front table + meeting cards + forward grid, dodgeball's WEEKLY layout) is
+BUILT AND SHIPPED from this app: Weekly.Core\EmailBuilder drives Core's BuildWeekly/WeeklyEmail
+live at UPDATE time, persists email.html/email.txt/email_preview.html to out\, and COPY EMAIL
+puts the persisted fragment on the clipboard as CF_HTML. Currency headers hyperlink to the
+dashboards when %APPDATA%\RatesWeekly\publish.json carries {"siteBase": "https://…"} — links are
+OMITTED, never guessed, without it. The movers strip ships dark until the movers page exists.
+dodgeball's standalone DodgeballWeekly.exe is slated for REMOVAL over there once the desk runs
+this app — do not improve the email in two repos.
 
 ## Build / test
 - SDK: dotnet 8 ("C:\Users\GPC Work\.dotnet\dotnet.exe" on the original machine).
@@ -46,8 +58,9 @@ cherry-pick, deliberately — config drift is acceptable, silent coupling is not
 - src\RateDesk.Weekly.Core — engine (no WPF): HistoryStore (SQLite, %APPDATA%\RatesWeekly\history.db,
   daily closes only, raw tickers only, today excluded, upsert self-heals), TickerUniverse (~989
   tickers), UpdateEngine (seed/maintain BDH → store).
-- src\RateDesk.Weekly — WPF shell (UPDATE / COPY EMAIL / OPEN OUTPUT). Renderers + email builder
-  land here (P2).
+- src\RateDesk.Weekly — WPF shell (UPDATE / COPY EMAIL / OPEN OUTPUT) + ClipboardHtml (CF_HTML
+  writer, UTF-8 byte offsets). Page renderers live in Weekly.Core\Render; the email builder in
+  Weekly.Core\EmailBuilder (own Bloomberg session; runs inside UPDATE, after the engine).
 - tools\BbgSmoke — ticker probe (NAME/SECURITY_DES first). Use for the invoice-spread research.
 
 ## Team workflow

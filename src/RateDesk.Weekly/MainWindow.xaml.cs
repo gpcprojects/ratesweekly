@@ -39,17 +39,28 @@ namespace RateDesk.Weekly
             StatusText.Text = "updating...";
             try
             {
-                var (result, pages) = await Task.Run(() =>
+                var (result, pages, emailErr) = await Task.Run(() =>
                 {
                     using var store = new HistoryStore(Path.Combine(AppDataDir, "history.db"));
                     var r = UpdateEngine.Run(store, new RatesSnapshot(), Log);
                     // Pulling the data and not redrawing the pages would leave the desk reading
                     // last week's dashboards, so the two are one action.
                     int n = RenderAll(store, Log);
-                    return (r, n);
+                    // The email is the same click (DESIGN.md §9), persisted to out\ so COPY EMAIL
+                    // is instant and restart-safe. It builds AFTER the engine has released its
+                    // session, on its own — a failure leaves the dashboards standing.
+                    string? eErr = null;
+                    try
+                    {
+                        var rep = EmailBuilder.Build(Log);
+                        EmailBuilder.Render(rep, OutDir, EmailBuilder.LoadSiteBase(AppDataDir), Log);
+                    }
+                    catch (Exception ex) { eErr = ex.Message; Log("! email build failed: " + ex.Message); }
+                    return (r, n, eErr);
                 });
                 StatusText.Text = $"updated {DateTime.Now:HH:mm:ss} — {result.Tickers} tickers, " +
-                                  $"{result.RowsWritten} rows written, {pages} pages rendered " +
+                                  $"{result.RowsWritten} rows written, {pages} pages rendered, " +
+                                  (emailErr == null ? "email ready " : "EMAIL FAILED — see log ") +
                                   $"({result.Elapsed.TotalSeconds:F0}s)" +
                                   (result.Warnings.Count > 0 ? $" · {result.Warnings.Count} warning(s) in log" : "");
                 foreach (var w in result.Warnings) Log("! " + w);
@@ -96,7 +107,21 @@ namespace RateDesk.Weekly
 
         private void CopyEmail_Click(object sender, RoutedEventArgs e)
         {
-            StatusText.Text = "email builder is not wired yet — next on the list.";
+            // Copies the PERSISTED fragment — never rebuilds. What UPDATE wrote is what pastes,
+            // and it still pastes after an app restart.
+            var frag = Path.Combine(OutDir, EmailBuilder.FragmentFile);
+            var txt = Path.Combine(OutDir, EmailBuilder.PlainTextFile);
+            if (!File.Exists(frag))
+            {
+                StatusText.Text = "no email built yet — run UPDATE first.";
+                return;
+            }
+            try
+            {
+                ClipboardHtml.Set(File.ReadAllText(frag), File.Exists(txt) ? File.ReadAllText(txt) : "");
+                StatusText.Text = $"email copied (built {File.GetLastWriteTime(frag):ddd HH:mm}) — paste into the email body.";
+            }
+            catch (Exception ex) { StatusText.Text = "copy failed: " + ex.Message; }
         }
 
         private void OpenOutput_Click(object sender, RoutedEventArgs e)

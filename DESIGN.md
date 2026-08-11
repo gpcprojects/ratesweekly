@@ -5,7 +5,15 @@
 > and get individual sign-off before they are wired (standing rule). This doc moves into the repo
 > with the code.
 
-## 0. Decisions (2026-08-05)
+## 0. Decisions (2026-08-05, +2026-08-11)
+
+- **Consolidation (2026-08-11, user)**: the weekly email is part of THIS project, not dodgeball.
+  Core/Bloomberg copy refreshed to dodgeball 9b52693 (v7.1.0 line: basis guard, SW_EFF_DT meeting
+  starts, corrected CB calendars, London 16:30 snaps, WeeklyEmail/BuildWeekly). EmailBuilder
+  (Weekly.Core) builds the email live during UPDATE and persists it to out\; COPY EMAIL pastes the
+  persisted fragment (CF_HTML). Dashboard links per §4 come from publish.json `siteBase` and are
+  omitted when unset. The movers strip stays dark until the movers page ships. DodgeballWeekly.exe
+  to be REMOVED from the dodgeball repo once the desk has switched to RatesWeekly.exe.
 
 - **Users**: some desk members have Dodgeball, some don't. RatesWeekly ships as its own
   standalone exe with its own release channel — a user needs ONLY RatesWeekly + a Bloomberg
@@ -159,6 +167,11 @@ Layout = Dodgeball WEEKLY email (monitor 3 rows: DM / EM+LATAM / ASIA EM; rows 2
 Links are plain anchors to stable URLs — maximally email-client-compatible. CF_HTML copy +
 plain-text fallback as in Dodgeball. ⚠ Paste into a real Outlook draft is a phase-1 acceptance test
 (Dodgeball's own HANDOFF flags this was never manually verified there either).
+
+STATUS 2026-08-11 (v0.2.0): built — EmailBuilder + WeeklyEmail port; ccy headers (forward grid +
+CB front table) hyperlink when publish.json `siteBase` is set, footer carries "dashboards updated
+{stamp} · {site} · source: Bloomberg". NOT yet: the movers top strip + teaser (needs the movers
+page), and the real-Outlook paste test above.
 
 ## 5. Movers Summary page
 
