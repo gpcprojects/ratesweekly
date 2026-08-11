@@ -37,11 +37,11 @@ namespace RateDesk.Tests
         public void ForwardGrid_HasSeparatorColumnsBetweenCurrencyGroups()
         {
             var html = WeeklyEmail.Html(Report(3));
-            // 3 currencies => 2 separator columns of the 6px cohesion unit (the card-title-to-
-            // table distance; 26px read as holes — desk 2026-08-11)
+            // 3 currencies => 2 separator columns of the 16px seam (desk 2026-08-11 second
+            // pass: 26px read as holes, 6px read as nothing)
             int seps = new System.Text.RegularExpressions.Regex(
-                System.Text.RegularExpressions.Regex.Escape("<col style=\"width:6px;\">")).Matches(html).Count;
-            Assert.True(seps >= 2, $"expected >=2 6px separator columns, saw {seps}");
+                System.Text.RegularExpressions.Regex.Escape("<col style=\"width:16px;\">")).Matches(html).Count;
+            Assert.True(seps >= 2, $"expected >=2 16px separator columns, saw {seps}");
         }
 
         [Fact]
