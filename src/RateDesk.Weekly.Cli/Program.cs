@@ -108,6 +108,21 @@ switch (cmd)
             }
             catch (Exception ex) { Console.Error.WriteLine($"  ! {cfg.Ccy}: {ex.Message}"); }
         }
+        if (only == null)
+        {
+            try
+            {
+                var mv = RateDesk.Weekly.Core.Series.MoverScan.Scan(configs, svc.SourceFor, store, asOf);
+                var idx = Path.Combine(outDir, "index.html");
+                File.WriteAllText(idx, RateDesk.Weekly.Core.Render.MoversPage.Build(mv));
+                File.WriteAllText(Path.Combine(outDir, "movers.json"),
+                    RateDesk.Weekly.Core.Series.MoverScan.ToJson(mv));
+                Console.WriteLine($"  MOVERS {new FileInfo(idx).Length / 1024.0,5:F0} KB  {idx}  " +
+                                  $"({mv.DmRanked.Count} DM / {mv.EmRanked.Count} EM ranked)");
+                n++;
+            }
+            catch (Exception ex) { Console.Error.WriteLine("  ! movers: " + ex.Message); }
+        }
         Console.WriteLine($"rendered {n} page(s) as of {asOf:yyyy-MM-dd} into {outDir}");
         return 0;
     }

@@ -57,7 +57,10 @@ this app — do not improve the email in two repos.
 ## Layout
 - src\RateDesk.Weekly.Core — engine (no WPF): HistoryStore (SQLite, %APPDATA%\RatesWeekly\history.db,
   daily closes only, raw tickers only, today excluded, upsert self-heals), TickerUniverse (~989
-  tickers), UpdateEngine (seed/maintain BDH → store).
+  tickers), UpdateEngine (seed/maintain BDH → store), MoverScan (outsized-movers ranking: |z| of
+  the 1w change, est-σ until the deep seed, RMS week-vol ratio, roll-corrected meeting series —
+  the "things to flag" descendant; refined here, then cherry-picked back to dodgeball).
+  Render\MoversPage → out\index.html (the hub/landing page).
 - src\RateDesk.Weekly — WPF shell (UPDATE / COPY EMAIL / OPEN OUTPUT) + ClipboardHtml (CF_HTML
   writer, UTF-8 byte offsets). Page renderers live in Weekly.Core\Render; the email builder in
   Weekly.Core\EmailBuilder (own Bloomberg session; runs inside UPDATE, after the engine).

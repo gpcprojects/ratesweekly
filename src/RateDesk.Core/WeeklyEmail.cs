@@ -10,9 +10,10 @@ namespace RateDesk.Core
     /// weekly app so there is exactly ONE definition of what the email looks like.
     ///
     /// RATESWEEKLY DIVERGENCE (2026-08-11, deliberate — candidate to cherry-pick back): Html and
-    /// PlainText take optional dashboard-link hooks (<paramref name="ccyHref"/> wraps currency
-    /// header cells in anchors; a footer carries the "dashboards updated" line, DESIGN.md §4).
-    /// Defaults are null, so with no arguments the rendering is byte-identical to dodgeball's.</summary>
+    /// PlainText take optional dashboard-link hooks (ccyHref wraps currency header cells in
+    /// anchors; a header carries the movers strip and a footer the "dashboards updated" line,
+    /// DESIGN.md §4). Defaults are null, so with no arguments the rendering is byte-identical to
+    /// dodgeball's.</summary>
     public static class WeeklyEmail
     {
     // fixed light styling: emails are white regardless of the app theme
@@ -57,7 +58,8 @@ namespace RateDesk.Core
         return sb.ToString();
     }
 
-    public static string Html(WeeklyReport rep, Func<string, string?>? ccyHref = null, string? footerHtml = null)
+    public static string Html(WeeklyReport rep, Func<string, string?>? ccyHref = null,
+        string? footerHtml = null, string? headerHtml = null)
     {
         var sb = new StringBuilder();
         // Outlook-safe anchor: inherit the cell's ink so the header stays a header; underline is
@@ -90,6 +92,7 @@ namespace RateDesk.Core
             $"border-bottom:1px solid {EmLine};padding:4px 1px 5px 1px;\">{s}</td></tr></table>" + Sp(8);
 
         sb.Append($"<div style=\"{EmFont}color:{EmTxt};font-size:14px;\">");
+        if (headerHtml != null) sb.Append(headerHtml);
         // ---- 1. CB Front Meeting Market Pricing ----
         if (rep.Fronts.Count > 0)
         {
@@ -231,10 +234,11 @@ namespace RateDesk.Core
         return sb.ToString();
     }
 
-    public static string PlainText(WeeklyReport rep, string? footerText = null)
+    public static string PlainText(WeeklyReport rep, string? footerText = null, string? headerText = null)
     {
         var inv = System.Globalization.CultureInfo.InvariantCulture;
         var sb = new StringBuilder();
+        if (headerText != null) sb.AppendLine(headerText);
         if (rep.Fronts.Count > 0)
         {
             sb.AppendLine();

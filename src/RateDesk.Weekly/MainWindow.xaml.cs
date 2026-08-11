@@ -6,6 +6,7 @@ using RateDesk.Core;
 using RateDesk.Core.Market;
 using RateDesk.Weekly.Core;
 using RateDesk.Weekly.Core.Render;
+using RateDesk.Weekly.Core.Series;
 
 namespace RateDesk.Weekly
 {
@@ -101,6 +102,17 @@ namespace RateDesk.Weekly
                 }
                 catch (Exception ex) { log($"! {cfg.Ccy}: {ex.Message}"); }
             }
+            // the hub last, so it ranks off the same store state the pages were drawn from;
+            // movers.json is what feeds the email's teaser strip
+            try
+            {
+                var mv = MoverScan.Scan(configs, svc.SourceFor, store, asOf);
+                File.WriteAllText(Path.Combine(OutDir, "index.html"), MoversPage.Build(mv));
+                File.WriteAllText(Path.Combine(OutDir, "movers.json"), MoverScan.ToJson(mv));
+                n++;
+                log($"movers hub: {mv.DmRanked.Count} DM / {mv.EmRanked.Count} EM instruments ranked");
+            }
+            catch (Exception ex) { log("! movers page failed: " + ex.Message); }
             log($"rendered {n} page(s) as of {asOf:yyyy-MM-dd}");
             return n;
         }

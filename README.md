@@ -5,8 +5,9 @@ dashboards, one project (consolidated out of dodgeball 2026-08-11). One click:
 
 1. pulls Bloomberg (terminal on localhost:8194),
 2. maintains a local daily-close history (`%APPDATA%\RatesWeekly\history.db`),
-3. regenerates the weekly dashboards — a Movers Summary hub plus one page per currency (28) —
-   and uploads them to the static site (stable public links, no sign-in),
+3. regenerates the weekly dashboards — the Movers Summary hub (`index.html`, top outsized movers
+   for DM and EM, |z|-ranked) plus one page per currency (28) — and uploads them to the static
+   site (stable public links, no sign-in),
 4. builds the desk email (CB front table, meeting cards, forward grid) and persists it to
    `%APPDATA%\RatesWeekly\out\` — COPY EMAIL pastes it into Outlook, currency headers linking to
    the dashboards when `publish.json` carries a `siteBase`.
