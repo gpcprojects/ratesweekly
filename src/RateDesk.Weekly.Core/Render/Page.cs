@@ -17,36 +17,41 @@ namespace RateDesk.Weekly.Core.Render
         };
 
         /// <summary>DM occupies the first row on its own; EM, LATAM and ASIA EM share the second
-        /// (desk layout, 2026-08-05).</summary>
-        public static string Nav(string current)
+        /// (desk layout, 2026-08-05). <paramref name="href"/> resolves a target ("movers" or a
+        /// ccy) to a link — file-per-page by default; the single-file edition passes hash
+        /// anchors so its router can switch sections in place.</summary>
+        public static string Nav(string current, Func<string, string>? href = null)
         {
+            href ??= c => c.Equals("movers", StringComparison.OrdinalIgnoreCase)
+                ? "index.html" : c.ToLowerInvariant() + ".html";
             var sb = new StringBuilder("<nav class=\"rw-nav\">");
 
             sb.Append("<div class=\"rw-navrow\"><a class=\"rw-hub");
             sb.Append(current.Equals("movers", StringComparison.OrdinalIgnoreCase) ? " on" : "");
-            sb.Append("\" href=\"index.html\">◆ Movers</a>");
-            sb.Append(GroupHtml(Groups[0], current));
+            sb.Append($"\" href=\"{href("movers")}\">◆ Movers</a>");
+            sb.Append(GroupHtml(Groups[0], current, href));
             sb.Append("</div>");
 
             sb.Append("<div class=\"rw-navrow\">");
-            for (int g = 1; g < Groups.Length; g++) sb.Append(GroupHtml(Groups[g], current));
+            for (int g = 1; g < Groups.Length; g++) sb.Append(GroupHtml(Groups[g], current, href));
             sb.Append("</div>");
 
             return sb.Append("</nav>").ToString();
         }
 
-        private static string GroupHtml(string[] g, string current)
+        private static string GroupHtml(string[] g, string current, Func<string, string> href)
         {
             var sb = new StringBuilder($"<span class=\"rw-grp\"><b>{Viz.Esc(g[0])}</b>");
             for (int i = 1; i < g.Length; i++)
             {
                 bool on = g[i].Equals(current, StringComparison.OrdinalIgnoreCase);
-                sb.Append($"<a class=\"rw-cc{(on ? " on" : "")}\" href=\"{g[i].ToLowerInvariant()}.html\">{g[i]}</a>");
+                sb.Append($"<a class=\"rw-cc{(on ? " on" : "")}\" href=\"{href(g[i])}\">{g[i]}</a>");
             }
             return sb.Append("</span>").ToString();
         }
 
-        public static string Shell(string title, string current, string heading, string body)
+        public static string Shell(string title, string current, string heading, string body,
+            Func<string, string>? navHref = null, bool wrapPanels = true)
         {
             // Token replacement, not interpolation: the CSS and JS below are full of braces, which
             // fight every raw-string interpolation form.
@@ -54,8 +59,9 @@ namespace RateDesk.Weekly.Core.Render
                 .Replace("%%TITLE%%", Viz.Esc(title))
                 .Replace("%%THEMECSS%%", Viz.ThemeCss)
                 .Replace("%%HEADING%%", Viz.Esc(heading))
-                .Replace("%%NAV%%", Nav(current))
-                .Replace("%%BODY%%", body);
+                .Replace("%%NAV%%", Nav(current, navHref))
+                // the single-file edition carries several rw-panels grids of its own, one per page
+                .Replace("%%BODY%%", wrapPanels ? $"<div class=\"rw-panels\">{body}</div>" : body);
         }
 
         private const string Template = """
@@ -182,7 +188,7 @@ namespace RateDesk.Weekly.Core.Render
                   <button class="rw-toggle" id="rwTheme" type="button">◑ theme</button>
                 </header>
                 %%NAV%%
-                <div class="rw-panels">%%BODY%%</div>
+                %%BODY%%
                 </div>
                 <script>
                 (function(){

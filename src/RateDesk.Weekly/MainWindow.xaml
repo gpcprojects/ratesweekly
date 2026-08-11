@@ -21,6 +21,9 @@
             <Button x:Name="UpdateBtn" Content="UPDATE" Click="Update_Click"
                     Width="120" Height="34" FontWeight="Bold"
                     Background="#1f6feb" Foreground="White" BorderThickness="0"/>
+            <Button x:Name="CreateEmailBtn" Content="CREATE EMAIL" Click="CreateEmail_Click"
+                    Width="120" Height="34" Margin="8,0,0,0"
+                    Background="#2a3038" Foreground="#e8ecf2" BorderThickness="0"/>
             <Button x:Name="CopyEmailBtn" Content="COPY EMAIL" Click="CopyEmail_Click"
                     Width="120" Height="34" Margin="8,0,0,0"
                     Background="#2a3038" Foreground="#e8ecf2" BorderThickness="0"/>

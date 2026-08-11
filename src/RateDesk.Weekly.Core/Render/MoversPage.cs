@@ -12,7 +12,15 @@ namespace RateDesk.Weekly.Core.Render
     public static class MoversPage
     {
         public static string Build(MoversResult mv)
+            => Page.Shell("DRAX Swaps — Weekly Rates Analysis — Movers", "movers",
+                "DRAX Swaps - Weekly Rates Analysis - Movers", Body(mv));
+
+        /// <summary>The hub's panels without the shell. <paramref name="href"/> resolves an
+        /// instrument's link target — its currency page file by default; hash anchors in the
+        /// single-file edition.</summary>
+        public static string Body(MoversResult mv, Func<Mover, string>? href = null)
         {
+            href ??= m => m.PageFile;
             var body = new StringBuilder();
 
             // context panel: what week this is, what the ranking means, what the market did
@@ -23,9 +31,9 @@ namespace RateDesk.Weekly.Core.Render
             foreach (var n in mv.Notes) body.Append($"<p>{Viz.Esc(n)}</p>");
             body.Append("</div></section>");
 
-            body.Append(Section("DM — outsized movers on the week", mv.DmHeroes, mv.DmRanked));
+            body.Append(Section("DM — outsized movers on the week", mv.DmHeroes, mv.DmRanked, href));
             body.Append(Section("EM — outsized movers on the week (EM · LATAM · ASIA EM)",
-                mv.EmHeroes, mv.EmRanked));
+                mv.EmHeroes, mv.EmRanked, href));
 
             // the dodgeball reintegration target, honest about why it is dark
             body.Append("<section class=\"rw-panel rw-wide\"><header class=\"rw-panel-head\">")
@@ -36,11 +44,11 @@ namespace RateDesk.Weekly.Core.Render
                     "itself in as the store deepens — no code change."))
                 .Append("</div></section>");
 
-            return Page.Shell("DRAX Swaps — Weekly Rates Analysis — Movers", "movers",
-                "DRAX Swaps - Weekly Rates Analysis - Movers", body.ToString());
+            return body.ToString();
         }
 
-        private static string Section(string title, List<Mover> heroes, List<Mover> ranked)
+        private static string Section(string title, List<Mover> heroes, List<Mover> ranked,
+            Func<Mover, string> href)
         {
             var sb = new StringBuilder();
             sb.Append($"<section class=\"rw-panel rw-wide\"><header class=\"rw-panel-head\"><h3>{Viz.Esc(title)}</h3></header>");
@@ -52,7 +60,7 @@ namespace RateDesk.Weekly.Core.Render
             }
 
             sb.Append("<div class=\"rw-heroes\">");
-            foreach (var m in heroes) sb.Append(Hero(m));
+            foreach (var m in heroes) sb.Append(Hero(m, href));
             sb.Append("</div>");
 
             var heroSet = new HashSet<Mover>(heroes);
@@ -69,7 +77,7 @@ namespace RateDesk.Weekly.Core.Render
                     rank++;
                     sb.Append("<tr>")
                       .Append($"<td class=\"l\">{rank}</td>")
-                      .Append($"<td class=\"l\"><a href=\"{m.PageFile}\">{Viz.Esc(m.Label)}</a></td>")
+                      .Append($"<td class=\"l\"><a href=\"{href(m)}\">{Viz.Esc(m.Label)}</a></td>")
                       .Append($"<td class=\"l\"><span class=\"rw-kind\">{Viz.Esc(m.Kind)}</span></td>")
                       .Append($"<td>{Viz.Esc(m.LevelText)}</td>")
                       .Append(Bp(m.W1Bp))
@@ -87,12 +95,12 @@ namespace RateDesk.Weekly.Core.Render
             return sb.ToString();
         }
 
-        private static string Hero(Mover m)
+        private static string Hero(Mover m, Func<Mover, string> href)
         {
             var sb = new StringBuilder();
             sb.Append("<div class=\"rw-hero\">");
             sb.Append("<div class=\"rw-hero-top\">")
-              .Append($"<a class=\"rw-hero-name\" href=\"{m.PageFile}\">{Viz.Esc(m.Label)}</a>")
+              .Append($"<a class=\"rw-hero-name\" href=\"{href(m)}\">{Viz.Esc(m.Label)}</a>")
               .Append($"<span class=\"rw-kind\">{Viz.Esc(m.Kind)}</span></div>");
 
             string cls = m.W1Bp > 0 ? "rw-upbp" : m.W1Bp < 0 ? "rw-downbp" : "rw-flatbp";

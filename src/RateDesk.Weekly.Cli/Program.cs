@@ -120,8 +120,12 @@ switch (cmd)
                 Console.WriteLine($"  MOVERS {new FileInfo(idx).Length / 1024.0,5:F0} KB  {idx}  " +
                                   $"({mv.DmRanked.Count} DM / {mv.EmRanked.Count} EM ranked)");
                 n++;
+                var pack = Path.Combine(outDir, RateDesk.Weekly.Core.Render.SiteFile.FileName);
+                File.WriteAllText(pack,
+                    RateDesk.Weekly.Core.Render.SiteFile.Build(configs, svc.SourceFor, store, asOf, mv));
+                Console.WriteLine($"  PACK   {new FileInfo(pack).Length / 1024.0,5:F0} KB  {pack}");
             }
-            catch (Exception ex) { Console.Error.WriteLine("  ! movers: " + ex.Message); }
+            catch (Exception ex) { Console.Error.WriteLine("  ! movers/pack: " + ex.Message); }
         }
         Console.WriteLine($"rendered {n} page(s) as of {asOf:yyyy-MM-dd} into {outDir}");
         return 0;

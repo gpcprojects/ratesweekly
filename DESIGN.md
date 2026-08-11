@@ -173,6 +173,19 @@ CB front table) hyperlink when publish.json `siteBase` is set, footer carries "d
 {stamp} · {site} · source: Bloomberg". NOT yet: the movers top strip + teaser (needs the movers
 page), and the real-Outlook paste test above.
 
+REVISED 2026-08-11 (v0.4.0, desk direction): **all-localised delivery** — no external links
+required. (1) Forward grid = THREE one-line tables (DM / EM · LATAM / ASIA EM), every currency of
+the line side by side; ONE spacing unit everywhere = the CB cards' 26px: spacer columns between
+currency groups, air between the grid lines, and vertical air between the meeting cards. (2) The
+meeting cards' Priced column wears the heat ramp (hike = green, cut = red, <2bp unfilled). (3) The
+MOVERS TEASER STRIP was REMOVED from the email (desk call) — movers live in the attachment.
+(4) Delivery = **CREATE EMAIL**: one click opens a ready Outlook draft (COM) with the body plus
+`RatesWeekly_Dashboards.html` attached — the WHOLE site (movers hub + 28 pages, hash-routed tabs)
+in one ~1.2MB self-contained file that opens offline in any browser. ⚠ acceptance test: first send
+to an external recipient (some gateways quarantine .html attachments; PDF pack is the fallback if
+one bites). The Azure static site (§0 hosting) remains the roadmap for stable public links;
+`siteBase` links stay wired and light up whenever it exists.
+
 ## 5. Movers Summary page
 
 Headline strip: the biggest mover in each of six categories, then a top-10 table per category.

@@ -81,12 +81,13 @@ namespace RateDesk.Core
     public sealed partial class PricingService
     {
         /// <summary>The weekly email's currency universe — the desk's grouping, fixed by spec.
-        /// A currency with no config (or disabled) drops out with a note rather than a crash.</summary>
+        /// A currency with no config (or disabled) drops out with a note rather than a crash.
+        /// RATESWEEKLY DIVERGENCE (desk spec 2026-08-11): THREE grid lines — DM on one, EM and
+        /// LATAM merged on one, ASIA EM on one — each rendered as a single full-width table.</summary>
         private static readonly (string title, string[] ccys)[] WeeklyGroups =
         {
             ("DM", new[] { "USD", "EUR", "GBP", "JPY", "CAD", "SEK", "NOK", "DKK", "CHF", "AUD", "NZD" }),
-            ("EM", new[] { "HUF", "CZK", "PLN", "ZAR", "ILS" }),
-            ("LATAM", new[] { "COP", "CLP", "MXN", "BRL" }),
+            ("EM · LATAM", new[] { "HUF", "CZK", "PLN", "ZAR", "ILS", "COP", "CLP", "MXN", "BRL" }),
             ("ASIA EM", new[] { "TWD", "THB", "MYR", "INR", "CNY", "HKD", "SGD", "KRW" }),
         };
 

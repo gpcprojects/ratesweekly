@@ -24,7 +24,7 @@ namespace RateDesk.Core
     /// <summary>Email heat fill, monitor convention: GREEN = higher yield, RED = lower.
     /// Empty (no fill) under 2bp — colour marks movers; ramp 2→10bp; opaque pastels of the
     /// monitor's own colours so black text stays legible.</summary>
-    internal static string? HeatHex(double bp)
+    public static string? HeatHex(double bp)
     {
         if (Math.Abs(bp) < 2.0) return null;
         double t = 0.16 + 0.44 * Math.Min(1.0, (Math.Abs(bp) - 2.0) / 8.0);
@@ -140,9 +140,10 @@ namespace RateDesk.Core
                 if (k > 0) sb.Append(Gap());
                 if (i + k >= runs.Count) { sb.Append("<td style=\"border:none;\">&nbsp;</td>"); continue; }
                 var run = runs[i + k];
-                // ~0.5cm of air below each card row (user spec) — padding, because Word honours
-                // cell padding where it drops table margins
-                sb.Append("<td style=\"vertical-align:top;padding:0 0 19px 0;\">");
+                // air below each card row matches the 26px column spacers (desk spec 2026-08-11:
+                // vertical gaps between currencies = the horizontal ones) — padding, because Word
+                // honours cell padding where it drops table margins
+                sb.Append("<td style=\"vertical-align:top;padding:0 0 26px 0;\">");
                 sb.Append($"<div style=\"{EmFont}font-weight:bold;font-size:12.5px;color:{EmTxt};margin:0 0 3px 1px;\">{run.Title}" +
                           (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">ref {rp:0.000}</span>" : "")
                           + "</div>");
@@ -156,10 +157,16 @@ namespace RateDesk.Core
                 foreach (var m in run.Rows)
                 {
                     string rb = RowBg(mr++);
+                    // Priced wears the heat convention (desk spec 2026-08-11): more hike = deeper
+                    // green, more cut = deeper red, quiet (<2bp) stays muted text
+                    string pcell = m.PricedBp is double p
+                        ? Td(p.ToString("+0.0;-0.0"), "text-align:right;" +
+                            (HeatHex(p) is string ph ? $"background:{ph};" : $"color:{EmMut};{rb}"))
+                        : Td("&nbsp;", rb);
                     sb.Append("<tr>" +
                         Td(Inv(m.Date), rb) +
                         Td($"<b>{m.MidPct:0.000}</b>", $"text-align:right;{rb}") +
-                        Td(m.PricedBp is double p ? p.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
+                        pcell +
                         Td(m.StepBp is double st ? st.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
                         ChgTd(m.W1Bp, false, false, mr - 1) + ChgTd(m.M1Bp, false, false, mr - 1) + "</tr>");
                 }
@@ -169,64 +176,75 @@ namespace RateDesk.Core
         }
 
         // ---- 3. Forward Rates Summary ----
-        // one block per <=6 currencies, and each block stops at its own last populated row: an EM
-        // block capped at 7y3y must not print four empty rows to prove it
+        // RATESWEEKLY DIVERGENCE (desk spec 2026-08-11): one table per grid LINE — DM, EM · LATAM,
+        // ASIA EM — every currency of the line side by side, a 26px spacer column between currency
+        // groups and 26px of air between the lines (the CB cards' own spacing unit). Each line
+        // still stops at its own last populated row: a capped line must not print empty rows.
         sb.Append(Sp(6));
         sb.Append(H2("Forward Rates Summary"));
         foreach (var sec in rep.Sections)
         {
-            for (int off = 0; off < sec.Ccys.Count; off += WeeklyCcysPerBlock)
+            var group = sec.Ccys;
+            if (group.Count == 0) continue;
+            var labels = group[0].Cells.Select(cl => cl.Label).ToList();
+            int lastRow = -1;
+            for (int rI = 0; rI < labels.Count; rI++)
+                if (group.Any(c => rI < c.Cells.Count && c.Cells[rI].Mid != null)) lastRow = rI;
+            if (lastRow < 0) continue;
+
+            var widths = new List<int> { 62 };
+            for (int gI = 0; gI < group.Count; gI++)
             {
-                var group = sec.Ccys.Skip(off).Take(WeeklyCcysPerBlock).ToList();
-                var labels = sec.Ccys[0].Cells.Select(cl => cl.Label).ToList();
-                int lastRow = -1;
-                for (int rI = 0; rI < labels.Count; rI++)
-                    if (group.Any(c => rI < c.Cells.Count && c.Cells[rI].Mid != null)) lastRow = rI;
-                if (lastRow < 0) continue;
-
-                var widths = new List<int> { 62 };
-                foreach (var _ in group) { widths.Add(62); widths.Add(50); widths.Add(50); }
-                sb.Append(TableOpen(widths, "0 0 14px 0"));
-
-                string label = off == 0 ? sec.Title : sec.Title + " (cont.)";
-                sb.Append("<tr>")
-                  .Append(Td($"<b>{label}</b>", $"background:{EmHead};font-size:12px;color:{EmTxt};"));
-                foreach (var c in group)
-                    sb.Append($"<td colspan=\"3\" style=\"{EmFont}padding:3px 8px;font-size:12px;" +
-                              $"background:{EmHead};text-align:center;font-weight:bold;{Sep()}\">{CcyLabel(c.Ccy)}</td>");
-                sb.Append("</tr>");
-
-                sb.Append("<tr>").Append(Td("&nbsp;", $"background:{EmHead};border-bottom:2px solid {EmAccent};"));
-                foreach (var _ in group)
-                {
-                    string h = $"background:{EmHead};text-align:center;color:{EmMut};font-size:9.5px;" +
-                               $"border-bottom:2px solid {EmAccent};";
-                    sb.Append(Td("mid", h)).Append(Td("1w", h)).Append(Td("1m", h + Sep()));
-                }
-                sb.Append("</tr>");
-
-                for (int rI = 0; rI <= lastRow; rI++)
-                {
-                    bool tl = rI is 1 or 5; // spot | 1y-window forwards | longer windows
-                    string tls = tl ? $"border-top:1px solid {EmLine};" : "";
-                    sb.Append("<tr>").Append(Td($"<b>{labels[rI]}</b>",
-                        $"background:{EmHead};{tls}{Sep()}"));
-                    foreach (var c in group)
-                    {
-                        var cell = rI < c.Cells.Count ? c.Cells[rI] : null;
-                        if (cell?.Mid is not double mid)
-                        {
-                            sb.Append(Td("&nbsp;", tls + RowBg(rI)))
-                              .Append(ChgTd(null, tl, false, rI)).Append(ChgTd(null, tl, true, rI));
-                            continue;
-                        }
-                        sb.Append(Td($"<b>{mid:0.000}</b>", $"text-align:right;{tls}{RowBg(rI)}"));
-                        sb.Append(ChgTd(cell.W1Bp, tl, false, rI)).Append(ChgTd(cell.M1Bp, tl, true, rI));
-                    }
-                    sb.Append("</tr>");
-                }
-                sb.Append("</table>");
+                widths.Add(62); widths.Add(50); widths.Add(50);
+                if (gI < group.Count - 1) widths.Add(26);
             }
+            sb.Append(TableOpen(widths, "0 0 26px 0"));
+
+            sb.Append("<tr>")
+              .Append(Td($"<b>{sec.Title}</b>", $"background:{EmHead};font-size:12px;color:{EmTxt};"));
+            for (int gI = 0; gI < group.Count; gI++)
+            {
+                sb.Append($"<td colspan=\"3\" style=\"{EmFont}padding:3px 8px;font-size:12px;" +
+                          $"background:{EmHead};text-align:center;font-weight:bold;\">{CcyLabel(group[gI].Ccy)}</td>");
+                if (gI < group.Count - 1) sb.Append(Gap());
+            }
+            sb.Append("</tr>");
+
+            sb.Append("<tr>").Append(Td("&nbsp;", $"background:{EmHead};border-bottom:2px solid {EmAccent};"));
+            for (int gI = 0; gI < group.Count; gI++)
+            {
+                string h = $"background:{EmHead};text-align:center;color:{EmMut};font-size:9.5px;" +
+                           $"border-bottom:2px solid {EmAccent};";
+                sb.Append(Td("mid", h)).Append(Td("1w", h)).Append(Td("1m", h));
+                if (gI < group.Count - 1) sb.Append(Gap());
+            }
+            sb.Append("</tr>");
+
+            for (int rI = 0; rI <= lastRow; rI++)
+            {
+                bool tl = rI is 1 or 5; // spot | 1y-window forwards | longer windows
+                string tls = tl ? $"border-top:1px solid {EmLine};" : "";
+                sb.Append("<tr>").Append(Td($"<b>{labels[rI]}</b>",
+                    $"background:{EmHead};{tls}{Sep()}"));
+                for (int gI = 0; gI < group.Count; gI++)
+                {
+                    var c = group[gI];
+                    var cell = rI < c.Cells.Count ? c.Cells[rI] : null;
+                    if (cell?.Mid is not double mid)
+                    {
+                        sb.Append(Td("&nbsp;", tls + RowBg(rI)))
+                          .Append(ChgTd(null, tl, false, rI)).Append(ChgTd(null, tl, false, rI));
+                    }
+                    else
+                    {
+                        sb.Append(Td($"<b>{mid:0.000}</b>", $"text-align:right;{tls}{RowBg(rI)}"));
+                        sb.Append(ChgTd(cell.W1Bp, tl, false, rI)).Append(ChgTd(cell.M1Bp, tl, false, rI));
+                    }
+                    if (gI < group.Count - 1) sb.Append(Gap());
+                }
+                sb.Append("</tr>");
+            }
+            sb.Append("</table>");
         }
 
         if (footerHtml != null) sb.Append(footerHtml);
