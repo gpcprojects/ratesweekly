@@ -24,6 +24,12 @@ namespace RateDesk.Weekly
             VersionText.Text = "v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?");
             Directory.CreateDirectory(AppDataDir);
             Directory.CreateDirectory(OutDir);
+            // one line per button; the first UPDATE clears these and takes the box over
+            LogBox.Text =
+                "UPDATE — pulls Bloomberg, brings the history current, redraws every dashboard and builds the desk email.\r\n" +
+                "CREATE EMAIL — opens a ready Outlook draft: body filled in, dashboards file attached.\r\n" +
+                "COPY EMAIL — copies the built email to the clipboard, for pasting into an existing draft.\r\n" +
+                "OPEN OUTPUT — opens the dashboards in your browser.\r\n";
         }
 
         private void Log(string s) => Dispatcher.Invoke(() =>
@@ -37,6 +43,7 @@ namespace RateDesk.Weekly
             if (_updating) return;
             _updating = true;
             UpdateBtn.IsEnabled = false;
+            LogBox.Clear();   // the startup instructions give way to the run log
             StatusText.Text = "updating...";
             try
             {

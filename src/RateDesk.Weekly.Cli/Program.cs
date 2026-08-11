@@ -27,7 +27,7 @@ switch (cmd)
 {
     case "update":
     {
-        Console.WriteLine($"RATESWEEKLY — history update  ({DateTime.Now:yyyy-MM-dd HH:mm:ss})");
+        Console.WriteLine($"RatesWeekly — history update  ({DateTime.Now:yyyy-MM-dd HH:mm:ss})");
         Console.WriteLine($"store: {dbPath}");
         using var store = new HistoryStore(dbPath);
         try
@@ -162,6 +162,6 @@ switch (cmd)
     }
 
     default:
-        Console.WriteLine("RATESWEEKLY CLI — usage: update [--db <path>] | status [--db <path>] | render [ccy] [--out <dir>] | email [--out <dir>]");
+        Console.WriteLine("RatesWeekly CLI — usage: update [--db <path>] | status [--db <path>] | render [ccy] [--out <dir>] | email [--out <dir>]");
         return cmd == "help" ? 0 : 1;
 }
