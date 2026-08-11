@@ -43,6 +43,13 @@
         "2028-11-01",
         "2028-12-13"
       ],
+      // decision ANNOUNCEMENT dates where they differ from the swap-period grid above
+      // (hand-curated from the official calendars; the weekly front table reads these).
+      "decisionDates": [
+        "2026-09-16",
+        "2026-10-28",
+        "2026-12-09"
+      ],
       "decisionTimeLondon": "19:00",
       "pastDates": [
         "2025-07-30",
@@ -69,12 +76,17 @@
         "2026-12-23",
         "2027-02-10",
         "2027-03-24",
-        "2027-05-05",
+        "2027-05-06",
         "2027-06-16",
         "2027-07-28",
         "2027-09-15",
-        "2027-10-27",
-        "2027-12-08"
+        "2027-11-03",
+        "2027-12-22"
+      ],
+      // decision ANNOUNCEMENT dates where they differ from the swap-period grid above
+      // (hand-curated from the official calendars; the weekly front table reads these).
+      "decisionDates": [
+        "2026-09-10"
       ],
       "decisionTimeLondon": "13:15",
       "pastDates": [
@@ -109,6 +121,13 @@
         "2027-11-04",
         "2027-12-16"
       ],
+      // decision ANNOUNCEMENT dates where they differ from the swap-period grid above
+      // (hand-curated from the official calendars; the weekly front table reads these).
+      "decisionDates": [
+        "2026-09-17",
+        "2026-11-05",
+        "2026-12-17"
+      ],
       "decisionTimeLondon": "12:00",
       "pastDates": [
         "2025-08-07",
@@ -124,8 +143,10 @@
     {
       "name": "BOC",
       "ccy": "CAD",
-      "header": "{CA} Indic BOC Run",
+      // NAB/BMO quote these MEETING families two-sided and live (verified 2026-08-06);
+      // they do NOT quote the swap-curve families, so this is meeting-only by nature.
       "source": "BMOD",
+      "header": "{CA} Indic BOC Run",
       "tickers": [
         "CDSF{N}A"
       ],
@@ -135,13 +156,18 @@
         "2026-10-29",
         "2026-12-10",
         "2027-01-28",
-        "2027-03-11",
-        "2027-04-22",
+        "2027-03-04",
+        "2027-04-29",
         "2027-06-03",
-        "2027-07-15",
-        "2027-09-02",
+        "2027-07-22",
+        "2027-09-09",
         "2027-10-28",
         "2027-12-09"
+      ],
+      // decision ANNOUNCEMENT dates where they differ from the swap-period grid above
+      // (hand-curated from the official calendars; the weekly front table reads these).
+      "decisionDates": [
+        "2026-09-02"
       ],
       "decisionTimeLondon": "14:45",
       "pastDates": [
@@ -158,8 +184,10 @@
     {
       "name": "RBA",
       "ccy": "AUD",
-      "header": "{AU} Indic RBA Run",
+      // NAB/BMO quote these MEETING families two-sided and live (verified 2026-08-06);
+      // they do NOT quote the swap-curve families, so this is meeting-only by nature.
       "source": "NABZ",
+      "header": "{AU} Indic RBA Run",
       "tickers": [
         "ADSF{N}A"
       ],
@@ -175,7 +203,12 @@
         "2027-08-11",
         "2027-09-29",
         "2027-11-03",
-        "2027-12-08"
+        "2027-12-15"
+      ],
+      // decision ANNOUNCEMENT dates where they differ from the swap-period grid above
+      // (hand-curated from the official calendars; the weekly front table reads these).
+      "decisionDates": [
+        "2026-08-11"
       ],
       "decisionTimeLondon": "05:30",
       "pastDates": [
@@ -192,8 +225,10 @@
     {
       "name": "RBNZ",
       "ccy": "NZD",
-      "header": "{NZ} Indic RBNZ Run",
+      // NAB/BMO quote these MEETING families two-sided and live (verified 2026-08-06);
+      // they do NOT quote the swap-curve families, so this is meeting-only by nature.
       "source": "NABZ",
+      "header": "{NZ} Indic RBNZ Run",
       "tickers": [
         "NDSF{N}A"
       ],
@@ -208,7 +243,13 @@
         "2027-08-05",
         "2027-09-16",
         "2027-10-28",
-        "2027-12-09"
+        "2027-12-09",
+        "2028-02-10"
+      ],
+      // decision ANNOUNCEMENT dates where they differ from the swap-period grid above
+      // (hand-curated from the official calendars; the weekly front table reads these).
+      "decisionDates": [
+        "2026-09-02"
       ],
       "decisionTimeLondon": "03:00",
       "pastDates": [
@@ -233,7 +274,7 @@
         "2026-09-25",
         "2026-12-11",
         "2027-03-19",
-        "2027-06-18",
+        "2027-06-25",
         "2027-09-24",
         "2027-12-17",
         "2028-03-24",
@@ -257,19 +298,41 @@
         "JYSOMPM{N}",
         "JYOMPM{N}"
       ],
+      // BOJ is the ONE family whose periods are not contiguous: a period STARTS at the settlement
+      // date after the decision, not on it, so these are 1-3 days later than the decisionDates
+      // below (30-Oct-26 decision -> 02-Nov-26 start). Read from each rung's own SW_EFF_DT on
+      // 2026-08-07 (JYSOMPM0..9); the last two are past the quoted family and follow the same rule,
+      // the next Tokyo business day after the official decision.
       "dates": [
-        "2026-08-03",
+        "2026-07-31",
         "2026-09-24",
         "2026-11-02",
         "2026-12-21",
         "2027-01-25",
-        "2027-03-22",
-        "2027-05-06",
-        "2027-06-21",
-        "2027-08-02",
-        "2027-09-27",
+        "2027-03-19",
+        "2027-04-30",
+        "2027-06-14",
+        "2027-07-23",
+        "2027-09-24",
         "2027-11-01",
         "2027-12-20"
+      ],
+      // decision ANNOUNCEMENT dates where they differ from the swap-period grid above
+      // (hand-curated from the official calendars; the weekly front table reads these).
+      // BOJ: every scheduled MPM statement release for 2026-2027, from the Bank's own published
+      // calendar. These are also exactly the JYSOMPM maturities, which is the cross-check.
+      "decisionDates": [
+        "2026-09-18",
+        "2026-10-30",
+        "2026-12-18",
+        "2027-01-22",
+        "2027-03-18",
+        "2027-04-28",
+        "2027-06-11",
+        "2027-07-22",
+        "2027-09-22",
+        "2027-10-29",
+        "2027-12-17"
       ],
       "decisionTimeLondon": "04:00",
       "pastDates": [
@@ -304,6 +367,13 @@
         "2027-11-10",
         "2027-12-22"
       ],
+      // announcement dates CONFIRMED from riksbank.se 2026-08-06 (Aug meeting 19th, decision
+      // published 20th, rate applies from the 26th; Sep meeting 23rd in Gothenburg, published
+      // 24th). Nov onward not yet published by the Riksbank - top up when they are.
+      "decisionDates": [
+        "2026-08-20",
+        "2026-09-24"
+      ],
       "decisionTimeLondon": "08:30",
       "pastDates": [
         "2025-08-20",
@@ -331,12 +401,17 @@
         "2026-12-18",
         "2027-01-22",
         "2027-03-19",
-        "2027-05-07",
+        "2027-05-06",
         "2027-06-18",
         "2027-08-13",
         "2027-09-24",
         "2027-11-05",
         "2027-12-17"
+      ],
+      // decision ANNOUNCEMENT dates where they differ from the swap-period grid above
+      // (hand-curated from the official calendars; the weekly front table reads these).
+      "decisionDates": [
+        "2026-08-13"
       ],
       "decisionTimeLondon": "09:00",
       "pastDates": [

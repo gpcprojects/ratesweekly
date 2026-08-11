@@ -29,6 +29,27 @@ namespace RateDesk.Core.Analytics
         public double? Percentile1y { get; init; }   // 0..100, rank of Last within 1y window
         public double? Range1yPct { get; init; }      // position in [min,max] as 0..100
 
+        /// <summary>The series' own most recent close, in series units. Kept so a consumer can test
+        /// the live level against the series it is about to be ranked in.</summary>
+        public double? LastClose { get; init; }
+        /// <summary>Report-unit scale this instance was computed with (100 for a %-level series, 1 for bp).</summary>
+        public double ChangeScale { get; init; } = 100.0;
+        /// <summary>Live level minus the series' last close, in REPORT units — one day's move when the
+        /// two are on the same basis, and the basis gap when they are not.</summary>
+        public double? BasisGap { get; init; }
+        /// <summary>Set when the live level and the history are NOT on the same basis, so every
+        /// statistic that ranks one against the other has been withheld. Null = stats are comparable.
+        ///
+        /// <para>This exists because the failure is silent and total: a −1/+2/−1 fly of IMM-dated legs
+        /// has no forward-ticker history, falls to the annuity-less par approximation, and (before the
+        /// combined-series anchor) sat ~5.4bp under our curve mid. Ranking a 10.55bp mid inside a
+        /// series that spent the year between 1.4 and 6.3 produced %ile 100, z 7.75/11.04 and an
+        /// AT RANGE of 186% — a position-in-range that cannot exceed 100 by construction. Every one
+        /// of those numbers was arithmetically correct and completely meaningless.</para></summary>
+        public string? SuppressReason { get; init; }
+        /// <summary>True when <see cref="SuppressReason"/> is set — level-comparison stats are null.</summary>
+        public bool Suppressed => SuppressReason != null;
+
         public double? ZScore3m { get; init; }
         public double? ZScore6m { get; init; }
         public double? ZScore1y { get; init; }
@@ -49,8 +70,14 @@ namespace RateDesk.Core.Analytics
         public static SeriesStats Empty(double last) => new() { Count = 0, Last = last };
 
         /// <summary>Compute from an ascending daily series of levels. changeScale converts a level
-        /// difference to the reported change unit: 100 for a %-level series (→ bp), 1 for a bp-level series.</summary>
-        public static SeriesStats Compute(IReadOnlyList<HistPoint> series, double? liveLast = null, double changeScale = 100.0)
+        /// difference to the reported change unit: 100 for a %-level series (→ bp), 1 for a bp-level series.
+        ///
+        /// <para><paramref name="basisRef"/> is the level the BASIS GUARD tests the history against —
+        /// pass the true curve mid when <paramref name="liveLast"/> is a hypothetical (MID O'RIDE),
+        /// so that entering a level outside the year's range re-scores the stats as intended instead
+        /// of being mistaken for a broken history. Defaults to <paramref name="liveLast"/>.</para></summary>
+        public static SeriesStats Compute(IReadOnlyList<HistPoint> series, double? liveLast = null,
+            double changeScale = 100.0, double? basisRef = null)
         {
             if (series == null || series.Count == 0)
                 return Empty(liveLast ?? double.NaN);
@@ -91,30 +118,86 @@ namespace RateDesk.Core.Analytics
             int ytdIdx = FirstIndexOnOrAfter(dates, jan1);
             if (ytdIdx >= 0) ytd = (last - vals[ytdIdx]) * changeScale;
 
+            double vol1y = RealizedVol(oneYear, changeScale) ?? double.NaN;
+            double lastClose = vals[^1];
+            double basis = basisRef ?? last;
+            double gap = (basis - lastClose) * changeScale;
+            // position-in-range of the BASIS level, which is what detector 1 has to judge: under a
+            // mid o'ride `last` is deliberately hypothetical and may sit anywhere.
+            double? basisRng = (min1y.HasValue && max1y.HasValue && max1y.Value > min1y.Value)
+                ? 100.0 * (basis - min1y.Value) / (max1y.Value - min1y.Value) : null;
+
+            // ---- BASIS GUARD ----------------------------------------------------------------
+            // Everything below the line ranks `last` (the LIVE level) inside `series` (the
+            // HISTORY). That is only meaningful when the two are the same quantity. When they are
+            // not, the arithmetic still succeeds and prints a confident, wrong number — so the
+            // check has to happen here, once, where the two meet, rather than in each window.
+            //
+            // Two independent detectors, both scale-free:
+            //  1. IMPOSSIBLE BY CONSTRUCTION — position-in-range outside [0,100]. `last` is not
+            //     merely at an extreme, it is outside the sample altogether. No legitimate input
+            //     produces this.
+            //  2. IMPLAUSIBLE AS A DAY'S MOVE — the live level sits more than 10 daily sigmas from
+            //     the series' own last close. One day cannot move a series ten times its own
+            //     typical day; a gap that size is a different basis, not a rally. The floor keeps
+            //     a genuinely quiet series (sigma -> 0) from tripping on rounding.
+            // Detector 2 catches what detector 1 cannot: a basis gap small enough to land inside a
+            // wide range still poisons every z-score, and nothing about the output looks wrong.
+            string? suppress = null;
+            if (basisRng is > 100.0 or < 0.0)
+                suppress = $"live level sits outside its own 1y range (position {basisRng:0}% of "
+                         + "min..max) — history and mid are not the same basis";
+            else if (!double.IsNaN(vol1y) && vol1y > 0)
+            {
+                double dailySigma = vol1y / Math.Sqrt(252.0);
+                double tol = Math.Max(2.0, 10.0 * dailySigma);   // report units are bp either way
+                if (Math.Abs(gap) > tol)
+                    suppress = $"live level is {gap:+0.0;-0.0} from the history's last close "
+                             + $"({Math.Abs(gap) / dailySigma:0} daily sigma) — history and mid are "
+                             + "not the same basis";
+            }
+            bool ok = suppress == null;
+
             return new SeriesStats
             {
                 Count = series.Count,
                 FirstDate = dates[0],
                 LastDate = lastDate,
                 Last = last,
-                Chg1d = ChgDaysAgo(1),
-                Chg1w = ChgDaysAgo(7),
-                Chg1m = ChgDaysAgo(31),
-                Chg3m = ChgDaysAgo(93),
-                Chg6m = ChgDaysAgo(186),
-                Chg1y = ChgDaysAgo(366),
-                ChgYtd = ytd,
-                Min1y = min1y,
-                Max1y = max1y,
-                Percentile1y = pct1y,
-                Range1yPct = rng,
-                Mean1y = m1y,
-                Std1yBp = s1y.HasValue ? s1y * changeScale : null,
-                ZScore1y = Z(m1y, s1y),
-                ZScore6m = Z(m6m, s6m),
-                ZScore3m = Z(m3m, s3m),
-                RealizedVol3mBp = RealizedVol(Window(series, lastDate.AddDays(-93)), changeScale),
-                RealizedVol1yBp = RealizedVol(Window(series, lastDate.AddDays(-366)), changeScale),
+                LastClose = lastClose,
+                ChangeScale = changeScale,
+                BasisGap = gap,
+                SuppressReason = suppress,
+                // Δ1d is history-derived here and just as cross-basis as the rest, so it goes too.
+                // Callers overwrite it with an exact prev-close reprice that needs no history — but
+                // that overwrite is conditional on the reprice succeeding, and when it doesn't, n/a
+                // is the honest answer rather than the offset wearing a one-day label.
+                Chg1d = ok ? ChgDaysAgo(1) : null,
+                Chg1w = ok ? ChgDaysAgo(7) : null,
+                Chg1m = ok ? ChgDaysAgo(31) : null,
+                Chg3m = ok ? ChgDaysAgo(93) : null,
+                Chg6m = ok ? ChgDaysAgo(186) : null,
+                Chg1y = ok ? ChgDaysAgo(366) : null,
+                ChgYtd = ok ? ytd : null,
+                // min/max are honest for the SERIES but are displayed beside the live mid, so a
+                // suppressed instance must not publish them either — a range the headline sits
+                // outside of reads as a range the headline sits inside.
+                Min1y = ok ? min1y : null,
+                Max1y = ok ? max1y : null,
+                Percentile1y = ok ? pct1y : null,
+                // bounded unconditionally, not just when the basis guard is happy: a mid o'ride can
+                // legitimately enter a level above the year's high, and "position inside min..max"
+                // has no meaning outside [0,100] whatever put it there. Blank, never 186%.
+                Range1yPct = ok && rng is >= 0.0 and <= 100.0 ? rng : null,
+                Mean1y = ok ? m1y : null,
+                Std1yBp = ok && s1y.HasValue ? s1y * changeScale : null,
+                ZScore1y = ok ? Z(m1y, s1y) : null,
+                ZScore6m = ok ? Z(m6m, s6m) : null,
+                ZScore3m = ok ? Z(m3m, s3m) : null,
+                // shift-invariant: built from DIFFERENCES (vol) or an AR(1) slope (half-life), so a
+                // constant basis offset cannot touch them and they stay valid when suppressed.
+                RealizedVol3mBp = RealizedVol(threeM, changeScale),
+                RealizedVol1yBp = double.IsNaN(vol1y) ? null : vol1y,
                 HalfLifeDays = HalfLife(oneYear),
                 Ar1Phi = Ar1(oneYear),
             };

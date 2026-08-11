@@ -13,6 +13,13 @@ namespace RateDesk.Core.Market
         public double? PrevClose { get; set; }
         /// <summary>Instrument maturity (meeting-dated OIS: the NEXT meeting date).</summary>
         public DateTime? Maturity { get; set; }
+        /// <summary>Instrument effective date (SW_EFF_DT). For a meeting-dated OIS this is the START
+        /// of the period it quotes. Every family except BOJ starts one period exactly where the
+        /// previous one matured, so the two are interchangeable there — the BOJ's periods begin at
+        /// the settlement date a business day or more AFTER the decision its rate responds to
+        /// (2026-10-30 decision, 2026-11-02 start), which is why the start has to be read and not
+        /// inferred from the neighbour's maturity.</summary>
+        public DateTime? Effective { get; set; }
         public DateTime? UpdatedUtc { get; set; }
         /// <summary>Minutes since the QUOTE's own LAST_UPDATE as Bloomberg reports it — not since we
         /// received it. A frozen market keeps re-stamping, so our receive time says nothing about
@@ -65,6 +72,12 @@ namespace RateDesk.Core.Market
         {
             var q = _quotes.GetOrAdd(ticker, _ => new QuoteData());
             lock (q) q.Maturity = maturity;
+        }
+
+        public void SetEffective(string ticker, DateTime effective)
+        {
+            var q = _quotes.GetOrAdd(ticker, _ => new QuoteData());
+            lock (q) q.Effective = effective;
         }
 
         /// <summary>Age of the quote per Bloomberg's own LAST_UPDATE, in minutes.</summary>
