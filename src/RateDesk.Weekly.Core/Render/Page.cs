@@ -155,7 +155,9 @@ namespace RateDesk.Weekly.Core.Render
                 .rw-wide{grid-column:1/-1}
                 .rw-ctx{color:var(--rw-ink2);font-size:12.5px;line-height:1.55;margin-top:6px}
                 .rw-ctx p{margin:0 0 4px}
-                .rw-heroes{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px;margin:10px 0 14px}
+                /* hero cards stack vertically inside each section (desk layout 2026-08-11: DM and
+                   EM side by side, cards below each other on each side) */
+                .rw-heroes{display:grid;grid-template-columns:1fr;gap:12px;margin:10px 0 14px}
                 .rw-hero{background:var(--rw-plane);border:1px solid var(--rw-border);border-radius:10px;
                   padding:12px 14px;min-width:0}
                 .rw-hero-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
@@ -170,11 +172,11 @@ namespace RateDesk.Weekly.Core.Render
                 .rw-stat-row{display:flex;gap:18px;flex-wrap:wrap;margin-top:6px}
                 .rw-stat b{display:block;font-size:13.5px;font-variant-numeric:tabular-nums}
                 .rw-stat span{font-size:9.5px;color:var(--rw-muted);text-transform:uppercase;letter-spacing:.04em}
-                table.rw-mv{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}
-                table.rw-mv th{text-align:right;font-weight:500;font-size:9.5px;letter-spacing:.03em;
-                  text-transform:uppercase;color:var(--rw-muted);padding:3px 8px;border-bottom:1px solid var(--rw-grid)}
+                table.rw-mv{border-collapse:collapse;width:100%;font-size:11px;white-space:nowrap}
+                table.rw-mv th{text-align:right;font-weight:500;font-size:9px;letter-spacing:.03em;
+                  text-transform:uppercase;color:var(--rw-muted);padding:2px 6px;border-bottom:1px solid var(--rw-grid)}
                 table.rw-mv th.l,table.rw-mv td.l{text-align:left}
-                table.rw-mv td{padding:3px 8px;text-align:right;font-variant-numeric:tabular-nums;
+                table.rw-mv td{padding:2px 6px;text-align:right;font-variant-numeric:tabular-nums;
                   border-bottom:1px solid var(--rw-grid)}
                 table.rw-mv a{color:var(--rw-ink);text-decoration:none;font-weight:600}
                 table.rw-mv a:hover{text-decoration:underline}

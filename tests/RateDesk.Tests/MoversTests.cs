@@ -213,8 +213,13 @@ namespace RateDesk.Tests
             Assert.Contains("EM — outsized movers", html);
             Assert.Contains("href=\"usd.html\"", html);
             Assert.Contains("href=\"mxn.html\"", html);
-            Assert.Contains("Beta-conditional flags", html);   // the honest pending panel
             Assert.Contains("<div class=\"rw-panels\">", html); // shell still wraps standalone pages
+            // the desk's no-blurb rule (2026-08-11): no week line, no methodology paragraph, no
+            // gate counts, no pending-feature panel — sections only
+            Assert.DoesNotContain("Week to", html);
+            Assert.DoesNotContain("Ranked by |z|", html);
+            Assert.DoesNotContain("excluded by the data gates", html);
+            Assert.DoesNotContain("Beta-conditional flags", html);
 
             var json = MoverScan.ToJson(mv);
             Assert.Contains("\"headline\"", json);

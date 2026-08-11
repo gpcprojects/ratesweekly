@@ -119,6 +119,9 @@ switch (cmd)
                     RateDesk.Weekly.Core.Series.MoverScan.ToJson(mv));
                 Console.WriteLine($"  MOVERS {new FileInfo(idx).Length / 1024.0,5:F0} KB  {idx}  " +
                                   $"({mv.DmRanked.Count} DM / {mv.EmRanked.Count} EM ranked)");
+                // the page itself carries NO blurb (desk rule) — the context lines land here
+                if (mv.G3Line is { } g3) Console.WriteLine("    " + g3);
+                foreach (var note in mv.Notes) Console.WriteLine("    " + note);
                 n++;
                 var pack = Path.Combine(outDir, RateDesk.Weekly.Core.Render.SiteFile.FileName);
                 File.WriteAllText(pack,

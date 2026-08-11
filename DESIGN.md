@@ -181,10 +181,14 @@ meeting cards' Priced column wears the heat ramp (hike = green, cut = red, <2bp 
 MOVERS TEASER STRIP was REMOVED from the email (desk call) — movers live in the attachment.
 (4) Delivery = **CREATE EMAIL**: one click opens a ready Outlook draft (COM) with the body plus
 `RatesWeekly_Dashboards.html` attached — the WHOLE site (movers hub + 28 pages, hash-routed tabs)
-in one ~1.2MB self-contained file that opens offline in any browser. ⚠ acceptance test: first send
+in one ~0.6MB self-contained file that opens offline in any browser. ⚠ acceptance test: first send
 to an external recipient (some gateways quarantine .html attachments; PDF pack is the fallback if
 one bites). The Azure static site (§0 hosting) remains the roadmap for stable public links;
-`siteBase` links stay wired and light up whenever it exists.
+`siteBase` links stay wired and light up whenever it exists. (5) The email FOOTER line
+("dashboards updated … · source: Bloomberg") is REMOVED permanently (desk 2026-08-11) — never
+re-add. (6) Movers page presentation (desk 2026-08-11): NO blurb of any kind (week line,
+methodology, gate counts, pending panels) — sections only, context to the CLI; DM and EM side by
+side, hero cards stacked per side, compact table.
 
 ## 5. Movers Summary page
 

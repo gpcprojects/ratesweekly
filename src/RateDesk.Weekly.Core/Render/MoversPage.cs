@@ -23,26 +23,14 @@ namespace RateDesk.Weekly.Core.Render
             href ??= m => m.PageFile;
             var body = new StringBuilder();
 
-            // context panel: what week this is, what the ranking means, what the market did
-            body.Append("<section class=\"rw-panel rw-wide\"><header class=\"rw-panel-head\">")
-                .Append($"<h3>Week to {mv.AsOf:ddd dd MMM yyyy}</h3></header><div class=\"rw-ctx\">");
-            if (mv.G3Line is { } g3) body.Append($"<p>{Viz.Esc(g3)}</p>");
-            body.Append($"<p>{Viz.Esc(mv.MethodNote)}</p>");
-            foreach (var n in mv.Notes) body.Append($"<p>{Viz.Esc(n)}</p>");
-            body.Append("</div></section>");
-
+            // NO blurb — desk rule 2026-08-11 (same discipline as dodgeball's weekly): no week
+            // line, no G3/method paragraph, no gate counts, no pending-feature panel. Operational
+            // notes go to the CLI; the methodology lives in DESIGN.md §5. Do not re-add any of it
+            // without the desk asking. The two sections are ordinary panels, so the shared
+            // auto-fit grid tiles DM and EM side by side on a widescreen and stacks them narrow.
             body.Append(Section("DM — outsized movers on the week", mv.DmHeroes, mv.DmRanked, href));
             body.Append(Section("EM — outsized movers on the week (EM · LATAM · ASIA EM)",
                 mv.EmHeroes, mv.EmRanked, href));
-
-            // the dodgeball reintegration target, honest about why it is dark
-            body.Append("<section class=\"rw-panel rw-wide\"><header class=\"rw-panel-head\">")
-                .Append("<h3>Beta-conditional flags</h3></header><div class=\"rw-pending\">")
-                .Append(Viz.Esc("Curve moves scored against each currency's own beta to its long leg, and " +
-                    "relative performance conditional on a common G3 move (the dodgeball \"things to flag\" " +
-                    "rules at weekly horizon) need ~6 months of history for the betas. This section fills " +
-                    "itself in as the store deepens — no code change."))
-                .Append("</div></section>");
 
             return body.ToString();
         }
@@ -51,7 +39,7 @@ namespace RateDesk.Weekly.Core.Render
             Func<Mover, string> href)
         {
             var sb = new StringBuilder();
-            sb.Append($"<section class=\"rw-panel rw-wide\"><header class=\"rw-panel-head\"><h3>{Viz.Esc(title)}</h3></header>");
+            sb.Append($"<section class=\"rw-panel\"><header class=\"rw-panel-head\"><h3>{Viz.Esc(title)}</h3></header>");
 
             if (ranked.Count == 0)
             {

@@ -97,23 +97,14 @@ namespace RateDesk.Weekly.Core
                 ? null
                 : ccy => $"{siteBase}/{ccy.ToLowerInvariant()}.html";
 
-            var inv = System.Globalization.CultureInfo.InvariantCulture;
-            string stamp = rep.AsOf.ToString("dd-MMM-yy HH:mm", inv);
-            string footerHtml =
-                $"<div style=\"{WeeklyEmail.EmFont}font-size:10px;color:{WeeklyEmail.EmMut};margin:2px 0 0 2px;\">" +
-                (siteBase != null
-                    ? $"dashboards updated {stamp} · <a href=\"{siteBase}/\" style=\"color:{WeeklyEmail.EmMut};\">{siteBase}/</a> · "
-                    : $"dashboards updated {stamp} · ") +
-                "source: Bloomberg</div>";
-            string footerText = siteBase != null
-                ? $"dashboards updated {stamp} · {siteBase}/ · source: Bloomberg"
-                : $"dashboards updated {stamp} · source: Bloomberg";
+            // NO footer ("dashboards updated … · source: Bloomberg") — removed permanently on
+            // desk instruction 2026-08-11. Do not re-add it; the WeeklyEmail hook stays unused.
 
             var frag = Path.Combine(outDir, FragmentFile);
             var txt = Path.Combine(outDir, PlainTextFile);
             var prev = Path.Combine(outDir, PreviewFile);
-            File.WriteAllText(frag, WeeklyEmail.Html(rep, href, footerHtml));
-            File.WriteAllText(txt, WeeklyEmail.PlainText(rep, footerText));
+            File.WriteAllText(frag, WeeklyEmail.Html(rep, href));
+            File.WriteAllText(txt, WeeklyEmail.PlainText(rep));
             // full-document wrapper only for the PREVIEW; the clipboard fragment stays bare
             File.WriteAllText(prev,
                 "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><title>RatesWeekly email preview</title></head>" +
