@@ -67,8 +67,11 @@ namespace RateDesk.Core
         string CcyLabel(string ccy) => ccyHref?.Invoke(ccy) is string u
             ? $"<a href=\"{u}\" style=\"color:inherit;text-decoration:underline;\">{ccy}</a>"
             : ccy;
+        // line-height pinned EXACTLY: left to itself, Word picks its own line spacing per table
+        // and near-identical tables render with visibly different row heights (the CB front vs
+        // the meeting cards, 2026-08-11). One shared cell helper = one row height everywhere.
         string Td(string inner, string extra = "") =>
-            $"<td style=\"{EmFont}padding:3px 8px;font-size:11.5px;{extra}\">{inner}</td>";
+            $"<td style=\"{EmFont}padding:3px 8px;font-size:11.5px;mso-line-height-rule:exactly;line-height:15px;{extra}\">{inner}</td>";
         string Sep() => $"border-right:1px solid {EmLine};";
         // Spacer cell with 1px metrics — an UNSTYLED &nbsp; cell picks up Word's Normal style
         // (11pt + paragraph spacing) and inflates EVERY row in the table to its height, which is
@@ -104,7 +107,7 @@ namespace RateDesk.Core
             sb.Append(TableOpen(new[] { 136, 108, 104, 82, 86, 90 }));
             string FH(string s, bool right = false) =>
                 Td($"<b>{s}</b>", $"background:{EmHead};{(right ? "text-align:right;" : "")}" +
-                                  $"border-bottom:2px solid {EmAccent};padding:5px 8px;");
+                                  $"border-bottom:2px solid {EmAccent};padding:4px 8px;");
             sb.Append("<tr>" + FH("Central Bank") + FH("Decision Date") + FH("Start Date")
                 + FH("OIS Mid", true) + FH("Base Rate", true) + FH("Priced (bp)", true) + "</tr>");
             int fr = 0;

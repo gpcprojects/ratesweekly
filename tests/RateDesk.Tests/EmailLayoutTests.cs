@@ -88,6 +88,27 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void EveryDataCell_PinsItsLineHeight_SoTablesShareOneRowHeight()
+        {
+            // Word chooses its own line spacing per table when line-height is unset — the CB
+            // front rendered taller than the meeting cards from identical declared metrics.
+            var rep = new WeeklyReport();
+            rep.Fronts.Add(new WeeklyFront
+            {
+                Bank = "TEST", Ccy = "USD",
+                Decision = new DateTime(2026, 9, 16), StartDate = new DateTime(2026, 9, 16),
+                MidPct = 3.76,
+            });
+            var run = new WeeklyRun { Title = "TEST · USD" };
+            run.Rows.Add(new WeeklyMeeting { Date = new DateTime(2026, 9, 16), MidPct = 3.9 });
+            rep.Runs.Add(run);
+
+            var html = WeeklyEmail.Html(rep);
+            Assert.Contains("mso-line-height-rule:exactly;line-height:15px", html);
+            Assert.DoesNotContain("padding:5px 8px", html);   // front header matches the cards' 4px
+        }
+
+        [Fact]
         public void FrontTable_PricedWearsTheHeatRampToo()
         {
             var rep = new WeeklyReport();
