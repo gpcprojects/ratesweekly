@@ -1,12 +1,16 @@
 # RatesWeekly
 
-Standalone weekly-summary app for the interest-rate derivatives desk. One click:
+Standalone weekly-summary app for the interest-rate derivatives desk — the weekly email AND the
+dashboards, one project (consolidated out of dodgeball 2026-08-11). One click:
 
 1. pulls Bloomberg (terminal on localhost:8194),
 2. maintains a local daily-close history (`%APPDATA%\RatesWeekly\history.db`),
-3. regenerates the weekly dashboards — a Movers Summary hub plus one page per currency (28) —
-   and uploads them to the static site (stable public links, no sign-in),
-4. builds the desk email (paste into Outlook via COPY EMAIL) with a hardwired link per currency.
+3. regenerates the weekly dashboards — the Movers Summary hub (`index.html`, top outsized movers
+   for DM and EM, |z|-ranked) plus one page per currency (28) — and uploads them to the static
+   site (stable public links, no sign-in),
+4. builds the desk email (CB front table, meeting cards, forward grid) and persists it to
+   `%APPDATA%\RatesWeekly\out\` — COPY EMAIL pastes it into Outlook, currency headers linking to
+   the dashboards when `publish.json` carries a `siteBase`.
 
 Users need **only `RatesWeekly.exe` and a logged-in Bloomberg terminal**. No other install.
 

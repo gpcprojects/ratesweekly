@@ -10,8 +10,8 @@
     <AssemblyTitle>RATESWEEKLY CLI — scriptable history maintenance</AssemblyTitle>
     <Company>Gabriel Pycroft</Company>
     <Copyright>© 2026 Gabriel Pycroft</Copyright>
-    <Version>0.1.0</Version>
-    <FileVersion>0.1.0.0</FileVersion>
+    <Version>0.3.0</Version>
+    <FileVersion>0.3.0.0</FileVersion>
     <NoWarn>$(NoWarn);NU1701</NoWarn>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <DebugType>none</DebugType>

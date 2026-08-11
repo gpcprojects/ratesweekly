@@ -491,7 +491,9 @@ namespace RateDesk.Core
                 {
                     res.FullHistory = comb;
                     res.History = SliceLookback(comb);
-                    res.Stats = SeriesStats.Compute(comb, liveLast: res.Mid, changeScale: 1.0);
+                    res.Stats = SeriesStats.Compute(comb, liveLast: res.Mid, changeScale: 1.0,
+                        basisRef: res.MidTrue ?? res.Mid);
+                    if (res.Stats?.SuppressReason is string cw) res.Notes.Add($"level stats withheld: {cw}.");
                     // exact Δ1d from the sides' own prev-close computations where both exist
                     if (res.Stats != null && ra.Stats?.Chg1d is double c1 && rb.Stats?.Chg1d is double c2)
                         res.Stats.Chg1d = c1 - c2;
@@ -1356,10 +1358,49 @@ namespace RateDesk.Core
             // amplified by the structure weights (x2, x4...), so the combination needs its own filter
             var combined = CleanCombined(CombineSeries(serieses, weights, scaleToBp: structure), structure);
             if (combined.Count < 10) { res.Notes.Add("insufficient overlapping history for the structure."); return; }
+
+            // COMBINED-LEVEL ANCHOR — the counterpart to the per-leg policy decided above.
+            //
+            // Not anchoring the LEGS is right, and stays: per-leg shifts get multiplied by the
+            // structure weights, do not cancel, and land as bp of fake roll (the JPY fly's overlay).
+            // But leaving the COMBINATION unanchored left the level series on the source's basis
+            // while res.Mid is our curve's, and every statistic that ranks the mid inside the series
+            // then inherits the whole gap. On a -1/+2/-1 fly of IMM-dated legs — whose only history
+            // rung is the annuity-less par approximation, and whose approximation errors do not
+            // cancel across the wings — that gap was ~5.4bp against a 1y range of 4.9bp: %ile 100,
+            // z 7.75, AT RANGE 186%, and six change tiles all reading the offset instead of a move.
+            //
+            // ONE shift applied AFTER combination has none of the per-leg problem: level series and
+            // every roll overlay move together, so the roll (the gap between them) is untouched, and
+            // beta/vol/half-life are difference-based and unchanged. Only the absolute level moves —
+            // onto the basis of the number printed at the top of the screen, which is the one basis
+            // a reader compares it against.
+            //
+            // Thresholdless and family-gated, deliberately: a threshold is what made the old per-leg
+            // anchor flip on live ticks. A Pillar-sourced leg IS its instrument (the quotes our own
+            // curve is bootstrapped from), so a pure-Pillar structure is already on one basis and its
+            // residual gap is the honest intraday move — anchoring there would erase today's move
+            // from every horizon. A proxy leg (FWCM ticker or par approx) is not the instrument.
+            if (structure && res.Mid is double liveMid
+                && levelFamilies.Any(f => f is HistFamily.Fwcm or HistFamily.Approx))
+            {
+                double shift = liveMid - combined[^1].Value;      // structures are in bp on both sides
+                if (Math.Abs(shift) > 1e-9)
+                {
+                    combined = combined.Select(p => new HistPoint(p.Date, p.Value + shift)).ToList();
+                    res.Notes.Add($"history anchored {shift:+0.0;-0.0}bp to the curve mid "
+                        + $"({string.Join("/", levelFamilies.Select(f => f.ToString().ToLowerInvariant()))} "
+                        + "source basis) — levels shifted, every daily change preserved.");
+                }
+            }
+
             res.History = SliceLookback(combined);
             res.FullHistory = combined;
             ApplyMidOverride(pq, res);
-            res.Stats = SeriesStats.Compute(combined, liveLast: res.Mid, changeScale: structure ? 1.0 : 100.0);
+            res.Stats = SeriesStats.Compute(combined, liveLast: res.Mid,
+                changeScale: structure ? 1.0 : 100.0, basisRef: res.MidTrue ?? res.Mid);
+            if (res.Stats?.SuppressReason is string why)
+                res.Notes.Add($"level stats withheld: {why}.");
 
             AttachRollOverlays(res, structure);
         }
@@ -2060,7 +2101,9 @@ namespace RateDesk.Core
                     r.History = SliceLookback(hist);
                     r.FullHistory = hist;
                     ApplyMidOverride(pq, r);
-                    r.Stats = SeriesStats.Compute(hist, liveLast: r.Mid, changeScale: 100.0);
+                    r.Stats = SeriesStats.Compute(hist, liveLast: r.Mid, changeScale: 100.0,
+                        basisRef: r.MidTrue ?? r.Mid);
+                    if (r.Stats?.SuppressReason is string lw) r.Notes.Add($"level stats withheld: {lw}.");
 
                     // roll overlays: where this point WILL BE in 3m/6m/9m/1y — the (t − h) ladder
                     // point, historically (same units/axis as the level)
@@ -2200,7 +2243,9 @@ namespace RateDesk.Core
                         r.History = SliceLookback(h);
                         r.FullHistory = h;
                         ApplyMidOverride(pq, r);
-                        r.Stats = SeriesStats.Compute(h, liveLast: r.Mid, changeScale: 100.0);
+                        r.Stats = SeriesStats.Compute(h, liveLast: r.Mid, changeScale: 100.0,
+                            basisRef: r.MidTrue ?? r.Mid);
+                        if (r.Stats?.SuppressReason is string hw) r.Notes.Add($"level stats withheld: {hw}.");
                         leg.HistoryNote = leg.BbgFwdTicker;
                     }
                 }
@@ -2215,7 +2260,9 @@ namespace RateDesk.Core
                         r.History = SliceLookback(combined);
                         r.FullHistory = combined;
                         ApplyMidOverride(pq, r);
-                        r.Stats = SeriesStats.Compute(combined, liveLast: r.Mid, changeScale: 100.0);
+                        r.Stats = SeriesStats.Compute(combined, liveLast: r.Mid, changeScale: 100.0,
+                            basisRef: r.MidTrue ?? r.Mid);
+                        if (r.Stats?.SuppressReason is string kw) r.Notes.Add($"level stats withheld: {kw}.");
                         leg.HistoryNote = "approx from ZC pillar history";
                     }
                 }
@@ -2340,7 +2387,9 @@ namespace RateDesk.Core
                     r.History = SliceLookback(hist);
                     r.FullHistory = hist;
                     ApplyMidOverride(pq, r);
-                    r.Stats = SeriesStats.Compute(hist, liveLast: r.Mid, changeScale: 100.0);
+                    r.Stats = SeriesStats.Compute(hist, liveLast: r.Mid, changeScale: 100.0,
+                        basisRef: r.MidTrue ?? r.Mid);
+                    if (r.Stats?.SuppressReason is string dw) r.Notes.Add($"level stats withheld: {dw}.");
                     // exact Δ 1d from the contract quote's prev close
                     if (q.CoDBp is double dcod) r.Stats.Chg1d = dcod + OvrShiftBp(r);
                 }

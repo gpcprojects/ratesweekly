@@ -145,6 +145,33 @@ namespace RateDesk.Weekly.Core.Render
                   padding:20px;color:var(--rw-muted);font-size:12px}
                 .rw-toggle{position:absolute;right:0;top:0;background:var(--rw-surface);color:var(--rw-ink2);
                   cursor:pointer;border:1px solid var(--rw-border);border-radius:8px;padding:5px 10px;font-size:12px}
+                /* movers hub */
+                .rw-wide{grid-column:1/-1}
+                .rw-ctx{color:var(--rw-ink2);font-size:12.5px;line-height:1.55;margin-top:6px}
+                .rw-ctx p{margin:0 0 4px}
+                .rw-heroes{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px;margin:10px 0 14px}
+                .rw-hero{background:var(--rw-plane);border:1px solid var(--rw-border);border-radius:10px;
+                  padding:12px 14px;min-width:0}
+                .rw-hero-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+                .rw-hero-name{font-size:15px;font-weight:700;color:var(--rw-ink);text-decoration:none}
+                .rw-hero-name:hover{text-decoration:underline}
+                .rw-kind{font-size:9.5px;letter-spacing:.05em;color:var(--rw-muted);text-transform:uppercase;
+                  border:1px solid var(--rw-border);border-radius:5px;padding:1px 6px;white-space:nowrap}
+                .rw-hero-move{margin:6px 0 6px;font-size:13px;color:var(--rw-ink2)}
+                .rw-hero-move b{font-size:17px;font-variant-numeric:tabular-nums}
+                .rw-est{font-size:9.5px;color:var(--rw-muted);vertical-align:super;margin-left:2px}
+                .rw-spark{width:100%;height:64px;display:block;margin:2px 0 4px}
+                .rw-stat-row{display:flex;gap:18px;flex-wrap:wrap;margin-top:6px}
+                .rw-stat b{display:block;font-size:13.5px;font-variant-numeric:tabular-nums}
+                .rw-stat span{font-size:9.5px;color:var(--rw-muted);text-transform:uppercase;letter-spacing:.04em}
+                table.rw-mv{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}
+                table.rw-mv th{text-align:right;font-weight:500;font-size:9.5px;letter-spacing:.03em;
+                  text-transform:uppercase;color:var(--rw-muted);padding:3px 8px;border-bottom:1px solid var(--rw-grid)}
+                table.rw-mv th.l,table.rw-mv td.l{text-align:left}
+                table.rw-mv td{padding:3px 8px;text-align:right;font-variant-numeric:tabular-nums;
+                  border-bottom:1px solid var(--rw-grid)}
+                table.rw-mv a{color:var(--rw-ink);text-decoration:none;font-weight:600}
+                table.rw-mv a:hover{text-decoration:underline}
                 @media (max-width:900px){.rw-panel-body{grid-template-columns:1fr}}
                 </style>
                 </head>

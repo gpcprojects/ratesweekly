@@ -10,8 +10,10 @@ using RateDesk.Weekly.Core.Series;
 //
 //   RatesWeeklyCli update              bring the store current (seed/maintain per UpdateEngine)
 //   RatesWeeklyCli status              store stats, no Bloomberg calls
+//   RatesWeeklyCli render [ccy]        redraw dashboard pages from the store
+//   RatesWeeklyCli email               build the desk email (live snapshot) into the out dir
 //
-// Requires a running, logged-in Bloomberg terminal on localhost:8194 for `update`.
+// Requires a running, logged-in Bloomberg terminal on localhost:8194 for `update` and `email`.
 
 var cmd = args.Length > 0 ? args[0].ToLowerInvariant() : "help";
 var dbPath = Path.Combine(
@@ -106,11 +108,53 @@ switch (cmd)
             }
             catch (Exception ex) { Console.Error.WriteLine($"  ! {cfg.Ccy}: {ex.Message}"); }
         }
+        if (only == null)
+        {
+            try
+            {
+                var mv = RateDesk.Weekly.Core.Series.MoverScan.Scan(configs, svc.SourceFor, store, asOf);
+                var idx = Path.Combine(outDir, "index.html");
+                File.WriteAllText(idx, RateDesk.Weekly.Core.Render.MoversPage.Build(mv));
+                File.WriteAllText(Path.Combine(outDir, "movers.json"),
+                    RateDesk.Weekly.Core.Series.MoverScan.ToJson(mv));
+                Console.WriteLine($"  MOVERS {new FileInfo(idx).Length / 1024.0,5:F0} KB  {idx}  " +
+                                  $"({mv.DmRanked.Count} DM / {mv.EmRanked.Count} EM ranked)");
+                n++;
+            }
+            catch (Exception ex) { Console.Error.WriteLine("  ! movers: " + ex.Message); }
+        }
         Console.WriteLine($"rendered {n} page(s) as of {asOf:yyyy-MM-dd} into {outDir}");
         return 0;
     }
 
+    case "email":
+    {
+        var outDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly", "out");
+        for (int i = 1; i < args.Length - 1; i++)
+            if (args[i].Equals("--out", StringComparison.OrdinalIgnoreCase)) outDir = args[i + 1];
+        try
+        {
+            var appData = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly");
+            var rep = EmailBuilder.Build(Console.WriteLine);
+            var o = EmailBuilder.Render(rep, outDir, EmailBuilder.LoadSiteBase(appData), Console.WriteLine);
+            Console.WriteLine($"as of {rep.AsOf:yyyy-MM-dd HH:mm:ss} — " +
+                              $"{rep.Sections.Sum(s => s.Ccys.Count)} currencies, " +
+                              $"{rep.Runs.Count} CB runs, {rep.Fronts.Count} front rows");
+            Console.WriteLine($"fragment:  {o.FragmentPath}");
+            Console.WriteLine($"plaintext: {o.PlainTextPath}");
+            Console.WriteLine($"preview:   {o.PreviewPath}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("EMAIL BUILD FAILED: " + ex.Message);
+            return 1;
+        }
+    }
+
     default:
-        Console.WriteLine("RATESWEEKLY CLI — usage: update [--db <path>] | status [--db <path>] | render [ccy] [--out <dir>]");
+        Console.WriteLine("RATESWEEKLY CLI — usage: update [--db <path>] | status [--db <path>] | render [ccy] [--out <dir>] | email [--out <dir>]");
         return cmd == "help" ? 0 : 1;
 }

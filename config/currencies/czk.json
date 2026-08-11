@@ -169,7 +169,8 @@
       {
         "tenor": "11Y",
         "type": "SWAP",
-        "ticker": "CKSW11"
+        "ticker": "CKSW11",
+        "enabled": false
       },
       {
         "tenor": "12Y",

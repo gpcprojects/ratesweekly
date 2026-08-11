@@ -5,7 +5,15 @@
 > and get individual sign-off before they are wired (standing rule). This doc moves into the repo
 > with the code.
 
-## 0. Decisions (2026-08-05)
+## 0. Decisions (2026-08-05, +2026-08-11)
+
+- **Consolidation (2026-08-11, user)**: the weekly email is part of THIS project, not dodgeball.
+  Core/Bloomberg copy refreshed to dodgeball 9b52693 (v7.1.0 line: basis guard, SW_EFF_DT meeting
+  starts, corrected CB calendars, London 16:30 snaps, WeeklyEmail/BuildWeekly). EmailBuilder
+  (Weekly.Core) builds the email live during UPDATE and persists it to out\; COPY EMAIL pastes the
+  persisted fragment (CF_HTML). Dashboard links per §4 come from publish.json `siteBase` and are
+  omitted when unset. The movers strip stays dark until the movers page ships. DodgeballWeekly.exe
+  to be REMOVED from the dodgeball repo once the desk has switched to RatesWeekly.exe.
 
 - **Users**: some desk members have Dodgeball, some don't. RatesWeekly ships as its own
   standalone exe with its own release channel — a user needs ONLY RatesWeekly + a Bloomberg
@@ -160,6 +168,11 @@ Links are plain anchors to stable URLs — maximally email-client-compatible. CF
 plain-text fallback as in Dodgeball. ⚠ Paste into a real Outlook draft is a phase-1 acceptance test
 (Dodgeball's own HANDOFF flags this was never manually verified there either).
 
+STATUS 2026-08-11 (v0.2.0): built — EmailBuilder + WeeklyEmail port; ccy headers (forward grid +
+CB front table) hyperlink when publish.json `siteBase` is set, footer carries "dashboards updated
+{stamp} · {site} · source: Bloomberg". NOT yet: the movers top strip + teaser (needs the movers
+page), and the real-Outlook paste test above.
+
 ## 5. Movers Summary page
 
 Headline strip: the biggest mover in each of six categories, then a top-10 table per category.
@@ -173,11 +186,29 @@ Candidate universes (all 28 ccys unless noted):
 - **(e) Forward flies** — ⚠ consecutive flies on the annual strip: fly(n)=2·f(n1y)−f((n−1)1y)−f((n+1)1y), n=2..8.
 - **(f) Invoice spreads** — USD/GBP/EUR once the module exists (§7).
 
-Ranking ⚠: primary metric = |z| of the 1w change, where z = Δ1w / σ(weekly changes, 1y window from
-the store) — makes a 9bp MXN move comparable to a 9bp CHF move. Raw Δbp shown alongside; both
-1w and 1m columns; minimum-data gates (≥40 weekly obs) and despike before σ. Each row links to the
-currency's page. Tabs/nav bar across the top to all 28 currency pages, grouped DM / EM / LATAM /
-ASIA EM.
+Ranking ⚠→RESOLVED (user direction 2026-08-11: "outsized movers vs the norm … historical
+volatilities vs vol over the preceding 1 week"): primary metric = |z| of the 1w change, where
+z = Δ1w / σ(weekly changes, 1y window from the store) — makes a 9bp MXN move comparable to a 9bp
+CHF move. Raw Δbp shown alongside; both 1w and 1m columns; minimum-data gates (≥40 weekly obs) and
+despike before σ. Each row links to the currency's page. Tabs/nav bar across the top to all 28
+currency pages, grouped DM / EM / LATAM / ASIA EM.
+
+STATUS 2026-08-11 (v0.3.0) — BUILT as the hub (out\index.html, the nav's landing page), two
+sections: DM and EM(+LATAM+ASIA EM), three hero cards (sparkline, Δ1w, z, 1m, wk-vol ratio, 45d
+range) over a top-12 ranked table each. Until the deep seed, σ is ESTIMATED (√5 × daily σ, ≥20
+obs, marked "est" everywhere); the strict weekly σ takes over per instrument automatically past
+≥40 weekly obs. "wk vol vs norm" = RMS(last 5 daily Δ) / RMS(prior ~60) — RMS deliberately, so a
+steady one-direction week cannot print 0×. Wired categories: (a) meetings (roll-corrected series,
+boundary days excluded, guard-rewritten prints excluded), (c) outrights 2/5/10/30y + slopes
+{2s10s, 5s30s} (the email's own pair — wider slope/fly sets stay ⚠), (d) QUOTED forward families
+only (par-approx daily rebuilds are not ranked — their bias is not a move), (b) inflation ZC
+benchmarks + 1y1y/2y2y/5y5y/10y10y forwards. Hero diversity: ≤1 per (ccy, kind), ≤2 per ccy —
+cards only, the table is pure ranking. G3 context line (avg 10y z) = the seed of dodgeball's
+"things to flag" rule 2; the full beta-conditional rules (rule 1/2 at weekly horizon) render as an
+honest pending panel until ~6m of history exists, and are the piece to REINTEGRATE INTO DODGEBALL
+once refined here (user 2026-08-11). Email top strip (movers link + teaser) reads out\movers.json
+and goes silent when the file is missing or stale. NOT wired: flies (⚠), FRA strips, invoice
+spreads (§7 dark), percentile/range tiles (366d gate, §0a).
 
 ## 6. Per-currency pages (maximum template; sections auto-drop where a ccy lacks the market)
 

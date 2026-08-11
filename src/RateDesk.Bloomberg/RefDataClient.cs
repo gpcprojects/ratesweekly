@@ -70,8 +70,12 @@ namespace RateDesk.Bloomberg
                     foreach (var t in chunk) req.GetElement("securities").AppendValue(t);
                     // LAST_UPDATE_DT/LAST_UPDATE ride along in the same round-trip: they are what tells
                     // a frozen market apart from a live one, since our own receive time cannot
+                    // SW_EFF_DT rides along for the same reason MATURITY does: a meeting-dated OIS
+                    // publishes the START of the period it quotes, and only the BOJ's differs from
+                    // the previous rung's maturity. (The mnemonic is SW_EFF_DT — SW_EFFECTIVE_DT
+                    // returns empty on these securities.)
                     foreach (var f in new[] { "PX_LAST", "PX_BID", "PX_ASK", "PX_CLOSE_1D", "MATURITY",
-                                              "LAST_UPDATE_DT", "LAST_UPDATE" })
+                                              "SW_EFF_DT", "LAST_UPDATE_DT", "LAST_UPDATE" })
                         req.GetElement("fields").AppendValue(f);
                     var corr = NextCorr();
                     _session.SendRequest(req, corr);
@@ -114,6 +118,9 @@ namespace RateDesk.Bloomberg
                                     if (fd.HasElement("MATURITY")
                                         && DateTime.TryParse(fd.GetElementAsString("MATURITY"), out var mat))
                                         snap.SetMaturity(ticker, mat);
+                                    if (fd.HasElement("SW_EFF_DT")
+                                        && DateTime.TryParse(fd.GetElementAsString("SW_EFF_DT"), out var eff))
+                                        snap.SetEffective(ticker, eff);
                                 }
                                 catch { /* not a dated instrument */ }
                                 if (has && QuoteAgeMinutes(fd) is double ageMin)
@@ -385,6 +392,77 @@ namespace RateDesk.Bloomberg
                 Trace?.Invoke($"bdh single: {ticker} in {swReq.ElapsedMilliseconds:N0} ms");
                 return pts.ToArray();
             }
+        }
+
+        // ---------- fixed-London-time snaps (IntradayBarRequest) ----------
+
+        private readonly ConcurrentDictionary<string, (DateTime day, TimeSpan tod, HistPoint[] data)> _snapCache = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly TimeZoneInfo LondonTz = TimeZoneInfo.FindSystemTimeZoneById("GMT Standard Time");
+
+        /// <summary>Per-day value at a fixed LONDON wall-clock time, from 30-min TRADE bars (one
+        /// IntradayBarRequest per ticker — the API takes a single security per bar request). For
+        /// each London day the last bar ENDING at or before the snap time supplies the value, so
+        /// a 16:30 snap is the 16:00-16:30 bar's close. DST is handled per-day by real tz
+        /// conversion. Intraday depth is ~140 trading days — plenty for 1w/1m lookbacks.</summary>
+        public IReadOnlyList<HistPoint> GetLondonSnaps(string ticker, int lookbackDays, TimeSpan londonTimeOfDay)
+        {
+            if (_snapCache.TryGetValue(ticker, out var c) && c.day == DateTime.Today && c.tod == londonTimeOfDay)
+                return c.data;
+            const int barMin = 30;
+            var byDay = new Dictionary<DateTime, (DateTime end, double close)>();
+            try
+            {
+                lock (_lock)
+                {
+                    var swReq = System.Diagnostics.Stopwatch.StartNew();
+                    var req = _service.CreateRequest("IntradayBarRequest");
+                    req.Set("security", ticker);
+                    req.Set("eventType", "TRADE");
+                    req.Set("interval", barMin);
+                    var endUtc = DateTime.UtcNow;
+                    var startUtc = endUtc.AddDays(-lookbackDays);
+                    req.Set("startDateTime", new Datetime(startUtc));
+                    req.Set("endDateTime", new Datetime(endUtc));
+                    var corr = NextCorr();
+                    _session.SendRequest(req, corr);
+                    bool done = false;
+                    while (!done)
+                    {
+                        Event ev = _session.NextEvent(45000);
+                        foreach (Message msg in ev)
+                        {
+                            if (!Matches(msg, corr)) continue;
+                            if (!msg.HasElement("barData")) continue;
+                            var bd = msg.GetElement("barData");
+                            if (!bd.HasElement("barTickData")) continue;
+                            var bars = bd.GetElement("barTickData");
+                            for (int i = 0; i < bars.NumValues; i++)
+                            {
+                                var b = bars.GetValueAsElement(i);
+                                var t = b.GetElementAsDatetime("time"); // bar START, UTC
+                                var barEndUtc = new DateTime(t.Year, t.Month, t.DayOfMonth,
+                                    t.Hour, t.Minute, 0, DateTimeKind.Utc).AddMinutes(barMin);
+                                var lon = TimeZoneInfo.ConvertTimeFromUtc(barEndUtc, LondonTz);
+                                if (lon.TimeOfDay > londonTimeOfDay) continue;
+                                double close = b.GetElementAsFloat64("close");
+                                if (!byDay.TryGetValue(lon.Date, out var cur) || barEndUtc > cur.end)
+                                    byDay[lon.Date] = (barEndUtc, close);
+                            }
+                        }
+                        if (ev.Type == Event.EventType.RESPONSE) done = true;
+                        if (ev.Type == Event.EventType.TIMEOUT) throw new TimeoutException("intraday bar timeout");
+                    }
+                    Trace?.Invoke($"bars snap: {ticker} {byDay.Count}d in {swReq.ElapsedMilliseconds:N0} ms");
+                }
+            }
+            catch
+            {
+                return Array.Empty<HistPoint>(); // uncached: next call retries; callers use closes meanwhile
+            }
+            var pts = byDay.OrderBy(kv => kv.Key)
+                .Select(kv => new HistPoint(kv.Key, kv.Value.close)).ToArray();
+            _snapCache[ticker] = (DateTime.Today, londonTimeOfDay, pts);
+            return pts;
         }
 
         private static double? TryGet(Element fieldData, string field)

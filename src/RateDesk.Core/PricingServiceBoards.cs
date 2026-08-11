@@ -90,6 +90,12 @@ namespace RateDesk.Core
         public List<DateTime> Dates { get; set; } = new();
         /// <summary>Trailing-year decision dates — only used to stitch ticker HISTORY across rolls.</summary>
         public List<DateTime> PastDates { get; set; } = new();
+        /// <summary>ANNOUNCEMENT dates, where they differ from the swap-period boundaries in
+        /// <see cref="Dates"/>. Some families' periods start ON the decision (FOMC, MPC), others at
+        /// the effective date days later (ECB's maintenance-period Wednesday, BOJ's settlement) — so
+        /// "Dates" is the period grid the tickers key on, and THIS is what a human calls the meeting.
+        /// Optional, hand-curated from the official calendars; consumers must fall back to Dates.</summary>
+        public List<DateTime> DecisionDates { get; set; } = new();
     }
 
     /// <summary>Central-bank decision dates: config\meetings.json next to the exe overrides the embedded list.
@@ -129,7 +135,7 @@ namespace RateDesk.Core
             // the stitcher's clustering of ticker-maturity vs config dates for the same meeting.
             foreach (var s in runs)
                 foreach (var d in s.Dates.Where(d => d.Date <= DateTime.Today))
-                    if (!s.PastDates.Any(p => Math.Abs((p - d).TotalDays) <= 6))
+                    if (!s.PastDates.Any(p => Math.Abs((p - d).TotalDays) <= 14))
                         s.PastDates.Add(d);
             return runs;
         }
@@ -499,8 +505,9 @@ namespace RateDesk.Core
             }
 
             // Meeting date N (1-based) = maturity of ticker N-1; the run-down (0) matures at meeting 1.
-            // ALIAS GUARD: Bloomberg aliases past-the-end numbers back to #1 (USSOFED10 -> USSOFED1),
-            // so maturities must strictly increase — the family ends at the first violation.
+            // ALIAS GUARD: Bloomberg aliases past-the-end numbers back to #1 (USSOFED10 -> USSOFED1,
+            // JYSOMPM10 -> JYSOMPM1), so maturities must strictly increase — the family ends at the
+            // first violation. Numbering is never evidence; a rung's own MATURITY is.
             var quotes = new Market.QuoteData?[maxRows + 2];
             var meetDates = new Dictionary<int, DateTime>();
             var lastMat = DateTime.MinValue;
@@ -515,6 +522,49 @@ namespace RateDesk.Core
                 }
             }
             bool tickerDates = meetDates.Count >= 2;
+
+            // ...but a row's date is the START of the period its own quote covers, and that is only
+            // the previous rung's maturity when the periods are contiguous. Nine of the ten families
+            // are (eff(N) == mat(N-1) exactly, verified ticker by ticker 2026-08-07). The BOJ is not:
+            // its periods begin at the settlement date after the decision, so JYSOMPM2 quotes
+            // 2026-11-02 -> 2026-12-18 while mat(1) is 2026-10-30. Labelling that row 30-Oct names
+            // the DECISION the rate responds to instead of the period the rate applies over, and the
+            // two drift 1-3 days apart all the way down the run.
+            //
+            // So prefer the rung's own SW_EFF_DT. Bounded deliberately: a start may sit at most a
+            // settlement lag (10d) AFTER the maturity-derived date, strictly before its own
+            // maturity — and up to 3 days BEFORE it. That last bound was ZERO until 2026-08-11,
+            // when the live RBA decision week showed why it cannot be: the run-down ADSF0A's
+            // maturity printed 13-Aug (a T+1 settlement artifact) while ADSF1A's own SW_EFF_DT
+            // said 12-Aug, the true period start (decision 11-Aug + 1d). A rung's own field is the
+            // authority on its own period; rejecting it labelled the front row one day late in the
+            // very week everyone reads it. A genuinely stale eff is a whole meeting period early
+            // (~5 weeks), far outside 3 days, so the garbage guard keeps its teeth.
+            bool laggedFamily = false;
+            for (int n = 1; n <= maxRows + 1; n++)
+            {
+                if (!meetDates.TryGetValue(n, out var viaMat)) continue;
+                if (quotes[n]?.Effective is not DateTime eff) continue;
+                if ((viaMat.Date - eff.Date).TotalDays > 3 || (eff.Date - viaMat.Date).TotalDays > 10) continue;
+                if (quotes[n]?.Maturity is DateTime own && eff.Date >= own.Date) continue;
+                if (eff.Date > viaMat.Date) laggedFamily = true;
+                meetDates[n] = eff.Date;
+            }
+
+            // The last rung the family quotes has no NEXT rung to read a start from — its own row
+            // would silently revert to naming the decision while every row above it names a period.
+            // Only for a family that has DEMONSTRATED a settlement lag above, and only from the
+            // config grid, which exists for exactly this (dates past where MATURITY is populated).
+            // A contiguous family cannot be touched: its config dates equal the maturities, so
+            // there is never one strictly after.
+            if (laggedFamily)
+                for (int n = 1; n <= maxRows + 1; n++)
+                {
+                    if (!meetDates.TryGetValue(n, out var d) || quotes[n]?.Effective != null) continue;
+                    var start = sched.Dates.FirstOrDefault(x => x.Date > d.Date
+                        && (x.Date - d.Date).TotalDays <= 10);
+                    if (start != default) meetDates[n] = start.Date;
+                }
 
             // fill gaps from the schedule: some families price beyond where MATURITY is populated
             // (EESF4A+, JYSOMPM4+), and without any tickers the schedule carries the whole run
@@ -1035,7 +1085,10 @@ namespace RateDesk.Core
                         res.History = SliceLookback(combined);
                         ApplyMidOverride(pq, res);
                         res.Stats = Analytics.SeriesStats.Compute(combined, liveLast: res.Mid ?? level,
-                            changeScale: n > 1 ? 1.0 : 100.0);
+                            changeScale: n > 1 ? 1.0 : 100.0,
+                            basisRef: res.MidTrue ?? res.Mid ?? level);
+                        if (res.Stats?.SuppressReason is string basisWhy)
+                            res.Notes.Add($"level stats withheld: {basisWhy}.");
                         // exact Δ 1d from the run rows (live mid vs prev close) — the stitched
                         // series' last point can predate today, which skews a history-based 1d
                         if (chosen.All(c => c.CoDBp.HasValue))
@@ -1071,29 +1124,94 @@ namespace RateDesk.Core
             // cluster within 6 days: ticker maturities and config dates describe the SAME meeting
             // with day-level differences — double-counting would shift every stitch index by one
             var allMeet = new List<DateTime>();
+            // 14-day clustering, NOT 6: config grids drift from ticker-derived truth by more than a
+            // week (BOJ's 2027 entries sat 8-11 days late), and every unclustered duplicate inflates
+            // the historical index by one — BOJ's far rows then stitched the retired JYOMPM family's
+            // stale ~0.98 prints and published +68bp "1w changes". No two real CB meetings are within
+            // 14 days of each other, so the wider window is safe by construction.
             foreach (var d in sched.PastDates.Concat(runDates)
                          .Concat(sched.Dates).Distinct().OrderBy(x => x))
-                if (allMeet.Count == 0 || (d - allMeet[^1]).TotalDays > 6)
+                if (allMeet.Count == 0 || (d - allMeet[^1]).TotalDays > 14)
                     allMeet.Add(d);
+            // roll boundaries are DECISION closes, not period starts: where an announcement date is
+            // recorded separately from the swap grid (ECB decides Thursday, the period starts the
+            // following Wednesday; BOJ Friday -> Thursday), the generics re-point after the DECISION,
+            // so snap the clustered entry back to it or up to ~4 business days of closes stitch to
+            // the wrong index after every such meeting
+            foreach (var dd in sched.DecisionDates)
+                for (int i = 0; i < allMeet.Count; i++)
+                    if (dd < allMeet[i] && (allMeet[i] - dd).TotalDays <= 6) { allMeet[i] = dd; break; }
+            // DESK CONVENTION (2026-08-06): history values are the daily 4:30pm-LONDON snaps, not
+            // closes — the desk's incumbent sheet snaps then, and the changes must reconcile. The
+            // snaps are also STRUCTURALLY cleaner at roll boundaries: at 16:30 on a decision day
+            // only generic #1 has re-pointed (probed GPSF 30-Jul-26: 2A/3A/4A still old-numbered
+            // carrying the post-decision prices) and the decision-day mapping reads tickers 2+, so
+            // a snapped boundary day stitches EXACTLY under old numbering. Closes stay as fallback
+            // for days without bars — those keep the exclusive-boundary rule (mixed-state closes).
+            var snapAt = new TimeSpan(16, 30, 0);
+            const int snapDays = 50; // covers the 1m lookback; charts keep closes further back
+            var famCache = new Dictionary<int, (IReadOnlyList<HistPoint> pts, HashSet<DateTime> snapped)?>();
+            (IReadOnlyList<HistPoint> pts, HashSet<DateTime> snapped)? FamilyHist(int idx)
+            {
+                if (idx < 0) return null;
+                if (famCache.TryGetValue(idx, out var cached)) return cached;
+                (IReadOnlyList<HistPoint>, HashSet<DateTime>)? result = null;
+                foreach (var pat in sched.Tickers)
+                {
+                    if (!pat.Contains("{N}")) continue; // explicit FRA-strip securities don't renumber this way
+                    var tkr = pat.Replace("{N}", idx.ToString()) + " Curncy";
+                    var cand = Hist(tkr, full: true);
+                    if (cand.Count == 0) continue;
+                    var snaps = History?.GetLondonSnaps(tkr, snapDays, snapAt) ?? Array.Empty<HistPoint>();
+                    if (snaps.Count == 0) { result = (cand, new HashSet<DateTime>()); break; }
+                    var merged = cand.ToDictionary(p => p.Date, p => p.Value);
+                    var snapped = new HashSet<DateTime>();
+                    foreach (var sp in snaps) { merged[sp.Date] = sp.Value; snapped.Add(sp.Date); }
+                    result = (merged.OrderBy(kv => kv.Key)
+                        .Select(kv => new HistPoint(kv.Key, kv.Value)).ToList(), snapped);
+                    break;
+                }
+                famCache[idx] = result;
+                return result;
+            }
             return meeting =>
             {
                 var upTo = allMeet.Where(m => m <= meeting).ToList();
                 var pts = new List<HistPoint>();
                 for (int i = upTo.Count - 2; i >= 0; i--)
                 {
-                    int idx = upTo.Count - 1 - i; // in [upTo[i], upTo[i+1]) this meeting is the idx-th next
+                    int idx = upTo.Count - 1 - i; // in (upTo[i], upTo[i+1]] this meeting is the idx-th next
                     if (idx > 13) break;
-                    IReadOnlyList<HistPoint>? h = null;
-                    foreach (var pat in sched.Tickers)
-                    {
-                        if (!pat.Contains("{N}")) continue; // explicit FRA-strip securities don't renumber this way
-                        var cand = Hist(pat.Replace("{N}", idx.ToString()) + " Curncy", full: true);
-                        if (cand.Count > 0) { h = cand; break; }
-                    }
-                    if (h == null) continue;
+                    var fam = FamilyHist(idx);
+                    if (fam == null) continue;
+                    var (h, snapped) = fam.Value;
                     var lo = upTo[i];
                     var hi = upTo[i + 1];
-                    pts.InsertRange(0, h.Where(p => p.Date >= lo && p.Date < hi));
+                    // boundary-day rule: a decision-day CLOSE is unanchorable (raw GPSF closes on the
+                    // 30-Jul-26 MPC show the family re-pointing NON-uniformly by the close — 1A rolled,
+                    // 2A not, 3A/4A alternating) so close-sourced points at hi are EXCLUDED and the
+                    // lookback anchors a day earlier. A 16:30-London SNAP at hi is uniformly OLD
+                    // numbered (only #1 re-points intraday, and this mapping starts at #2), so snapped
+                    // boundary days are included — post-decision prices under the old index, exactly
+                    // the desk sheet's baseline.
+                    var win = h.Where(p => p.Date > lo && (p.Date < hi || (p.Date == hi && snapped.Contains(p.Date)))).ToList();
+                    if (win.Count == 0) continue;
+                    // same neighbour guard as the live rows: a thin family's misprint (SKSF4A's 1.387
+                    // between 1.85/2.09 neighbours) poisons HISTORY too — judge each point against the
+                    // adjacent generics on the same date, replace with their midpoint when impossible
+                    var loN = FamilyHist(idx - 1)?.pts;
+                    var hiN = FamilyHist(idx + 1)?.pts;
+                    if (loN != null && hiN != null && idx - 1 >= 1)
+                    {
+                        var loBy = loN.ToDictionary(p => p.Date, p => p.Value);
+                        var hiBy = hiN.ToDictionary(p => p.Date, p => p.Value);
+                        for (int k = 0; k < win.Count; k++)
+                            if (loBy.TryGetValue(win[k].Date, out var a) && hiBy.TryGetValue(win[k].Date, out var b)
+                                && Math.Abs(a - b) * 100.0 < 25.0
+                                && Math.Abs(win[k].Value - (a + b) / 2.0) * 100.0 > 25.0)
+                                win[k] = new HistPoint(win[k].Date, (a + b) / 2.0);
+                    }
+                    pts.InsertRange(0, win);
                 }
                 return pts;
             };
@@ -1106,9 +1224,10 @@ namespace RateDesk.Core
             sb.Append(r.Header);
             if (r.RefPct.HasValue) sb.Append($"   ref {r.RefPct.Value:0.000}");
             sb.AppendLine();
-            sb.AppendLine($"{"Meeting",-11} {"Mid",7} {"Priced",8} {"Step",7} {"CoD",6}");
+            sb.AppendLine($"{"StartDate",-11} {"Mid",7} {"Priced",8} {"Step",7} {"CoD",6}");
             foreach (var row in r.Rows)
-                sb.AppendLine($"{row.Date:dd-MMM-yy}   {row.MidPct,7:0.000} {SignedBp(row.PricedBp),8} {SignedBp(row.StepBp),7} {SignedBp(row.CoDBp),6}");
+                sb.AppendLine($"{row.Date.ToString("dd-MMM-yy", System.Globalization.CultureInfo.InvariantCulture)}   " +
+                    $"{row.MidPct,7:0.000} {SignedBp(row.PricedBp),8} {SignedBp(row.StepBp),7} {SignedBp(row.CoDBp),6}");
             return sb.ToString();
         }
     }

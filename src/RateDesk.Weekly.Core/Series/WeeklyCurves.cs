@@ -74,6 +74,18 @@ namespace RateDesk.Weekly.Core.Series
             return list;
         }
 
+        /// <summary>The natural-band pillar ladder as (years, ticker, label), for callers that need
+        /// the SECURITIES rather than resolved values — the movers scan pulls daily series per
+        /// pillar. Same band selection as <see cref="ParCurve"/>, so a dual-band basis can never
+        /// enter a movers series either.</summary>
+        public static IReadOnlyList<(double Years, string Ticker, string Label)> NaturalPillarLadder(
+            CurrencyConfig cfg, string src, double minYears = 1.0)
+            => Pillars(cfg, src)
+                .Where(p => p.Natural && p.Months >= minYears * 12.0 - 0.5)
+                .OrderBy(p => p.Months)
+                .Select(p => (p.Months / 12.0, p.Ticker, p.Label))
+                .ToList();
+
         /// <summary>The tenors the desk reads a curve on. Config carries every quoted pillar —
         /// 21 of them for USD, including 6/8/9/11-14Y added to keep forward ends landing on real
         /// quotes — but a weekly is read at a glance, and a table you have to scroll is a table
