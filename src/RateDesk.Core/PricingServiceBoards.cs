@@ -531,16 +531,21 @@ namespace RateDesk.Core
             // the DECISION the rate responds to instead of the period the rate applies over, and the
             // two drift 1-3 days apart all the way down the run.
             //
-            // So prefer the rung's own SW_EFF_DT. Bounded deliberately: a start may only sit at or
-            // after the previous maturity, strictly before its own, and within a settlement lag of
-            // it. Outside those bounds the field is wrong, not conventional, and the maturity-derived
-            // date stands.
+            // So prefer the rung's own SW_EFF_DT. Bounded deliberately: a start may sit at most a
+            // settlement lag (10d) AFTER the maturity-derived date, strictly before its own
+            // maturity — and up to 3 days BEFORE it. That last bound was ZERO until 2026-08-11,
+            // when the live RBA decision week showed why it cannot be: the run-down ADSF0A's
+            // maturity printed 13-Aug (a T+1 settlement artifact) while ADSF1A's own SW_EFF_DT
+            // said 12-Aug, the true period start (decision 11-Aug + 1d). A rung's own field is the
+            // authority on its own period; rejecting it labelled the front row one day late in the
+            // very week everyone reads it. A genuinely stale eff is a whole meeting period early
+            // (~5 weeks), far outside 3 days, so the garbage guard keeps its teeth.
             bool laggedFamily = false;
             for (int n = 1; n <= maxRows + 1; n++)
             {
                 if (!meetDates.TryGetValue(n, out var viaMat)) continue;
                 if (quotes[n]?.Effective is not DateTime eff) continue;
-                if (eff.Date < viaMat.Date || (eff.Date - viaMat.Date).TotalDays > 10) continue;
+                if ((viaMat.Date - eff.Date).TotalDays > 3 || (eff.Date - viaMat.Date).TotalDays > 10) continue;
                 if (quotes[n]?.Maturity is DateTime own && eff.Date >= own.Date) continue;
                 if (eff.Date > viaMat.Date) laggedFamily = true;
                 meetDates[n] = eff.Date;

@@ -268,6 +268,26 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void DecisionWeek_RunDownMaturityArtifact_TheRungsOwnEffectiveDateWins()
+        {
+            // live RBA, 2026-08-11 (decision day): the run-down ADSF0A printed maturity 13-Aug —
+            // a T+1 settlement artifact — while ADSF1A's own SW_EFF_DT said 12-Aug, the true
+            // period start (decision 11-Aug + 1d). One day of disagreement about the SAME
+            // boundary resolves to the rung's own field, not the neighbour's maturity. Found by
+            // tools\audit_email_dates.py against the live terminal.
+            var snap = new RatesSnapshot();
+            const string p = "TESTRBA{N}";
+            Rung(snap, p, 0, new DateTime(2026, 8, 12), new DateTime(2026, 8, 13));  // artifact
+            Rung(snap, p, 1, new DateTime(2026, 8, 12), new DateTime(2026, 9, 30));
+            Rung(snap, p, 2, new DateTime(2026, 9, 30), new DateTime(2026, 11, 4));
+
+            var d = Service(snap).ResolveMeetingDates(Sched(p)).Dates;
+
+            Assert.Equal(new DateTime(2026, 8, 12), d[1]);   // NOT the 13-Aug artifact
+            Assert.Equal(new DateTime(2026, 9, 30), d[2]);
+        }
+
+        [Fact]
         public void AnImplausibleEffectiveDate_IsIgnoredRatherThanTrusted()
         {
             // a start before the previous maturity, or past its own end, is a bad field — not a
