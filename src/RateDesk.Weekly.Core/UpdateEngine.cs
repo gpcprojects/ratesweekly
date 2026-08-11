@@ -94,6 +94,15 @@ namespace RateDesk.Weekly.Core
             }
             if (mats > 0) Log($"  recorded {mats} maturities");
 
+            // calendar self-policing (desk 2026-08-11): drifted grids, decision-calendar runway,
+            // ticker re-points the calendar can't explain — flagged on EVERY update, weeks before
+            // they could misprint, while the renderers degrade honestly in the meantime
+            foreach (var w in CalendarHealth.Check(snap, store, today0))
+            {
+                warnings.Add(w);
+                Log("  ! " + w);
+            }
+
             var seed = new List<string>();
             var seedDeep = new List<string>();
             var maintain = new Dictionary<int, List<string>>();

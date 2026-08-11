@@ -13,8 +13,8 @@
     <Company>Gabriel Pycroft</Company>
     <Copyright>© 2026 Gabriel Pycroft</Copyright>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>0.4.3</Version>
-    <FileVersion>0.4.3.0</FileVersion>
+    <Version>0.4.4</Version>
+    <FileVersion>0.4.4.0</FileVersion>
     <NoWarn>$(NoWarn);NU1701</NoWarn>
     <!-- truly standalone single file, same rationale as Dodgeball: WPF + sqlite natives must bundle -->
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>

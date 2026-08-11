@@ -96,6 +96,34 @@ namespace RateDesk.Weekly.Core
             }
         }
 
+        /// <summary>Days on which a ticker's RECORDED maturity changed — the observed roll days.
+        /// Grows a measured boundary history as updates accumulate; CalendarHealth validates the
+        /// configured calendars against it, so a re-point the calendar doesn't know about is
+        /// flagged on the very next update instead of silently mis-shifting a lookback.</summary>
+        public List<DateTime> MaturityChanges(string ticker, int sinceDays = 400)
+        {
+            lock (_gate)
+            {
+                var cutoff = DateTime.Today.AddDays(-Math.Max(1, sinceDays))
+                    .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "SELECT date, maturity FROM maturity WHERE ticker=@t AND date>=@c ORDER BY date;";
+                cmd.Parameters.AddWithValue("@t", ticker);
+                cmd.Parameters.AddWithValue("@c", cutoff);
+                var changes = new List<DateTime>();
+                string? prev = null;
+                using var r = cmd.ExecuteReader();
+                while (r.Read())
+                {
+                    var mat = r.GetString(1);
+                    if (prev != null && mat != prev)
+                        changes.Add(DateTime.ParseExact(r.GetString(0), "yyyy-MM-dd", CultureInfo.InvariantCulture));
+                    prev = mat;
+                }
+                return changes;
+            }
+        }
+
         /// <summary>Maturity recorded at or before <paramref name="asOf"/>, or null if never seen.</summary>
         public DateTime? MaturityAsOf(string ticker, DateTime asOf)
         {

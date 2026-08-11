@@ -34,12 +34,25 @@ namespace RateDesk.Tests
         }
 
         [Fact]
-        public void ForwardGrid_HasSpacerColumnsBetweenCurrencyGroups()
+        public void ForwardGrid_HasSeparatorColumnsBetweenCurrencyGroups()
         {
             var html = WeeklyEmail.Html(Report(3));
-            // 3 currencies => 2 spacer columns of the CB cards' 26px unit in the colgroup
-            int spacers = html.Split("<col style=\"width:26px;\">").Length - 1;
-            Assert.True(spacers >= 2, $"expected >=2 26px spacer columns, saw {spacers}");
+            // 3 currencies => 2 separator columns of the 6px cohesion unit (the card-title-to-
+            // table distance; 26px read as holes — desk 2026-08-11)
+            int seps = new System.Text.RegularExpressions.Regex(
+                System.Text.RegularExpressions.Regex.Escape("<col style=\"width:6px;\">")).Matches(html).Count;
+            Assert.True(seps >= 2, $"expected >=2 6px separator columns, saw {seps}");
+        }
+
+        [Fact]
+        public void EveryCell_ForbidsWrapping_SoWordCannotDoubleRows()
+        {
+            // Word shrinks any table wider than the window; once a change cell drops below its
+            // text width the value wraps and the whole row doubles (the DM line, 2026-08-11).
+            // nowrap makes a too-wide table scroll instead of mangling.
+            var html = WeeklyEmail.Html(Report(3));
+            Assert.Contains("<td nowrap", html);
+            Assert.DoesNotContain("<td style=", html);   // every Td-built cell carries the attribute
         }
 
         [Fact]

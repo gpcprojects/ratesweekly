@@ -85,8 +85,22 @@
       ],
       // decision ANNOUNCEMENT dates where they differ from the swap-period grid above
       // (hand-curated from the official calendars; the weekly front table reads these).
+      // ECB decides the THURSDAY six days before its Wednesday maintenance-period start
+      // (verified pair: 10-Sep-26 -> 16-Sep-26; official 2026: 29-Oct, 17-Dec). Derived
+      // start-6d for every Wednesday start; 2027-05-06 is a THURSDAY start (pattern break,
+      // Ascension week) and is left for the official calendar - the front shows start* there
+      // and CalendarHealth keeps flagging it until filled.
       "decisionDates": [
-        "2026-09-10"
+        "2026-09-10",
+        "2026-10-29",
+        "2026-12-17",
+        "2027-02-04",
+        "2027-03-18",
+        "2027-06-10",
+        "2027-07-22",
+        "2027-09-09",
+        "2027-10-28",
+        "2027-12-16"
       ],
       "decisionTimeLondon": "13:15",
       "pastDates": [
@@ -166,8 +180,20 @@
       ],
       // decision ANNOUNCEMENT dates where they differ from the swap-period grid above
       // (hand-curated from the official calendars; the weekly front table reads these).
+      // BOC announces the WEDNESDAY before its Thursday period start (verified pair:
+      // 02-Sep-26 -> 03-Sep-26; official 2026: 28-Oct, 09-Dec). Derived start-1bd throughout.
       "decisionDates": [
-        "2026-09-02"
+        "2026-09-02",
+        "2026-10-28",
+        "2026-12-09",
+        "2027-01-27",
+        "2027-03-03",
+        "2027-04-28",
+        "2027-06-02",
+        "2027-07-21",
+        "2027-09-08",
+        "2027-10-27",
+        "2027-12-08"
       ],
       "decisionTimeLondon": "14:45",
       "pastDates": [
@@ -205,10 +231,24 @@
         "2027-11-03",
         "2027-12-15"
       ],
-      // decision ANNOUNCEMENT dates where they differ from the swap-period grid above
-      // (hand-curated from the official calendars; the weekly front table reads these).
+      // decision ANNOUNCEMENT dates where they differ from the swap-period grid above.
+      // RBA announces the Tuesday BEFORE each period start (new rate effective next day):
+      // derived decision = SW_EFF_DT - 1 business day, verified live 2026-08-11 (decision
+      // 11-Aug, ADSF1A eff 12-Aug) and against the official RBA calendar (Sep 28-29 -> Tue
+      // 29th, Nov 2-3 -> Tue 3rd, Dec 7-8 -> Tue 8th). Every period start above is a Wednesday.
       "decisionDates": [
-        "2026-08-11"
+        "2026-08-11",
+        "2026-09-29",
+        "2026-11-03",
+        "2026-12-08",
+        "2027-02-09",
+        "2027-03-23",
+        "2027-05-04",
+        "2027-06-22",
+        "2027-08-10",
+        "2027-09-28",
+        "2027-11-02",
+        "2027-12-14"
       ],
       "decisionTimeLondon": "05:30",
       "pastDates": [
@@ -248,8 +288,21 @@
       ],
       // decision ANNOUNCEMENT dates where they differ from the swap-period grid above
       // (hand-curated from the official calendars; the weekly front table reads these).
+      // RBNZ announces the WEDNESDAY before its Thursday period start (verified pair:
+      // 02-Sep-26 -> 03-Sep-26). Derived start-1bd throughout.
       "decisionDates": [
-        "2026-09-02"
+        "2026-09-02",
+        "2026-10-28",
+        "2026-12-09",
+        "2027-02-10",
+        "2027-03-17",
+        "2027-05-05",
+        "2027-06-16",
+        "2027-08-04",
+        "2027-09-15",
+        "2027-10-27",
+        "2027-12-08",
+        "2028-02-09"
       ],
       "decisionTimeLondon": "03:00",
       "pastDates": [
@@ -410,8 +463,21 @@
       ],
       // decision ANNOUNCEMENT dates where they differ from the swap-period grid above
       // (hand-curated from the official calendars; the weekly front table reads these).
+      // NORGES announces the THURSDAY before its Friday period start (verified pair:
+      // 13-Aug-26 -> 14-Aug-26). Derived start-1bd; 2027-05-06 is a THURSDAY start (pattern
+      // break, Ascension week) and is left for the official calendar.
       "decisionDates": [
-        "2026-08-13"
+        "2026-08-13",
+        "2026-09-24",
+        "2026-11-05",
+        "2026-12-17",
+        "2027-01-21",
+        "2027-03-18",
+        "2027-06-17",
+        "2027-08-12",
+        "2027-09-23",
+        "2027-11-04",
+        "2027-12-16"
       ],
       "decisionTimeLondon": "09:00",
       "pastDates": [

@@ -70,13 +70,17 @@ namespace RateDesk.Core
         // line-height pinned EXACTLY: left to itself, Word picks its own line spacing per table
         // and near-identical tables render with visibly different row heights (the CB front vs
         // the meeting cards, 2026-08-11). One shared cell helper = one row height everywhere.
+        // NOWRAP is just as load-bearing: Word SHRINKS any table wider than the window
+        // proportionally, and once a change cell drops below its text width the value wraps and
+        // doubles the row (the DM line, 2026-08-11). nowrap forbids the wrap, so a too-wide
+        // table scrolls instead of mangling — row heights become window-independent.
         string Td(string inner, string extra = "") =>
-            $"<td style=\"{EmFont}padding:3px 8px;font-size:11.5px;mso-line-height-rule:exactly;line-height:15px;{extra}\">{inner}</td>";
+            $"<td nowrap style=\"{EmFont}padding:3px 8px;font-size:11.5px;white-space:nowrap;mso-line-height-rule:exactly;line-height:15px;{extra}\">{inner}</td>";
         string Sep() => $"border-right:1px solid {EmLine};";
         // Spacer cell with 1px metrics — an UNSTYLED &nbsp; cell picks up Word's Normal style
         // (11pt + paragraph spacing) and inflates EVERY row in the table to its height, which is
         // exactly what happened to the 2026-08-11 grid rebuild. Same principle as Sp().
-        string Gap() => $"<td style=\"{EmFont}font-size:1px;line-height:1px;border:none;\">&nbsp;</td>";
+        string Gap() => $"<td nowrap style=\"{EmFont}font-size:1px;line-height:1px;border:none;\">&nbsp;</td>";
         string RowBg(int rI) => rI % 2 == 1 ? "background:#f5f7fa;" : "";
         string ChgTd(double? v, bool topLine = false, bool sep = false, int rI = 0)
         {
@@ -94,7 +98,7 @@ namespace RateDesk.Core
         // border (survives Word where a styled <hr> or a div border would not), full report width
         string H2(string s) =>
             TableOpen(new[] { 1168 }, "0") +
-            $"<tr><td style=\"{EmFont}font-size:14.5px;font-weight:bold;color:{EmTxt};" +
+            $"<tr><td nowrap style=\"{EmFont}font-size:14.5px;font-weight:bold;color:{EmTxt};" +
             $"border-bottom:1px solid {EmLine};padding:4px 1px 5px 1px;\">{s}</td></tr></table>" + Sp(8);
 
         sb.Append($"<div style=\"{EmFont}color:{EmTxt};font-size:14px;\">");
@@ -143,17 +147,17 @@ namespace RateDesk.Core
         var runs = rep.Runs;
         for (int i = 0; i < runs.Count; i += 3)
         {
-            sb.Append(TableOpen(new[] { 372, 26, 372, 26, 372 }, "0 0 8px 0"));
+            sb.Append(TableOpen(new[] { 372, 6, 372, 6, 372 }, "0 0 8px 0"));
             sb.Append("<tr>");
             for (int k = 0; k < 3; k++)
             {
                 if (k > 0) sb.Append(Gap());
-                if (i + k >= runs.Count) { sb.Append("<td style=\"border:none;\">&nbsp;</td>"); continue; }
+                if (i + k >= runs.Count) { sb.Append("<td nowrap style=\"border:none;\">&nbsp;</td>"); continue; }
                 var run = runs[i + k];
                 // air below each card row matches the 26px column spacers (desk spec 2026-08-11:
                 // vertical gaps between currencies = the horizontal ones) — padding, because Word
                 // honours cell padding where it drops table margins
-                sb.Append("<td style=\"vertical-align:top;padding:0 0 26px 0;\">");
+                sb.Append("<td nowrap style=\"vertical-align:top;padding:0 0 26px 0;\">");
                 sb.Append($"<div style=\"{EmFont}font-weight:bold;font-size:12.5px;color:{EmTxt};margin:0 0 3px 1px;\">{run.Title}" +
                           (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">ref {rp:0.000}</span>" : "")
                           + "</div>");
@@ -198,11 +202,13 @@ namespace RateDesk.Core
                 if (group.Any(c => rI < c.Cells.Count && c.Cells[rI].Mid != null)) lastRow = rI;
             if (lastRow < 0) continue;
 
+            // 6px separator columns between currency groups — the card-title-to-table distance,
+            // the desk's cohesion unit (2026-08-11; down from 26px, which read as holes)
             var widths = new List<int> { 62 };
             for (int gI = 0; gI < group.Count; gI++)
             {
                 widths.Add(62); widths.Add(50); widths.Add(50);
-                if (gI < group.Count - 1) widths.Add(26);
+                if (gI < group.Count - 1) widths.Add(6);
             }
 
             // section title as a caption ABOVE the table — the CB cards' own pattern, and it
@@ -214,7 +220,7 @@ namespace RateDesk.Core
             sb.Append("<tr>").Append(Td("&nbsp;", $"background:{EmHead};"));
             for (int gI = 0; gI < group.Count; gI++)
             {
-                sb.Append($"<td colspan=\"3\" style=\"{EmFont}padding:3px 8px;font-size:12px;" +
+                sb.Append($"<td colspan=\"3\" nowrap style=\"{EmFont}padding:3px 8px;font-size:12px;" +
                           $"background:{EmHead};text-align:center;font-weight:bold;\">{CcyLabel(group[gI].Ccy)}</td>");
                 if (gI < group.Count - 1) sb.Append(Gap());
             }
