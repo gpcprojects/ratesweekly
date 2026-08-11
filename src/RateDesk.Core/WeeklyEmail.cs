@@ -80,7 +80,11 @@ namespace RateDesk.Core
         // Spacer cell with 1px metrics — an UNSTYLED &nbsp; cell picks up Word's Normal style
         // (11pt + paragraph spacing) and inflates EVERY row in the table to its height, which is
         // exactly what happened to the 2026-08-11 grid rebuild. Same principle as Sp().
-        string Gap() => $"<td nowrap style=\"{EmFont}font-size:1px;line-height:1px;border:none;\">&nbsp;</td>";
+        // The WIDTH must live ON THE CELL (css + the width attribute): Word ignores colgroup
+        // widths and sizes columns from cells, so a widthless 1px-font spacer collapses to
+        // nothing — which is why the 16px colgroup separators rendered as no gap at all.
+        string Gap(int w = 16) =>
+            $"<td nowrap width=\"{w}\" style=\"{EmFont}font-size:1px;line-height:1px;border:none;width:{w}px;\">&nbsp;</td>";
         string RowBg(int rI) => rI % 2 == 1 ? "background:#f5f7fa;" : "";
         string ChgTd(double? v, bool topLine = false, bool sep = false, int rI = 0)
         {

@@ -37,11 +37,12 @@ namespace RateDesk.Tests
         public void ForwardGrid_HasSeparatorColumnsBetweenCurrencyGroups()
         {
             var html = WeeklyEmail.Html(Report(3));
-            // 3 currencies => 2 separator columns of the 16px seam (desk 2026-08-11 second
-            // pass: 26px read as holes, 6px read as nothing)
+            // Word IGNORES colgroup widths and sizes columns from cells — the separator width
+            // must ride on the spacer CELL itself (css + width attribute), or the seam
+            // collapses to nothing in the paste (the 2026-08-11 invisible-spacer saga).
             int seps = new System.Text.RegularExpressions.Regex(
-                System.Text.RegularExpressions.Regex.Escape("<col style=\"width:16px;\">")).Matches(html).Count;
-            Assert.True(seps >= 2, $"expected >=2 16px separator columns, saw {seps}");
+                System.Text.RegularExpressions.Regex.Escape("<td nowrap width=\"16\"")).Matches(html).Count;
+            Assert.True(seps >= 2, $"expected >=2 width-carrying separator cells, saw {seps}");
         }
 
         [Fact]
