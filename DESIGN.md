@@ -173,6 +173,23 @@ CB front table) hyperlink when publish.json `siteBase` is set, footer carries "d
 {stamp} · {site} · source: Bloomberg". NOT yet: the movers top strip + teaser (needs the movers
 page), and the real-Outlook paste test above.
 
+REVISED 2026-08-11 (v0.4.0, desk direction): **all-localised delivery** — no external links
+required. (1) Forward grid = THREE one-line tables (DM / EM · LATAM / ASIA EM), every currency of
+the line side by side; ONE spacing unit everywhere = the CB cards' 26px: spacer columns between
+currency groups, air between the grid lines, and vertical air between the meeting cards. (2) The
+meeting cards' Priced column wears the heat ramp (hike = green, cut = red, <2bp unfilled). (3) The
+MOVERS TEASER STRIP was REMOVED from the email (desk call) — movers live in the attachment.
+(4) Delivery = **CREATE EMAIL**: one click opens a ready Outlook draft (COM) with the body plus
+`RatesWeekly_Dashboards.html` attached — the WHOLE site (movers hub + 28 pages, hash-routed tabs)
+in one ~0.6MB self-contained file that opens offline in any browser. ⚠ acceptance test: first send
+to an external recipient (some gateways quarantine .html attachments; PDF pack is the fallback if
+one bites). The Azure static site (§0 hosting) remains the roadmap for stable public links;
+`siteBase` links stay wired and light up whenever it exists. (5) The email FOOTER line
+("dashboards updated … · source: Bloomberg") is REMOVED permanently (desk 2026-08-11) — never
+re-add. (6) Movers page presentation (desk 2026-08-11): NO blurb of any kind (week line,
+methodology, gate counts, pending panels) — sections only, context to the CLI; DM and EM side by
+side, hero cards stacked per side, compact table.
+
 ## 5. Movers Summary page
 
 Headline strip: the biggest mover in each of six categories, then a top-10 table per category.
@@ -289,6 +306,28 @@ thin 30y20y nominal point (~9bp wide in USD) should be flagged indicative.
 RESOLVED: GBP RPI 2-month lag — no longer an assumption, it is what Bloomberg's own maturity field
 says (§0b). Inflation forward tickers — desk supplied the `.{CC}{a}{b}IN G Index` convention
 2026-08-05 and the grid was probed point by point.
+
+## 12. Meeting-OIS roll correctness (hardened + independently verified 2026-08-11)
+
+Desk requirement: ZERO TOUCH — swaps start days after decisions (BOJ ~6d, ECB ~1wk, RBA 1d), the
+tickers roll at the DECISION, and the sheet must carry a just-announced rate before it kicks in,
+automatically, surprises included. What is wired:
+
+- Roll boundaries SNAP TO DECISION DATES (dates/pastDates still contribute; 14-day cluster keeps
+  the earliest of each pair). A lookback landing between decision and period start no longer
+  shifts an index.
+- Decision-day closes are never read: a lookback ON a boundary steps to the day before with the
+  pre-roll index; a walk-back RESOLVING to a boundary close recomputes from the day before it.
+- ANNOUNCED-BUT-NOT-YET-EFFECTIVE base: between a decision and its period start, "Priced"
+  re-bases onto the just-decided period's own OIS (live run-down mid, else its last
+  pre-decision close) instead of the stale o/n fixing — the market print carries the new rate,
+  no policy ticker, no rate calendar. Replaces dodgeball's MANUAL MeetingRefOverrides for this
+  case; manual still wins if set. CHERRY-PICK CANDIDATE for dodgeball.
+- VERIFIED: tools\verify_strip_changes.py restitches every rendered meeting row from raw BDH
+  with an independently-coded shift — 2026-08-11: 58/58 rows reconciled (level, 1w, 1m), 0
+  mismatches, 9 runs — and cross-checks FOMC magnitudes against Fed Funds FUTURES (non-rolling,
+  shares nothing): reconciled. Re-run after calendar updates or roll-logic changes, always
+  against a fresh render.
 
 ## 11. Phasing
 

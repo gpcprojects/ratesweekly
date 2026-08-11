@@ -81,12 +81,13 @@ namespace RateDesk.Core
     public sealed partial class PricingService
     {
         /// <summary>The weekly email's currency universe — the desk's grouping, fixed by spec.
-        /// A currency with no config (or disabled) drops out with a note rather than a crash.</summary>
+        /// A currency with no config (or disabled) drops out with a note rather than a crash.
+        /// RATESWEEKLY DIVERGENCE (desk spec 2026-08-11): THREE grid lines — DM on one, EM and
+        /// LATAM merged on one, ASIA EM on one — each rendered as a single full-width table.</summary>
         private static readonly (string title, string[] ccys)[] WeeklyGroups =
         {
             ("DM", new[] { "USD", "EUR", "GBP", "JPY", "CAD", "SEK", "NOK", "DKK", "CHF", "AUD", "NZD" }),
-            ("EM", new[] { "HUF", "CZK", "PLN", "ZAR", "ILS" }),
-            ("LATAM", new[] { "COP", "CLP", "MXN", "BRL" }),
+            ("EM · LATAM", new[] { "HUF", "CZK", "PLN", "ZAR", "ILS", "COP", "CLP", "MXN", "BRL" }),
             ("ASIA EM", new[] { "TWD", "THB", "MYR", "INR", "CNY", "HKD", "SGD", "KRW" }),
         };
 
@@ -170,8 +171,14 @@ namespace RateDesk.Core
                     if (run.Rows.Count > 0)
                     {
                         var front = run.Rows[0];
+                        // the decision must BELONG to this period (within the settlement lag):
+                        // on decision day the front rolls to the next meeting, and a calendar
+                        // that isn't topped up yet would otherwise pair it with the JUST-DELIVERED
+                        // decision (RBA, 2026-08-11: 30-Sep start shown against the 11-Aug
+                        // decision). No match ⇒ null ⇒ the honest "start *" rendering.
                         var dec = sched.DecisionDates
-                            .Where(d => d.Date >= DateTime.Today && d <= front.Date)
+                            .Where(d => d.Date >= DateTime.Today && d.Date <= front.Date
+                                     && (front.Date - d.Date).TotalDays <= 10)
                             .OrderBy(d => d).Cast<DateTime?>().FirstOrDefault();
                         rep.Fronts.Add(new WeeklyFront
                         {

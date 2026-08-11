@@ -1,0 +1,36 @@
+# RatesWeekly — build, test, and publish the exes as a pipeline artifact on every master push,
+# so teammates with Azure access download a build without needing a dev setup:
+# Pipelines → ratesweekly → latest run → Artifacts → ratesweekly-exes (app/RatesWeekly.exe).
+# Deliberately minimal — no feed publish (the org's free Artifacts tier is full, see dodgeball's
+# HANDOFF), no GitHub-release step (releases to the desk are cut from a dev machine for now).
+trigger:
+  branches:
+    include:
+      - master
+
+pool:
+  vmImage: windows-latest
+
+steps:
+  - task: UseDotNet@2
+    displayName: .NET 8 SDK
+    inputs:
+      packageType: sdk
+      version: 8.0.x
+
+  - script: dotnet test tests/RateDesk.Tests/RateDesk.Tests.csproj -c Release
+    displayName: tests (must stay green)
+
+  - script: >
+      dotnet publish src/RateDesk.Weekly/RateDesk.Weekly.csproj -c Release -r win-x64
+      -o $(Build.ArtifactStagingDirectory)/app --self-contained true /p:PublishSingleFile=true
+    displayName: publish RatesWeekly.exe
+
+  - script: >
+      dotnet publish src/RateDesk.Weekly.Cli/RateDesk.Weekly.Cli.csproj -c Release -r win-x64
+      -o $(Build.ArtifactStagingDirectory)/cli --self-contained true /p:PublishSingleFile=true
+    displayName: publish RatesWeeklyCli.exe
+
+  - publish: $(Build.ArtifactStagingDirectory)
+    artifact: ratesweekly-exes
+    displayName: artifact ratesweekly-exes

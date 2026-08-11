@@ -288,6 +288,65 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void BetweenDecisionAndEffect_PricedRebasesOffTheDecidedPeriod()
+        {
+            // The ECB shape: a change announced Thursday starts the following Wednesday. Until
+            // then the o/n fixing prints the OLD rate, and priced-vs-fixing would overstate the
+            // whole run by the just-delivered change. The base must re-base AUTOMATICALLY onto
+            // the decided period's own OIS — zero touch (desk 2026-08-11).
+            var snap = new RatesSnapshot();
+            const string p = "TESTECB{N}";
+            var dec = DateTime.Today.AddDays(-2);
+            var eff = DateTime.Today.AddDays(4);
+
+            Rung(snap, p, 0, eff, eff.AddDays(42));                 // the decided period
+            Rung(snap, p, 1, eff.AddDays(42), eff.AddDays(84));     // next undecided
+            snap.Update(p.Replace("{N}", "0") + " Curncy", null, null, 2.25);  // NEW rate
+            snap.Update(p.Replace("{N}", "1") + " Curncy", null, null, 2.30);
+            snap.Update("TESTFIX Index", null, null, 2.00);         // fixing still on the OLD rate
+
+            var sched = new MeetingScheduleDef
+            {
+                Name = "TESTW", Ccy = "USD", Header = "t",
+                Tickers = new List<string> { p },
+                RefTicker = "TESTFIX Index",
+                DecisionDates = new List<DateTime> { dec },
+                Dates = new List<DateTime> { eff, eff.AddDays(42), eff.AddDays(84) },
+            };
+
+            var run = Service(snap).MeetingRun(sched);
+
+            Assert.NotNull(run.RefPct);
+            Assert.Equal(2.25, run.RefPct!.Value, 6);   // the decided period's rate, not 2.00
+        }
+
+        [Fact]
+        public void OutsideTheDecisionWindow_TheFixingStands()
+        {
+            var snap = new RatesSnapshot();
+            const string p = "TESTSTD{N}";
+            var eff = DateTime.Today.AddDays(30);
+            Rung(snap, p, 0, DateTime.Today.AddDays(-12), eff);
+            Rung(snap, p, 1, eff, eff.AddDays(42));
+            snap.Update(p.Replace("{N}", "0") + " Curncy", null, null, 2.10);
+            snap.Update(p.Replace("{N}", "1") + " Curncy", null, null, 2.20);
+            snap.Update("TESTFIX Index", null, null, 2.00);
+
+            var sched = new MeetingScheduleDef
+            {
+                Name = "TESTW2", Ccy = "USD", Header = "t",
+                Tickers = new List<string> { p },
+                RefTicker = "TESTFIX Index",
+                DecisionDates = new List<DateTime> { DateTime.Today.AddDays(-40) },  // long settled
+                Dates = new List<DateTime>
+                    { DateTime.Today.AddDays(-40), eff, eff.AddDays(42) },
+            };
+
+            var run = Service(snap).MeetingRun(sched);
+            Assert.Equal(2.00, run.RefPct!.Value, 6);
+        }
+
+        [Fact]
         public void AnImplausibleEffectiveDate_IsIgnoredRatherThanTrusted()
         {
             // a start before the previous maturity, or past its own end, is a bad field — not a

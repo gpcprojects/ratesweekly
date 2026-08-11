@@ -213,12 +213,35 @@ namespace RateDesk.Tests
             Assert.Contains("EM — outsized movers", html);
             Assert.Contains("href=\"usd.html\"", html);
             Assert.Contains("href=\"mxn.html\"", html);
-            Assert.Contains("Beta-conditional flags", html);   // the honest pending panel
+            Assert.Contains("<div class=\"rw-panels\">", html); // shell still wraps standalone pages
+            // the desk's no-blurb rule (2026-08-11): no week line, no methodology paragraph, no
+            // gate counts, no pending-feature panel — sections only
+            Assert.DoesNotContain("Week to", html);
+            Assert.DoesNotContain("Ranked by |z|", html);
+            Assert.DoesNotContain("excluded by the data gates", html);
+            Assert.DoesNotContain("Beta-conditional flags", html);
 
             var json = MoverScan.ToJson(mv);
             Assert.Contains("\"headline\"", json);
             Assert.Contains("DM:", json);
             Assert.Contains("USD", json);
+        }
+
+        [Fact]
+        public void SiteFile_CarriesEveryPageBehindHashNav_AndTheRouter()
+        {
+            using var store = ScanFixture(out var configs);
+            var mv = MoverScan.Scan(configs, _ => "", store, AsOf);
+
+            var html = SiteFile.Build(configs, _ => "", store, AsOf, mv);
+
+            Assert.Contains("id=\"pg-movers\"", html);
+            Assert.Contains("id=\"pg-usd\" hidden", html);      // only the hub starts visible
+            Assert.Contains("id=\"pg-mxn\" hidden", html);
+            Assert.Contains("href=\"#usd\"", html);             // nav switched to hash anchors
+            Assert.Contains("href=\"#movers\"", html);
+            Assert.Contains("hashchange", html);                // the router is aboard
+            Assert.DoesNotContain("href=\"usd.html\"", html);   // no file links inside the pack
         }
     }
 }

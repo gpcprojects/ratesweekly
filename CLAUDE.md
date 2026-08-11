@@ -35,12 +35,22 @@ dashboard-link/footer hooks (null = byte-identical to dodgeball's rendering).
 ## The weekly email lives HERE (consolidation decision, 2026-08-11)
 The desk email (CB front table + meeting cards + forward grid, dodgeball's WEEKLY layout) is
 BUILT AND SHIPPED from this app: Weekly.Core\EmailBuilder drives Core's BuildWeekly/WeeklyEmail
-live at UPDATE time, persists email.html/email.txt/email_preview.html to out\, and COPY EMAIL
-puts the persisted fragment on the clipboard as CF_HTML. Currency headers hyperlink to the
-dashboards when %APPDATA%\RatesWeekly\publish.json carries {"siteBase": "https://…"} — links are
-OMITTED, never guessed, without it. The movers strip ships dark until the movers page exists.
-dodgeball's standalone DodgeballWeekly.exe is slated for REMOVAL over there once the desk runs
-this app — do not improve the email in two repos.
+live at UPDATE time, persists email.html/email.txt/email_preview.html to out\. **CREATE EMAIL**
+opens a ready Outlook draft (COM, late-bound) with the body + the single-file dashboards pack
+attached (Render\SiteFile → out\RatesWeekly_Dashboards.html — the whole site, hash-routed, works
+offline); COPY EMAIL remains the clipboard fallback (a paste cannot carry attachments). Layout
+per desk spec 2026-08-11: three one-line forward grids (DM / EM · LATAM / ASIA EM), 26px spacing
+unit everywhere, Priced heat on the meeting cards, NO movers strip in the email. Currency headers
+hyperlink only when %APPDATA%\RatesWeekly\publish.json carries {"siteBase": …} — links are
+OMITTED, never guessed. dodgeball's standalone DodgeballWeekly.exe is slated for REMOVAL over
+there once the desk runs this app — do not improve the email in two repos.
+
+PRESENTATION RULES (desk, 2026-08-11 — same discipline as dodgeball's weekly): NO footer/source
+line in the email ("dashboards updated … · source: Bloomberg" is gone — never re-add), NO blurb
+on the movers page (no week line, no G3/methodology paragraph, no gate counts, no
+pending-feature panels — sections only; the context lines print in the CLI render instead), and
+the movers layout is DM and EM side by side (ordinary panels in the auto-fit grid), hero cards
+stacked vertically per side, compact ranked table.
 
 ## Build / test
 - SDK: dotnet 8 ("C:\Users\GPC Work\.dotnet\dotnet.exe" on the original machine).

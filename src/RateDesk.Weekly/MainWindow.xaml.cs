@@ -24,6 +24,12 @@ namespace RateDesk.Weekly
             VersionText.Text = "v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?");
             Directory.CreateDirectory(AppDataDir);
             Directory.CreateDirectory(OutDir);
+            // one line per button; the first UPDATE clears these and takes the box over
+            LogBox.Text =
+                "UPDATE — pulls Bloomberg, brings the history current, redraws every dashboard and builds the desk email.\r\n" +
+                "CREATE EMAIL — opens a ready Outlook draft: body filled in, dashboards file attached.\r\n" +
+                "COPY EMAIL — copies the built email to the clipboard, for pasting into an existing draft.\r\n" +
+                "OPEN OUTPUT — opens the dashboards in your browser.\r\n";
         }
 
         private void Log(string s) => Dispatcher.Invoke(() =>
@@ -37,6 +43,7 @@ namespace RateDesk.Weekly
             if (_updating) return;
             _updating = true;
             UpdateBtn.IsEnabled = false;
+            LogBox.Clear();   // the startup instructions give way to the run log
             StatusText.Text = "updating...";
             try
             {
@@ -102,8 +109,8 @@ namespace RateDesk.Weekly
                 }
                 catch (Exception ex) { log($"! {cfg.Ccy}: {ex.Message}"); }
             }
-            // the hub last, so it ranks off the same store state the pages were drawn from;
-            // movers.json is what feeds the email's teaser strip
+            // the hub last, so it ranks off the same store state the pages were drawn from —
+            // then the whole site again as ONE self-contained file, the email's attachment
             try
             {
                 var mv = MoverScan.Scan(configs, svc.SourceFor, store, asOf);
@@ -111,10 +118,44 @@ namespace RateDesk.Weekly
                 File.WriteAllText(Path.Combine(OutDir, "movers.json"), MoverScan.ToJson(mv));
                 n++;
                 log($"movers hub: {mv.DmRanked.Count} DM / {mv.EmRanked.Count} EM instruments ranked");
+                var pack = Path.Combine(OutDir, SiteFile.FileName);
+                File.WriteAllText(pack, SiteFile.Build(configs, svc.SourceFor, store, asOf, mv));
+                log($"single-file pack: {SiteFile.FileName} ({new FileInfo(pack).Length / 1024.0 / 1024.0:F2} MB)");
             }
-            catch (Exception ex) { log("! movers page failed: " + ex.Message); }
+            catch (Exception ex) { log("! movers/pack failed: " + ex.Message); }
             log($"rendered {n} page(s) as of {asOf:yyyy-MM-dd}");
             return n;
+        }
+
+        /// <summary>One click to a ready Outlook draft: body = the persisted email fragment, the
+        /// single-file dashboards pack attached. COM via late binding so the exe stays standalone
+        /// and works with whatever Outlook the desk runs. COPY EMAIL remains the fallback — a
+        /// clipboard paste physically cannot carry an attachment.</summary>
+        private void CreateEmail_Click(object sender, RoutedEventArgs e)
+        {
+            var frag = Path.Combine(OutDir, EmailBuilder.FragmentFile);
+            if (!File.Exists(frag))
+            {
+                StatusText.Text = "no email built yet — run UPDATE first.";
+                return;
+            }
+            try
+            {
+                var t = Type.GetTypeFromProgID("Outlook.Application")
+                    ?? throw new InvalidOperationException("Outlook is not installed on this machine");
+                dynamic outlook = Activator.CreateInstance(t)!;
+                dynamic mail = outlook.CreateItem(0); // olMailItem
+                mail.Subject = $"DRAX Swaps — Rates Weekly — {File.GetLastWriteTime(frag):dd MMM yyyy}";
+                mail.HTMLBody = "<html><body style=\"margin:14px;background:#ffffff;\">"
+                    + File.ReadAllText(frag) + "</body></html>";
+                var pack = Path.Combine(OutDir, SiteFile.FileName);
+                bool attached = File.Exists(pack);
+                if (attached) mail.Attachments.Add(pack);
+                mail.Display();
+                StatusText.Text = "draft opened in Outlook — add recipients and send."
+                    + (attached ? " Dashboards pack attached." : " (no dashboards pack found — run UPDATE)");
+            }
+            catch (Exception ex) { StatusText.Text = "create email failed: " + ex.Message; }
         }
 
         private void CopyEmail_Click(object sender, RoutedEventArgs e)

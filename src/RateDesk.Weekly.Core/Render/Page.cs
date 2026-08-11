@@ -17,36 +17,41 @@ namespace RateDesk.Weekly.Core.Render
         };
 
         /// <summary>DM occupies the first row on its own; EM, LATAM and ASIA EM share the second
-        /// (desk layout, 2026-08-05).</summary>
-        public static string Nav(string current)
+        /// (desk layout, 2026-08-05). <paramref name="href"/> resolves a target ("movers" or a
+        /// ccy) to a link — file-per-page by default; the single-file edition passes hash
+        /// anchors so its router can switch sections in place.</summary>
+        public static string Nav(string current, Func<string, string>? href = null)
         {
+            href ??= c => c.Equals("movers", StringComparison.OrdinalIgnoreCase)
+                ? "index.html" : c.ToLowerInvariant() + ".html";
             var sb = new StringBuilder("<nav class=\"rw-nav\">");
 
             sb.Append("<div class=\"rw-navrow\"><a class=\"rw-hub");
             sb.Append(current.Equals("movers", StringComparison.OrdinalIgnoreCase) ? " on" : "");
-            sb.Append("\" href=\"index.html\">◆ Movers</a>");
-            sb.Append(GroupHtml(Groups[0], current));
+            sb.Append($"\" href=\"{href("movers")}\">◆ Movers</a>");
+            sb.Append(GroupHtml(Groups[0], current, href));
             sb.Append("</div>");
 
             sb.Append("<div class=\"rw-navrow\">");
-            for (int g = 1; g < Groups.Length; g++) sb.Append(GroupHtml(Groups[g], current));
+            for (int g = 1; g < Groups.Length; g++) sb.Append(GroupHtml(Groups[g], current, href));
             sb.Append("</div>");
 
             return sb.Append("</nav>").ToString();
         }
 
-        private static string GroupHtml(string[] g, string current)
+        private static string GroupHtml(string[] g, string current, Func<string, string> href)
         {
             var sb = new StringBuilder($"<span class=\"rw-grp\"><b>{Viz.Esc(g[0])}</b>");
             for (int i = 1; i < g.Length; i++)
             {
                 bool on = g[i].Equals(current, StringComparison.OrdinalIgnoreCase);
-                sb.Append($"<a class=\"rw-cc{(on ? " on" : "")}\" href=\"{g[i].ToLowerInvariant()}.html\">{g[i]}</a>");
+                sb.Append($"<a class=\"rw-cc{(on ? " on" : "")}\" href=\"{href(g[i])}\">{g[i]}</a>");
             }
             return sb.Append("</span>").ToString();
         }
 
-        public static string Shell(string title, string current, string heading, string body)
+        public static string Shell(string title, string current, string heading, string body,
+            Func<string, string>? navHref = null, bool wrapPanels = true)
         {
             // Token replacement, not interpolation: the CSS and JS below are full of braces, which
             // fight every raw-string interpolation form.
@@ -54,8 +59,9 @@ namespace RateDesk.Weekly.Core.Render
                 .Replace("%%TITLE%%", Viz.Esc(title))
                 .Replace("%%THEMECSS%%", Viz.ThemeCss)
                 .Replace("%%HEADING%%", Viz.Esc(heading))
-                .Replace("%%NAV%%", Nav(current))
-                .Replace("%%BODY%%", body);
+                .Replace("%%NAV%%", Nav(current, navHref))
+                // the single-file edition carries several rw-panels grids of its own, one per page
+                .Replace("%%BODY%%", wrapPanels ? $"<div class=\"rw-panels\">{body}</div>" : body);
         }
 
         private const string Template = """
@@ -149,7 +155,9 @@ namespace RateDesk.Weekly.Core.Render
                 .rw-wide{grid-column:1/-1}
                 .rw-ctx{color:var(--rw-ink2);font-size:12.5px;line-height:1.55;margin-top:6px}
                 .rw-ctx p{margin:0 0 4px}
-                .rw-heroes{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px;margin:10px 0 14px}
+                /* hero cards stack vertically inside each section (desk layout 2026-08-11: DM and
+                   EM side by side, cards below each other on each side) */
+                .rw-heroes{display:grid;grid-template-columns:1fr;gap:12px;margin:10px 0 14px}
                 .rw-hero{background:var(--rw-plane);border:1px solid var(--rw-border);border-radius:10px;
                   padding:12px 14px;min-width:0}
                 .rw-hero-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
@@ -164,11 +172,11 @@ namespace RateDesk.Weekly.Core.Render
                 .rw-stat-row{display:flex;gap:18px;flex-wrap:wrap;margin-top:6px}
                 .rw-stat b{display:block;font-size:13.5px;font-variant-numeric:tabular-nums}
                 .rw-stat span{font-size:9.5px;color:var(--rw-muted);text-transform:uppercase;letter-spacing:.04em}
-                table.rw-mv{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}
-                table.rw-mv th{text-align:right;font-weight:500;font-size:9.5px;letter-spacing:.03em;
-                  text-transform:uppercase;color:var(--rw-muted);padding:3px 8px;border-bottom:1px solid var(--rw-grid)}
+                table.rw-mv{border-collapse:collapse;width:100%;font-size:11px;white-space:nowrap}
+                table.rw-mv th{text-align:right;font-weight:500;font-size:9px;letter-spacing:.03em;
+                  text-transform:uppercase;color:var(--rw-muted);padding:2px 6px;border-bottom:1px solid var(--rw-grid)}
                 table.rw-mv th.l,table.rw-mv td.l{text-align:left}
-                table.rw-mv td{padding:3px 8px;text-align:right;font-variant-numeric:tabular-nums;
+                table.rw-mv td{padding:2px 6px;text-align:right;font-variant-numeric:tabular-nums;
                   border-bottom:1px solid var(--rw-grid)}
                 table.rw-mv a{color:var(--rw-ink);text-decoration:none;font-weight:600}
                 table.rw-mv a:hover{text-decoration:underline}
@@ -182,7 +190,7 @@ namespace RateDesk.Weekly.Core.Render
                   <button class="rw-toggle" id="rwTheme" type="button">◑ theme</button>
                 </header>
                 %%NAV%%
-                <div class="rw-panels">%%BODY%%</div>
+                %%BODY%%
                 </div>
                 <script>
                 (function(){

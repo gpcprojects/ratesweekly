@@ -27,7 +27,7 @@ switch (cmd)
 {
     case "update":
     {
-        Console.WriteLine($"RATESWEEKLY — history update  ({DateTime.Now:yyyy-MM-dd HH:mm:ss})");
+        Console.WriteLine($"RatesWeekly — history update  ({DateTime.Now:yyyy-MM-dd HH:mm:ss})");
         Console.WriteLine($"store: {dbPath}");
         using var store = new HistoryStore(dbPath);
         try
@@ -119,9 +119,16 @@ switch (cmd)
                     RateDesk.Weekly.Core.Series.MoverScan.ToJson(mv));
                 Console.WriteLine($"  MOVERS {new FileInfo(idx).Length / 1024.0,5:F0} KB  {idx}  " +
                                   $"({mv.DmRanked.Count} DM / {mv.EmRanked.Count} EM ranked)");
+                // the page itself carries NO blurb (desk rule) — the context lines land here
+                if (mv.G3Line is { } g3) Console.WriteLine("    " + g3);
+                foreach (var note in mv.Notes) Console.WriteLine("    " + note);
                 n++;
+                var pack = Path.Combine(outDir, RateDesk.Weekly.Core.Render.SiteFile.FileName);
+                File.WriteAllText(pack,
+                    RateDesk.Weekly.Core.Render.SiteFile.Build(configs, svc.SourceFor, store, asOf, mv));
+                Console.WriteLine($"  PACK   {new FileInfo(pack).Length / 1024.0,5:F0} KB  {pack}");
             }
-            catch (Exception ex) { Console.Error.WriteLine("  ! movers: " + ex.Message); }
+            catch (Exception ex) { Console.Error.WriteLine("  ! movers/pack: " + ex.Message); }
         }
         Console.WriteLine($"rendered {n} page(s) as of {asOf:yyyy-MM-dd} into {outDir}");
         return 0;
@@ -155,6 +162,6 @@ switch (cmd)
     }
 
     default:
-        Console.WriteLine("RATESWEEKLY CLI — usage: update [--db <path>] | status [--db <path>] | render [ccy] [--out <dir>] | email [--out <dir>]");
+        Console.WriteLine("RatesWeekly CLI — usage: update [--db <path>] | status [--db <path>] | render [ccy] [--out <dir>] | email [--out <dir>]");
         return cmd == "help" ? 0 : 1;
 }

@@ -24,7 +24,7 @@ namespace RateDesk.Core
     /// <summary>Email heat fill, monitor convention: GREEN = higher yield, RED = lower.
     /// Empty (no fill) under 2bp — colour marks movers; ramp 2→10bp; opaque pastels of the
     /// monitor's own colours so black text stays legible.</summary>
-    internal static string? HeatHex(double bp)
+    public static string? HeatHex(double bp)
     {
         if (Math.Abs(bp) < 2.0) return null;
         double t = 0.16 + 0.44 * Math.Min(1.0, (Math.Abs(bp) - 2.0) / 8.0);
@@ -67,10 +67,24 @@ namespace RateDesk.Core
         string CcyLabel(string ccy) => ccyHref?.Invoke(ccy) is string u
             ? $"<a href=\"{u}\" style=\"color:inherit;text-decoration:underline;\">{ccy}</a>"
             : ccy;
+        // line-height pinned EXACTLY: left to itself, Word picks its own line spacing per table
+        // and near-identical tables render with visibly different row heights (the CB front vs
+        // the meeting cards, 2026-08-11). One shared cell helper = one row height everywhere.
+        // NOWRAP is just as load-bearing: Word SHRINKS any table wider than the window
+        // proportionally, and once a change cell drops below its text width the value wraps and
+        // doubles the row (the DM line, 2026-08-11). nowrap forbids the wrap, so a too-wide
+        // table scrolls instead of mangling — row heights become window-independent.
         string Td(string inner, string extra = "") =>
-            $"<td style=\"{EmFont}padding:3px 8px;font-size:11.5px;{extra}\">{inner}</td>";
+            $"<td nowrap style=\"{EmFont}padding:3px 8px;font-size:11.5px;white-space:nowrap;mso-line-height-rule:exactly;line-height:15px;{extra}\">{inner}</td>";
         string Sep() => $"border-right:1px solid {EmLine};";
-        string Gap() => "<td style=\"border:none;\">&nbsp;</td>";
+        // Spacer cell with 1px metrics — an UNSTYLED &nbsp; cell picks up Word's Normal style
+        // (11pt + paragraph spacing) and inflates EVERY row in the table to its height, which is
+        // exactly what happened to the 2026-08-11 grid rebuild. Same principle as Sp().
+        // The WIDTH must live ON THE CELL (css + the width attribute): Word ignores colgroup
+        // widths and sizes columns from cells, so a widthless 1px-font spacer collapses to
+        // nothing — which is why the 16px colgroup separators rendered as no gap at all.
+        string Gap(int w = 8) =>
+            $"<td nowrap width=\"{w}\" style=\"{EmFont}font-size:1px;line-height:1px;border:none;width:{w}px;\">&nbsp;</td>";
         string RowBg(int rI) => rI % 2 == 1 ? "background:#f5f7fa;" : "";
         string ChgTd(double? v, bool topLine = false, bool sep = false, int rI = 0)
         {
@@ -88,7 +102,7 @@ namespace RateDesk.Core
         // border (survives Word where a styled <hr> or a div border would not), full report width
         string H2(string s) =>
             TableOpen(new[] { 1168 }, "0") +
-            $"<tr><td style=\"{EmFont}font-size:14.5px;font-weight:bold;color:{EmTxt};" +
+            $"<tr><td nowrap style=\"{EmFont}font-size:14.5px;font-weight:bold;color:{EmTxt};" +
             $"border-bottom:1px solid {EmLine};padding:4px 1px 5px 1px;\">{s}</td></tr></table>" + Sp(8);
 
         sb.Append($"<div style=\"{EmFont}color:{EmTxt};font-size:14px;\">");
@@ -98,27 +112,31 @@ namespace RateDesk.Core
         {
             bool anyStartOnly = false;
             sb.Append(H2("CB Front Meeting Market Pricing"));
-            sb.Append(TableOpen(new[] { 136, 108, 104, 82, 86, 90 }));
+            sb.Append(TableOpen(new[] { 136, 108, 104, 82, 86, 90, 64 }));
             string FH(string s, bool right = false) =>
                 Td($"<b>{s}</b>", $"background:{EmHead};{(right ? "text-align:right;" : "")}" +
-                                  $"border-bottom:2px solid {EmAccent};padding:5px 8px;");
+                                  $"border-bottom:2px solid {EmAccent};padding:4px 8px;");
             sb.Append("<tr>" + FH("Central Bank") + FH("Decision Date") + FH("Start Date")
-                + FH("OIS Mid", true) + FH("Base Rate", true) + FH("Priced (bp)", true) + "</tr>");
+                + FH("OIS Mid", true) + FH("Base Rate", true) + FH("Priced (bp)", true)
+                + FH("% 25bp", true) + "</tr>");
             int fr = 0;
             foreach (var f in rep.Fronts)
             {
                 string rb = RowBg(fr++);
                 anyStartOnly |= f.Decision == null;
-                string pStyle = f.PricedBp is double pv && Math.Abs(pv) >= 2.0
-                    ? (pv > 0 ? "color:#1e7a3c;font-weight:bold;" : "color:#b3362a;font-weight:bold;")
-                    : $"color:{EmMut};";
+                // NO heat on Priced (desk 2026-08-11: "doesn't look as good as I thought") — the
+                // emphasis column is % 25bp: the priced move as a share of a standard 25bp step,
+                // signed by direction, deliberately uncapped (+50bp priced = +200%).
+                string pct = f.PricedBp is double pv
+                    ? (pv / 25.0 * 100.0).ToString("+0;-0;0") + "%" : "&nbsp;";
                 sb.Append("<tr>" +
                     Td($"<b>{f.Bank}</b> <span style=\"color:{EmMut};font-size:10px;\">{CcyLabel(f.Ccy)}</span>", rb) +
                     Td(f.Decision is { } dd ? Inv(dd) : Inv(f.StartDate) + " *", rb) +
                     Td(Inv(f.StartDate), rb) +
                     Td($"<b>{f.MidPct:0.000}</b>", $"text-align:right;{rb}") +
                     Td(f.RefPct is double rp2 ? rp2.ToString("0.000") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
-                    Td(f.PricedBp is double p2 ? p2.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;{pStyle}{rb}") +
+                    Td(f.PricedBp is double p2 ? p2.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
+                    Td($"<b>{pct}</b>", $"text-align:right;{rb}") +
                     "</tr>");
             }
             sb.Append("</table>");
@@ -133,16 +151,17 @@ namespace RateDesk.Core
         var runs = rep.Runs;
         for (int i = 0; i < runs.Count; i += 3)
         {
-            sb.Append(TableOpen(new[] { 372, 26, 372, 26, 372 }, "0 0 8px 0"));
+            sb.Append(TableOpen(new[] { 372, 8, 372, 8, 372 }, "0 0 8px 0"));
             sb.Append("<tr>");
             for (int k = 0; k < 3; k++)
             {
                 if (k > 0) sb.Append(Gap());
-                if (i + k >= runs.Count) { sb.Append("<td style=\"border:none;\">&nbsp;</td>"); continue; }
+                if (i + k >= runs.Count) { sb.Append("<td nowrap style=\"border:none;\">&nbsp;</td>"); continue; }
                 var run = runs[i + k];
-                // ~0.5cm of air below each card row (user spec) — padding, because Word honours
-                // cell padding where it drops table margins
-                sb.Append("<td style=\"vertical-align:top;padding:0 0 19px 0;\">");
+                // air below each card row matches the 26px column spacers (desk spec 2026-08-11:
+                // vertical gaps between currencies = the horizontal ones) — padding, because Word
+                // honours cell padding where it drops table margins
+                sb.Append("<td nowrap style=\"vertical-align:top;padding:0 0 26px 0;\">");
                 sb.Append($"<div style=\"{EmFont}font-weight:bold;font-size:12.5px;color:{EmTxt};margin:0 0 3px 1px;\">{run.Title}" +
                           (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">ref {rp:0.000}</span>" : "")
                           + "</div>");
@@ -156,6 +175,8 @@ namespace RateDesk.Core
                 foreach (var m in run.Rows)
                 {
                     string rb = RowBg(mr++);
+                    // Priced stays plain muted text — the heat experiment was reverted on the
+                    // desk's read (2026-08-11); heat belongs to the CHANGE columns only
                     sb.Append("<tr>" +
                         Td(Inv(m.Date), rb) +
                         Td($"<b>{m.MidPct:0.000}</b>", $"text-align:right;{rb}") +
@@ -169,64 +190,87 @@ namespace RateDesk.Core
         }
 
         // ---- 3. Forward Rates Summary ----
-        // one block per <=6 currencies, and each block stops at its own last populated row: an EM
-        // block capped at 7y3y must not print four empty rows to prove it
+        // RATESWEEKLY DIVERGENCE (desk spec 2026-08-11): one table per grid LINE — DM, EM · LATAM,
+        // ASIA EM — every currency of the line side by side, a 26px spacer column between currency
+        // groups and 26px of air between the lines (the CB cards' own spacing unit). Each line
+        // still stops at its own last populated row: a capped line must not print empty rows.
         sb.Append(Sp(6));
         sb.Append(H2("Forward Rates Summary"));
         foreach (var sec in rep.Sections)
         {
-            for (int off = 0; off < sec.Ccys.Count; off += WeeklyCcysPerBlock)
+            var group = sec.Ccys;
+            if (group.Count == 0) continue;
+            var labels = group[0].Cells.Select(cl => cl.Label).ToList();
+            int lastRow = -1;
+            for (int rI = 0; rI < labels.Count; rI++)
+                if (group.Any(c => rI < c.Cells.Count && c.Cells[rI].Mid != null)) lastRow = rI;
+            if (lastRow < 0) continue;
+
+            // 8px separator columns between currency groups (desk-tuned 2026-08-11: 26 = holes,
+            // 6 = nothing, 16 = too wide, 8 = the seam)
+            var widths = new List<int> { 62 };
+            for (int gI = 0; gI < group.Count; gI++)
             {
-                var group = sec.Ccys.Skip(off).Take(WeeklyCcysPerBlock).ToList();
-                var labels = sec.Ccys[0].Cells.Select(cl => cl.Label).ToList();
-                int lastRow = -1;
-                for (int rI = 0; rI < labels.Count; rI++)
-                    if (group.Any(c => rI < c.Cells.Count && c.Cells[rI].Mid != null)) lastRow = rI;
-                if (lastRow < 0) continue;
-
-                var widths = new List<int> { 62 };
-                foreach (var _ in group) { widths.Add(62); widths.Add(50); widths.Add(50); }
-                sb.Append(TableOpen(widths, "0 0 14px 0"));
-
-                string label = off == 0 ? sec.Title : sec.Title + " (cont.)";
-                sb.Append("<tr>")
-                  .Append(Td($"<b>{label}</b>", $"background:{EmHead};font-size:12px;color:{EmTxt};"));
-                foreach (var c in group)
-                    sb.Append($"<td colspan=\"3\" style=\"{EmFont}padding:3px 8px;font-size:12px;" +
-                              $"background:{EmHead};text-align:center;font-weight:bold;{Sep()}\">{CcyLabel(c.Ccy)}</td>");
-                sb.Append("</tr>");
-
-                sb.Append("<tr>").Append(Td("&nbsp;", $"background:{EmHead};border-bottom:2px solid {EmAccent};"));
-                foreach (var _ in group)
-                {
-                    string h = $"background:{EmHead};text-align:center;color:{EmMut};font-size:9.5px;" +
-                               $"border-bottom:2px solid {EmAccent};";
-                    sb.Append(Td("mid", h)).Append(Td("1w", h)).Append(Td("1m", h + Sep()));
-                }
-                sb.Append("</tr>");
-
-                for (int rI = 0; rI <= lastRow; rI++)
-                {
-                    bool tl = rI is 1 or 5; // spot | 1y-window forwards | longer windows
-                    string tls = tl ? $"border-top:1px solid {EmLine};" : "";
-                    sb.Append("<tr>").Append(Td($"<b>{labels[rI]}</b>",
-                        $"background:{EmHead};{tls}{Sep()}"));
-                    foreach (var c in group)
-                    {
-                        var cell = rI < c.Cells.Count ? c.Cells[rI] : null;
-                        if (cell?.Mid is not double mid)
-                        {
-                            sb.Append(Td("&nbsp;", tls + RowBg(rI)))
-                              .Append(ChgTd(null, tl, false, rI)).Append(ChgTd(null, tl, true, rI));
-                            continue;
-                        }
-                        sb.Append(Td($"<b>{mid:0.000}</b>", $"text-align:right;{tls}{RowBg(rI)}"));
-                        sb.Append(ChgTd(cell.W1Bp, tl, false, rI)).Append(ChgTd(cell.M1Bp, tl, true, rI));
-                    }
-                    sb.Append("</tr>");
-                }
-                sb.Append("</table>");
+                widths.Add(62); widths.Add(50); widths.Add(50);
+                if (gI < group.Count - 1) widths.Add(8);
             }
+
+            // section title as a caption ABOVE the table — the CB cards' own pattern, and it
+            // cannot wrap inside the 62px corner cell the way "EM · LATAM" would
+            sb.Append($"<div style=\"{EmFont}font-weight:bold;font-size:12.5px;color:{EmTxt};" +
+                      $"margin:0 0 3px 1px;\">{sec.Title}</div>");
+            sb.Append(TableOpen(widths, "0"));
+
+            sb.Append("<tr>").Append(Td("&nbsp;", $"background:{EmHead};"));
+            for (int gI = 0; gI < group.Count; gI++)
+            {
+                sb.Append($"<td colspan=\"3\" nowrap style=\"{EmFont}padding:3px 8px;font-size:12px;" +
+                          $"background:{EmHead};text-align:center;font-weight:bold;\">{CcyLabel(group[gI].Ccy)}</td>");
+                if (gI < group.Count - 1) sb.Append(Gap());
+            }
+            sb.Append("</tr>");
+
+            sb.Append("<tr>").Append(Td("&nbsp;", $"background:{EmHead};border-bottom:2px solid {EmAccent};"));
+            for (int gI = 0; gI < group.Count; gI++)
+            {
+                string h = $"background:{EmHead};text-align:center;color:{EmMut};font-size:9.5px;" +
+                           $"border-bottom:2px solid {EmAccent};";
+                sb.Append(Td("mid", h)).Append(Td("1w", h)).Append(Td("1m", h));
+                if (gI < group.Count - 1) sb.Append(Gap());
+            }
+            sb.Append("</tr>");
+
+            for (int rI = 0; rI <= lastRow; rI++)
+            {
+                bool tl = rI is 1 or 5; // spot | 1y-window forwards | longer windows
+                string tls = tl ? $"border-top:1px solid {EmLine};" : "";
+                sb.Append("<tr>").Append(Td($"<b>{labels[rI]}</b>",
+                    $"background:{EmHead};{tls}{Sep()}"));
+                for (int gI = 0; gI < group.Count; gI++)
+                {
+                    var c = group[gI];
+                    var cell = rI < c.Cells.Count ? c.Cells[rI] : null;
+                    if (cell?.Mid is not double mid)
+                    {
+                        sb.Append(Td("&nbsp;", tls + RowBg(rI)))
+                          .Append(ChgTd(null, tl, false, rI)).Append(ChgTd(null, tl, false, rI));
+                    }
+                    else
+                    {
+                        sb.Append(Td($"<b>{mid:0.000}</b>", $"text-align:right;{tls}{RowBg(rI)}"));
+                        sb.Append(ChgTd(cell.W1Bp, tl, false, rI)).Append(ChgTd(cell.M1Bp, tl, false, rI));
+                    }
+                    if (gI < group.Count - 1) sb.Append(Gap());
+                }
+                sb.Append("</tr>");
+            }
+            // the air below each grid line lives INSIDE the table as an exact-height row — the
+            // SAME mechanism as the CB cards' bottom padding, so table-bottom→next-title matches
+            // the cards to the pixel (a free-standing Sp() div picks up Word paragraph spacing
+            // and renders fatter than the cards' clean 26px)
+            sb.Append($"<tr><td colspan=\"{widths.Count}\" nowrap height=\"26\" " +
+                      $"style=\"{EmFont}font-size:1px;line-height:1px;border:none;\">&nbsp;</td></tr>");
+            sb.Append("</table>");
         }
 
         if (footerHtml != null) sb.Append(footerHtml);

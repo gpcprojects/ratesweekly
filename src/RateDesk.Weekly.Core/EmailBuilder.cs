@@ -16,9 +16,9 @@ namespace RateDesk.Weekly.Core
     ///
     /// Needs a running, logged-in terminal: mids are a fresh snapshot and the 1w/1m meeting
     /// columns ride 16:30-London intraday snaps, neither of which the history store carries.
-    /// The MOVERS strip (DESIGN §4's top strip) is read from movers.json in the out directory —
-    /// written by the same render pass that draws index.html — and is skipped when the file is
-    /// missing or stale, so the email can never tease movers it cannot show.</summary>
+    /// The movers TEASER STRIP was removed on desk instruction 2026-08-11 — the movers live in
+    /// the attached dashboards file instead (single-file edition); the WeeklyEmail header hook
+    /// stays for whoever wants a strip back.</summary>
     public static class EmailBuilder
     {
         public sealed record Output(string FragmentPath, string PlainTextPath, string PreviewPath);
@@ -97,54 +97,14 @@ namespace RateDesk.Weekly.Core
                 ? null
                 : ccy => $"{siteBase}/{ccy.ToLowerInvariant()}.html";
 
-            var inv = System.Globalization.CultureInfo.InvariantCulture;
-            string stamp = rep.AsOf.ToString("dd-MMM-yy HH:mm", inv);
-            string footerHtml =
-                $"<div style=\"{WeeklyEmail.EmFont}font-size:10px;color:{WeeklyEmail.EmMut};margin:2px 0 0 2px;\">" +
-                (siteBase != null
-                    ? $"dashboards updated {stamp} · <a href=\"{siteBase}/\" style=\"color:{WeeklyEmail.EmMut};\">{siteBase}/</a> · "
-                    : $"dashboards updated {stamp} · ") +
-                "source: Bloomberg</div>";
-            string footerText = siteBase != null
-                ? $"dashboards updated {stamp} · {siteBase}/ · source: Bloomberg"
-                : $"dashboards updated {stamp} · source: Bloomberg";
-
-            // movers strip: title links to the hub when the site base is known, else plain bold —
-            // the teaser is still worth reading before the dashboards are hosted anywhere
-            string? moversHtml = null, moversText = null;
-            try
-            {
-                var mj = Path.Combine(outDir, "movers.json");
-                if (File.Exists(mj))
-                {
-                    using var doc = JsonDocument.Parse(File.ReadAllText(mj));
-                    var root = doc.RootElement;
-                    if (root.TryGetProperty("asOf", out var a)
-                        && DateTime.TryParseExact(a.GetString(), "yyyy-MM-dd", inv,
-                            System.Globalization.DateTimeStyles.None, out var mvAsOf)
-                        && (rep.AsOf.Date - mvAsOf.Date).TotalDays is >= 0 and <= 7
-                        && root.TryGetProperty("headline", out var hl)
-                        && hl.GetString() is { Length: > 0 } head)
-                    {
-                        string title = siteBase != null
-                            ? $"<a href=\"{siteBase}/index.html\" style=\"color:{WeeklyEmail.EmAccent};\">► MOVERS SUMMARY</a>"
-                            : $"<span style=\"color:{WeeklyEmail.EmAccent};\">► MOVERS SUMMARY</span>";
-                        moversHtml =
-                            $"<div style=\"{WeeklyEmail.EmFont}font-size:12px;padding:7px 10px;margin:0 0 12px 0;" +
-                            $"background:{WeeklyEmail.EmHead};border:1px solid {WeeklyEmail.EmLine};\">" +
-                            $"<b>{title}</b> &nbsp;{System.Net.WebUtility.HtmlEncode(head)}</div>";
-                        moversText = "MOVERS SUMMARY" + (siteBase != null ? $" ({siteBase}/index.html)" : "")
-                            + ": " + head;
-                    }
-                }
-            }
-            catch { /* the teaser is best-effort; the email must never fail on it */ }
+            // NO footer ("dashboards updated … · source: Bloomberg") — removed permanently on
+            // desk instruction 2026-08-11. Do not re-add it; the WeeklyEmail hook stays unused.
 
             var frag = Path.Combine(outDir, FragmentFile);
             var txt = Path.Combine(outDir, PlainTextFile);
             var prev = Path.Combine(outDir, PreviewFile);
-            File.WriteAllText(frag, WeeklyEmail.Html(rep, href, footerHtml, moversHtml));
-            File.WriteAllText(txt, WeeklyEmail.PlainText(rep, footerText, moversText));
+            File.WriteAllText(frag, WeeklyEmail.Html(rep, href));
+            File.WriteAllText(txt, WeeklyEmail.PlainText(rep));
             // full-document wrapper only for the PREVIEW; the clipboard fragment stays bare
             File.WriteAllText(prev,
                 "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><title>RatesWeekly email preview</title></head>" +

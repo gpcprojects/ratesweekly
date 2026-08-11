@@ -159,9 +159,10 @@ namespace RateDesk.Weekly.Core.Series
             HistoryStore store, IEnumerable<DateTime> boundaries, Func<int, string> ticker,
             DateTime contract, DateTime asOf, int windowDays, int maxIndexProbe = 13)
         {
+            // 14-day cluster, matching RollingStrip — the dodgeball stitcher's hardened width
             var cl = new List<DateTime>();
             foreach (var b in boundaries.Select(b => b.Date).OrderBy(b => b))
-                if (cl.Count == 0 || (b - cl[^1]).TotalDays > 6) cl.Add(b);
+                if (cl.Count == 0 || (b - cl[^1]).TotalDays > 14) cl.Add(b);
 
             var from = asOf.AddDays(-windowDays).Date;
             var cuts = new List<DateTime> { from };
@@ -297,7 +298,8 @@ namespace RateDesk.Weekly.Core.Series
                 if (pat == null) continue;
 
                 var strip = RollingStrip.ForMeetings(sched, store, asOf);
-                var bounds = sched.Dates.Concat(sched.PastDates).ToList();
+                // decision dates first — the tickers re-point at the DECISION (see RollingStrip)
+                var bounds = sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates).ToList();
                 foreach (var row in strip.Rows)
                 {
                     if (row.Label.EndsWith("*", StringComparison.Ordinal)) { excluded++; continue; }

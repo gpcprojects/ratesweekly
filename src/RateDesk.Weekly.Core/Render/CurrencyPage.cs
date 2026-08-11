@@ -18,6 +18,13 @@ namespace RateDesk.Weekly.Core.Render
             new(StringComparer.OrdinalIgnoreCase) { "EUR" };
 
         public static string Build(CurrencyConfig cfg, string src, HistoryStore store, DateTime asOf)
+            => Page.Shell(
+                $"DRAX Swaps — Weekly Rates Analysis — {cfg.Ccy}", cfg.Ccy,
+                $"DRAX Swaps - Weekly Rates Analysis - {cfg.Ccy}", Body(cfg, src, store, asOf));
+
+        /// <summary>The page's panels without the shell — the single-file edition hosts one of
+        /// these per currency inside a single document.</summary>
+        public static string Body(CurrencyConfig cfg, string src, HistoryStore store, DateTime asOf)
         {
             var body = new StringBuilder();
             var par = WeeklyCurves.ParCurve(cfg, src, store, asOf);
@@ -83,9 +90,7 @@ namespace RateDesk.Weekly.Core.Render
                 "needs ~2.5 years of history; the store currently holds about a month. " +
                 "This section fills itself in once the history is deepened — no code change."));
 
-            return Page.Shell(
-                $"DRAX Swaps — Weekly Rates Analysis — {cfg.Ccy}", cfg.Ccy,
-                $"DRAX Swaps - Weekly Rates Analysis - {cfg.Ccy}", body.ToString());
+            return body.ToString();
         }
 
         private static string Pending(string title, string why) =>
