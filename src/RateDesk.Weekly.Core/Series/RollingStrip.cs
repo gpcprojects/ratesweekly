@@ -33,8 +33,12 @@ namespace RateDesk.Weekly.Core.Series
     /// migrates them into pastDates automatically.</summary>
     public static class RollingStrip
     {
-        /// <summary>Cluster width for treating two configured dates as the same decision.</summary>
-        private const int ClusterDays = 6;
+        /// <summary>Cluster width for treating two configured dates as the same decision.
+        /// 14 days, not 6 — dodgeball's stitcher learned this live (2026-08-06): a config date
+        /// drifted more than the cluster width from ticker truth counts as a SECOND boundary and
+        /// shifts every row's index by one. No two real meetings of one bank sit within 14 days
+        /// (a tested config invariant), so the wide cluster is safe by construction.</summary>
+        private const int ClusterDays = 14;
 
         /// <summary>Rows for a numbered family.
         /// <paramref name="ticker"/> maps a 1-based index to a security;
@@ -107,18 +111,41 @@ namespace RateDesk.Weekly.Core.Series
 
         /// <summary>The value THIS contract had on <paramref name="then"/>, found by shifting the
         /// index forward by the number of boundaries that have passed since. Null when the store
-        /// has nothing for the resolved ticker.</summary>
+        /// has nothing for the resolved ticker.
+        ///
+        /// A lookback landing ON a decision day steps back to the day before: the numbered
+        /// families re-point NON-uniformly during the decision day (probed in dodgeball at 16:30
+        /// London: #1 had rolled, #2-#4 had not), so that day's close is unattributable to either
+        /// contract and must never source a change.</summary>
         private static double? RolledValue(
             HistoryStore store, Func<int, string> ticker, List<DateTime> bounds,
             DateTime contract, DateTime then, int maxIndex)
         {
+            if (bounds.Any(b => b == then.Date)) then = then.Date.AddDays(-1);
+
             // Boundaries strictly after `then` and at or before the contract date are exactly the
             // rolls that have happened between then and now for this contract.
             int crossed = bounds.Count(b => b > then.Date && b <= contract.Date);
             int idxThen = crossed;                       // 1-based: the contract was `crossed`-th next
             if (idxThen < 1) idxThen = 1;
             if (idxThen > maxIndex) return null;
-            return store.ValueAsOf(ticker(idxThen), then);
+
+            // ...and if the walk-back itself resolves to a decision-day close (a weekend lookback
+            // over a Friday decision, say), recompute from the day before that boundary — the
+            // index shifts too: before the roll, this contract lived under the NEXT number up.
+            var read = store.ValueAsOf(ticker(idxThen), then);
+            if (read is null) return null;
+            if (LastCloseDate(store, ticker(idxThen), then) is { } d && bounds.Contains(d.Date))
+                return RolledValue(store, ticker, bounds, contract, d.Date.AddDays(-1), maxIndex);
+            return read;
+        }
+
+        /// <summary>The DATE of the close ValueAsOf would read at or before <paramref name="then"/>.</summary>
+        private static DateTime? LastCloseDate(HistoryStore store, string ticker, DateTime then)
+        {
+            foreach (var p in store.GetDaily(ticker, 400).Reverse())
+                if (p.Date.Date <= then.Date) return p.Date.Date;
+            return null;
         }
 
         /// <summary>Central-bank runs from config: contracts are the future decision dates, roll
@@ -128,7 +155,13 @@ namespace RateDesk.Weekly.Core.Series
         {
             var future = sched.Dates.Where(d => d.Date > asOf.Date).OrderBy(d => d).Take(maxRows).ToList();
             var contracts = future.Select(d => (d.ToString("dd-MMM-yy"), d)).ToList();
-            var bounds = sched.Dates.Concat(sched.PastDates);
+            // Roll boundaries SNAP TO DECISION DATES where the calendar has them: the numbered
+            // tickers re-point at the decision, not at the swap-period start — for the BOJ those
+            // differ by up to six days (settlement lag; RBA showed the 1-day version live
+            // 2026-08-11), and a lookback landing between them would shift by one index. The
+            // period dates still contribute for banks with no decision calendar; the 14-day
+            // cluster keeps the EARLIEST of each pair, which is the decision.
+            var bounds = sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates);
             var pat = sched.Tickers.FirstOrDefault(t => t.Contains("{N}"));
 
             if (pat == null || contracts.Count == 0)

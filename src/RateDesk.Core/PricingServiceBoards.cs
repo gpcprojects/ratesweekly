@@ -653,6 +653,47 @@ namespace RateDesk.Core
                 }
                 if (meetDates.TryGetValue(1, out var next)) res.NextDecision = next;
 
+                // ANNOUNCED-BUT-NOT-YET-EFFECTIVE compensation (RATESWEEKLY DIVERGENCE, desk
+                // 2026-08-11 — the zero-touch replacement for the manual MeetingRefOverrides
+                // case). Between a decision and the start of the period it decided, the o/n
+                // fixing still prints the OLD rate — the ECB announces Thursday and the change
+                // starts the next maintenance-period Wednesday — so priced-vs-fixing would
+                // overstate every row by the full just-delivered change for up to a week. Inside
+                // that window the base re-bases AUTOMATICALLY onto the just-decided period's own
+                // OIS: the live run-down mid when the family quotes one, else that contract's
+                // last close BEFORE the decision day (the pre-roll rung 1 — decision-day closes
+                // are unanchorable). No policy-rate ticker, no rate calendar: the market print
+                // carries the new rate, surprises included. Strictly-after-the-decision-day
+                // gating keeps the intraday announcement hours on the fixing, matching the
+                // board's existing next-day fixing-lag behaviour. A manual override still wins.
+                if (!res.RefOverridden && sched.DecisionDates.Count > 0)
+                {
+                    var today = DateTime.Today;
+                    DateTime? lastDec = null;
+                    foreach (var d in sched.DecisionDates.OrderBy(d => d))
+                        if (d.Date <= today) lastDec = d.Date;
+                    if (lastDec is { } dec)
+                    {
+                        DateTime? effStart = null;
+                        foreach (var d in sched.Dates.OrderBy(d => d))
+                            if (d.Date >= dec) { effStart = d.Date; break; }
+                        if (effStart is { } eff && today > dec && today < eff
+                            && (eff - dec).TotalDays <= 10)
+                        {
+                            double? pending = quotes[0]?.Effective is { } e0 && e0.Date >= dec
+                                ? quotes[0]?.Mid : null;
+                            if (pending is null && History != null
+                                && sched.Tickers.FirstOrDefault(t => t.Contains("{N}")) is { } pat)
+                            {
+                                int span = (int)(today - dec).TotalDays + 15;
+                                foreach (var pt in History.GetDaily(MeetingTick(sched, pat, 1), span))
+                                    if (pt.Date.Date < dec) pending = pt.Value;
+                            }
+                            if (pending is { } pv) res.RefPct = pv;
+                        }
+                    }
+                }
+
                 Calendar? cal = null;
                 DayCounter? dcc = null;
                 if (curves != null && cfg.Ois != null)

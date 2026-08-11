@@ -171,8 +171,14 @@ namespace RateDesk.Core
                     if (run.Rows.Count > 0)
                     {
                         var front = run.Rows[0];
+                        // the decision must BELONG to this period (within the settlement lag):
+                        // on decision day the front rolls to the next meeting, and a calendar
+                        // that isn't topped up yet would otherwise pair it with the JUST-DELIVERED
+                        // decision (RBA, 2026-08-11: 30-Sep start shown against the 11-Aug
+                        // decision). No match ⇒ null ⇒ the honest "start *" rendering.
                         var dec = sched.DecisionDates
-                            .Where(d => d.Date >= DateTime.Today && d <= front.Date)
+                            .Where(d => d.Date >= DateTime.Today && d.Date <= front.Date
+                                     && (front.Date - d.Date).TotalDays <= 10)
                             .OrderBy(d => d).Cast<DateTime?>().FirstOrDefault();
                         rep.Fronts.Add(new WeeklyFront
                         {

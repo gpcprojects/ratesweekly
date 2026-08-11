@@ -307,6 +307,28 @@ RESOLVED: GBP RPI 2-month lag — no longer an assumption, it is what Bloomberg'
 says (§0b). Inflation forward tickers — desk supplied the `.{CC}{a}{b}IN G Index` convention
 2026-08-05 and the grid was probed point by point.
 
+## 12. Meeting-OIS roll correctness (hardened + independently verified 2026-08-11)
+
+Desk requirement: ZERO TOUCH — swaps start days after decisions (BOJ ~6d, ECB ~1wk, RBA 1d), the
+tickers roll at the DECISION, and the sheet must carry a just-announced rate before it kicks in,
+automatically, surprises included. What is wired:
+
+- Roll boundaries SNAP TO DECISION DATES (dates/pastDates still contribute; 14-day cluster keeps
+  the earliest of each pair). A lookback landing between decision and period start no longer
+  shifts an index.
+- Decision-day closes are never read: a lookback ON a boundary steps to the day before with the
+  pre-roll index; a walk-back RESOLVING to a boundary close recomputes from the day before it.
+- ANNOUNCED-BUT-NOT-YET-EFFECTIVE base: between a decision and its period start, "Priced"
+  re-bases onto the just-decided period's own OIS (live run-down mid, else its last
+  pre-decision close) instead of the stale o/n fixing — the market print carries the new rate,
+  no policy ticker, no rate calendar. Replaces dodgeball's MANUAL MeetingRefOverrides for this
+  case; manual still wins if set. CHERRY-PICK CANDIDATE for dodgeball.
+- VERIFIED: tools\verify_strip_changes.py restitches every rendered meeting row from raw BDH
+  with an independently-coded shift — 2026-08-11: 58/58 rows reconciled (level, 1w, 1m), 0
+  mismatches, 9 runs — and cross-checks FOMC magnitudes against Fed Funds FUTURES (non-rolling,
+  shares nothing): reconciled. Re-run after calendar updates or roll-logic changes, always
+  against a fresh render.
+
 ## 11. Phasing
 
 - **P1 skeleton + proof**: repo per Q1; store + BDH layer; par/forward pages for USD, EUR, GBP, JPY;

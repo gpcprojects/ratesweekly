@@ -104,6 +104,49 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void LookbackOnADecisionDay_ReadsTheDayBefore_WithThePreRollIndex()
+        {
+            // A decision exactly 7 days before asOf: the 1w target IS the boundary. That day's
+            // close is unattributable — the numbered families re-point non-uniformly during the
+            // decision day (the dodgeball 16:30 probe) — so the strip reads the day BEFORE, from
+            // the ticker that pointed at this contract pre-roll (index 2, not 1).
+            using var store = Store();
+            var boundary = AsOf.AddDays(-7);
+            var thisOne = AsOf.AddDays(40);
+
+            Put(store, 1, AsOf, 3.50);
+            Put(store, 1, boundary, 9.99);               // decision-day chaos close — never read
+            Put(store, 2, boundary, 9.99);
+            Put(store, 2, boundary.AddDays(-1), 3.45);   // the honest pre-decision close
+
+            var t = RollingStrip.Build("t", store, AsOf,
+                new[] { ("m1", thisOne) }, new[] { boundary, thisOne }, Tk);
+
+            Assert.Equal(3.45, t.Rows[0].WeekLevel!.Value, 10);
+        }
+
+        [Fact]
+        public void WeekendLookbackOverAFridayDecision_StepsPastTheBoundaryClose()
+        {
+            // 1w target on a Sunday, decision the preceding Friday: the walk-back would land on
+            // the Friday boundary close. It must recompute from the Thursday instead — and with
+            // the shifted index, because before the roll this contract lived under ticker 2.
+            using var store = Store();
+            var asOf = new DateTime(2026, 8, 2);          // a Sunday
+            var boundary = new DateTime(2026, 7, 24);     // the Friday decision
+            var thisOne = asOf.AddDays(40);
+
+            Put(store, 1, new DateTime(2026, 7, 31), 3.50);
+            Put(store, 1, boundary, 9.99);                // the close the walk-back would hit
+            Put(store, 2, boundary.AddDays(-1), 3.45);    // Thursday — the honest read
+
+            var t = RollingStrip.Build("t", store, asOf,
+                new[] { ("m1", thisOne) }, new[] { boundary, thisOne }, Tk);
+
+            Assert.Equal(3.45, t.Rows[0].WeekLevel!.Value, 10);
+        }
+
+        [Fact]
         public void TrailingUnquotedRowsAreDropped_NotPublishedBlank()
         {
             using var store = Store();
