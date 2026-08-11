@@ -43,19 +43,49 @@ namespace RateDesk.Tests
         }
 
         [Fact]
-        public void MeetingCards_PricedWearsTheHeatRamp()
+        public void Priced_CarriesNoHeat_AnywhereAnymore()
         {
+            // the heat-on-Priced experiment was reverted (desk 2026-08-11): heat belongs to the
+            // CHANGE columns only. W1/M1 left null here, so any heat fill could only have come
+            // from a Priced cell — there must be none.
             var rep = new WeeklyReport();
             var run = new WeeklyRun { Title = "TEST · USD", RefPct = 4.0 };
             run.Rows.Add(new WeeklyMeeting { Date = new DateTime(2026, 9, 16), MidPct = 3.9, PricedBp = -8.0 });
             run.Rows.Add(new WeeklyMeeting { Date = new DateTime(2026, 10, 28), MidPct = 3.95, PricedBp = 8.0 });
-            run.Rows.Add(new WeeklyMeeting { Date = new DateTime(2026, 12, 9), MidPct = 3.96, PricedBp = 0.5 });
             rep.Runs.Add(run);
+            rep.Fronts.Add(new WeeklyFront
+            {
+                Bank = "TEST", Ccy = "USD",
+                Decision = new DateTime(2026, 9, 16), StartDate = new DateTime(2026, 9, 16),
+                MidPct = 3.9, RefPct = 4.0, PricedBp = -8.0,
+            });
 
             var html = WeeklyEmail.Html(rep);
-            Assert.Contains($"background:{WeeklyEmail.HeatHex(-8.0)}", html);   // deep cut = red fill
-            Assert.Contains($"background:{WeeklyEmail.HeatHex(8.0)}", html);    // deep hike = green fill
-            Assert.Null(WeeklyEmail.HeatHex(0.5));                              // quiet rows stay unfilled
+            Assert.DoesNotContain($"background:{WeeklyEmail.HeatHex(-8.0)}", html);
+            Assert.DoesNotContain($"background:{WeeklyEmail.HeatHex(8.0)}", html);
+        }
+
+        [Fact]
+        public void FrontTable_PricesTheStandardStep_AsAnUncappedPercentage()
+        {
+            var rep = new WeeklyReport();
+            void Front(string bank, double priced) => rep.Fronts.Add(new WeeklyFront
+            {
+                Bank = bank, Ccy = "USD",
+                Decision = new DateTime(2026, 9, 16), StartDate = new DateTime(2026, 9, 16),
+                MidPct = 3.9, RefPct = 4.0, PricedBp = priced,
+            });
+            Front("HIKE20", 20.0);     // 20/25  -> +80%
+            Front("CUT12H", -12.5);    //        -> -50%
+            Front("BIG50", 50.0);      // past 100% is deliberate -> +200%
+            Front("FLAT", 0.0);
+
+            var html = WeeklyEmail.Html(rep);
+            Assert.Contains("% 25bp", html);
+            Assert.Contains("<b>+80%</b>", html);
+            Assert.Contains("<b>-50%</b>", html);
+            Assert.Contains("<b>+200%</b>", html);
+            Assert.Contains("<b>0%</b>", html);
         }
 
         [Fact]
@@ -108,18 +138,5 @@ namespace RateDesk.Tests
             Assert.DoesNotContain("padding:5px 8px", html);   // front header matches the cards' 4px
         }
 
-        [Fact]
-        public void FrontTable_PricedWearsTheHeatRampToo()
-        {
-            var rep = new WeeklyReport();
-            rep.Fronts.Add(new WeeklyFront
-            {
-                Bank = "TEST", Ccy = "USD",
-                Decision = new DateTime(2026, 9, 16), StartDate = new DateTime(2026, 9, 16),
-                MidPct = 3.76, RefPct = 4.0, PricedBp = -9.0,
-            });
-            var html = WeeklyEmail.Html(rep);
-            Assert.Contains($"background:{WeeklyEmail.HeatHex(-9.0)}", html);
-        }
     }
 }

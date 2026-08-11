@@ -104,29 +104,31 @@ namespace RateDesk.Core
         {
             bool anyStartOnly = false;
             sb.Append(H2("CB Front Meeting Market Pricing"));
-            sb.Append(TableOpen(new[] { 136, 108, 104, 82, 86, 90 }));
+            sb.Append(TableOpen(new[] { 136, 108, 104, 82, 86, 90, 64 }));
             string FH(string s, bool right = false) =>
                 Td($"<b>{s}</b>", $"background:{EmHead};{(right ? "text-align:right;" : "")}" +
                                   $"border-bottom:2px solid {EmAccent};padding:4px 8px;");
             sb.Append("<tr>" + FH("Central Bank") + FH("Decision Date") + FH("Start Date")
-                + FH("OIS Mid", true) + FH("Base Rate", true) + FH("Priced (bp)", true) + "</tr>");
+                + FH("OIS Mid", true) + FH("Base Rate", true) + FH("Priced (bp)", true)
+                + FH("% 25bp", true) + "</tr>");
             int fr = 0;
             foreach (var f in rep.Fronts)
             {
                 string rb = RowBg(fr++);
                 anyStartOnly |= f.Decision == null;
-                // Priced wears the same heat ramp as everywhere else — one convention for the
-                // whole email (a coloured-text front over heat-filled cards read as two designs)
-                string pStyle = f.PricedBp is double pv && HeatHex(pv) is string ph
-                    ? $"background:{ph};font-weight:bold;"
-                    : $"color:{EmMut};{rb}";
+                // NO heat on Priced (desk 2026-08-11: "doesn't look as good as I thought") — the
+                // emphasis column is % 25bp: the priced move as a share of a standard 25bp step,
+                // signed by direction, deliberately uncapped (+50bp priced = +200%).
+                string pct = f.PricedBp is double pv
+                    ? (pv / 25.0 * 100.0).ToString("+0;-0;0") + "%" : "&nbsp;";
                 sb.Append("<tr>" +
                     Td($"<b>{f.Bank}</b> <span style=\"color:{EmMut};font-size:10px;\">{CcyLabel(f.Ccy)}</span>", rb) +
                     Td(f.Decision is { } dd ? Inv(dd) : Inv(f.StartDate) + " *", rb) +
                     Td(Inv(f.StartDate), rb) +
                     Td($"<b>{f.MidPct:0.000}</b>", $"text-align:right;{rb}") +
                     Td(f.RefPct is double rp2 ? rp2.ToString("0.000") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
-                    Td(f.PricedBp is double p2 ? p2.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;{pStyle}") +
+                    Td(f.PricedBp is double p2 ? p2.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
+                    Td($"<b>{pct}</b>", $"text-align:right;{rb}") +
                     "</tr>");
             }
             sb.Append("</table>");
@@ -165,16 +167,12 @@ namespace RateDesk.Core
                 foreach (var m in run.Rows)
                 {
                     string rb = RowBg(mr++);
-                    // Priced wears the heat convention (desk spec 2026-08-11): more hike = deeper
-                    // green, more cut = deeper red, quiet (<2bp) stays muted text
-                    string pcell = m.PricedBp is double p
-                        ? Td(p.ToString("+0.0;-0.0"), "text-align:right;" +
-                            (HeatHex(p) is string ph ? $"background:{ph};" : $"color:{EmMut};{rb}"))
-                        : Td("&nbsp;", rb);
+                    // Priced stays plain muted text — the heat experiment was reverted on the
+                    // desk's read (2026-08-11); heat belongs to the CHANGE columns only
                     sb.Append("<tr>" +
                         Td(Inv(m.Date), rb) +
                         Td($"<b>{m.MidPct:0.000}</b>", $"text-align:right;{rb}") +
-                        pcell +
+                        Td(m.PricedBp is double p ? p.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
                         Td(m.StepBp is double st ? st.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
                         ChgTd(m.W1Bp, false, false, mr - 1) + ChgTd(m.M1Bp, false, false, mr - 1) + "</tr>");
                 }
