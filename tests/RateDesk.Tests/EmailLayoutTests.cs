@@ -66,5 +66,39 @@ namespace RateDesk.Tests
             var html = WeeklyEmail.Html(rep);
             Assert.Contains("padding:0 0 26px 0", html);
         }
+
+        [Fact]
+        public void SpacerCells_PinTheirOwnMetrics_SoRowsCannotInflate()
+        {
+            // Word gives an unstyled &nbsp; cell its Normal paragraph style and inflates EVERY
+            // row in the table to match it — the 2026-08-11 pasted-grid bloat. Spacers must carry
+            // 1px font metrics (the Sp() principle) so the data cells alone set the row height.
+            var html = WeeklyEmail.Html(Report(3));
+            Assert.Contains("font-size:1px;line-height:1px;border:none;", html);
+            Assert.DoesNotContain("<td style=\"border:none;\">&nbsp;</td>", html);
+        }
+
+        [Fact]
+        public void SectionTitle_IsACaptionAboveTheTable_NotACornerCell()
+        {
+            // compact rows would wrap "EM · LATAM" to three lines inside the 62px corner cell —
+            // the caption-above-table pattern is the CB cards' own, one design language
+            var html = WeeklyEmail.Html(Report(2));
+            Assert.Contains(">EM · LATAM</div>", html);
+        }
+
+        [Fact]
+        public void FrontTable_PricedWearsTheHeatRampToo()
+        {
+            var rep = new WeeklyReport();
+            rep.Fronts.Add(new WeeklyFront
+            {
+                Bank = "TEST", Ccy = "USD",
+                Decision = new DateTime(2026, 9, 16), StartDate = new DateTime(2026, 9, 16),
+                MidPct = 3.76, RefPct = 4.0, PricedBp = -9.0,
+            });
+            var html = WeeklyEmail.Html(rep);
+            Assert.Contains($"background:{WeeklyEmail.HeatHex(-9.0)}", html);
+        }
     }
 }

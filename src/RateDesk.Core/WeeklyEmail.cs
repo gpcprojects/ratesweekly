@@ -70,7 +70,10 @@ namespace RateDesk.Core
         string Td(string inner, string extra = "") =>
             $"<td style=\"{EmFont}padding:3px 8px;font-size:11.5px;{extra}\">{inner}</td>";
         string Sep() => $"border-right:1px solid {EmLine};";
-        string Gap() => "<td style=\"border:none;\">&nbsp;</td>";
+        // Spacer cell with 1px metrics — an UNSTYLED &nbsp; cell picks up Word's Normal style
+        // (11pt + paragraph spacing) and inflates EVERY row in the table to its height, which is
+        // exactly what happened to the 2026-08-11 grid rebuild. Same principle as Sp().
+        string Gap() => $"<td style=\"{EmFont}font-size:1px;line-height:1px;border:none;\">&nbsp;</td>";
         string RowBg(int rI) => rI % 2 == 1 ? "background:#f5f7fa;" : "";
         string ChgTd(double? v, bool topLine = false, bool sep = false, int rI = 0)
         {
@@ -109,16 +112,18 @@ namespace RateDesk.Core
             {
                 string rb = RowBg(fr++);
                 anyStartOnly |= f.Decision == null;
-                string pStyle = f.PricedBp is double pv && Math.Abs(pv) >= 2.0
-                    ? (pv > 0 ? "color:#1e7a3c;font-weight:bold;" : "color:#b3362a;font-weight:bold;")
-                    : $"color:{EmMut};";
+                // Priced wears the same heat ramp as everywhere else — one convention for the
+                // whole email (a coloured-text front over heat-filled cards read as two designs)
+                string pStyle = f.PricedBp is double pv && HeatHex(pv) is string ph
+                    ? $"background:{ph};font-weight:bold;"
+                    : $"color:{EmMut};{rb}";
                 sb.Append("<tr>" +
                     Td($"<b>{f.Bank}</b> <span style=\"color:{EmMut};font-size:10px;\">{CcyLabel(f.Ccy)}</span>", rb) +
                     Td(f.Decision is { } dd ? Inv(dd) : Inv(f.StartDate) + " *", rb) +
                     Td(Inv(f.StartDate), rb) +
                     Td($"<b>{f.MidPct:0.000}</b>", $"text-align:right;{rb}") +
                     Td(f.RefPct is double rp2 ? rp2.ToString("0.000") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
-                    Td(f.PricedBp is double p2 ? p2.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;{pStyle}{rb}") +
+                    Td(f.PricedBp is double p2 ? p2.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;{pStyle}") +
                     "</tr>");
             }
             sb.Append("</table>");
@@ -198,10 +203,14 @@ namespace RateDesk.Core
                 widths.Add(62); widths.Add(50); widths.Add(50);
                 if (gI < group.Count - 1) widths.Add(26);
             }
-            sb.Append(TableOpen(widths, "0 0 26px 0"));
 
-            sb.Append("<tr>")
-              .Append(Td($"<b>{sec.Title}</b>", $"background:{EmHead};font-size:12px;color:{EmTxt};"));
+            // section title as a caption ABOVE the table — the CB cards' own pattern, and it
+            // cannot wrap inside the 62px corner cell the way "EM · LATAM" would
+            sb.Append($"<div style=\"{EmFont}font-weight:bold;font-size:12.5px;color:{EmTxt};" +
+                      $"margin:0 0 3px 1px;\">{sec.Title}</div>");
+            sb.Append(TableOpen(widths, "0"));
+
+            sb.Append("<tr>").Append(Td("&nbsp;", $"background:{EmHead};"));
             for (int gI = 0; gI < group.Count; gI++)
             {
                 sb.Append($"<td colspan=\"3\" style=\"{EmFont}padding:3px 8px;font-size:12px;" +
@@ -245,6 +254,9 @@ namespace RateDesk.Core
                 sb.Append("</tr>");
             }
             sb.Append("</table>");
+            // air between the grid lines: an explicit-height div, because Word half-ignores
+            // table margins (the Sp() lesson) — same 26px unit as the column spacers
+            sb.Append(Sp(26));
         }
 
         if (footerHtml != null) sb.Append(footerHtml);
