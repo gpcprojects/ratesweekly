@@ -347,6 +347,116 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void AnnouncedDecision_RollsTheFrontOff_BeforeTheTickersRepoint()
+        {
+            // The live RIKSBANK case (20-Aug-26, 08:30): statement out, feed still entirely
+            // old-numbered. The just-decided period must leave the board on the CLOCK, the next
+            // meeting becomes the front under the OLD quote numbering (a uniform shift), and
+            // Priced re-bases onto the decided period's own OIS the same moment.
+            var snap = new RatesSnapshot();
+            const string p = "TESTROLL{N}";
+            var dec = DateTime.Today;                 // announced from 00:00 — deterministic
+            var eff = DateTime.Today.AddDays(6);
+            var nxt = eff.AddDays(42);
+
+            Rung(snap, p, 0, DateTime.Today.AddDays(-30), eff);   // old run-down → decided start
+            Rung(snap, p, 1, eff, nxt);                           // the decided period, still #1
+            Rung(snap, p, 2, nxt, nxt.AddDays(42));               // the next meeting, still #2
+            snap.Update(p.Replace("{N}", "1") + " Curncy", null, null, 2.25);  // decided period's OIS
+            snap.Update(p.Replace("{N}", "2") + " Curncy", null, null, 2.30);
+            snap.Update("TESTFIX Index", null, null, 2.00);       // fixing still on the OLD rate
+
+            var sched = new MeetingScheduleDef
+            {
+                Name = "TESTROLL", Ccy = "USD", Header = "t",
+                Tickers = new List<string> { p },
+                RefTicker = "TESTFIX Index",
+                DecisionDates = new List<DateTime> { dec },
+                DecisionTimeLondon = "00:00",
+                Dates = new List<DateTime> { eff, nxt, nxt.AddDays(42) },
+            };
+
+            var run = Service(snap).MeetingRun(sched);
+
+            Assert.Equal(nxt, run.Rows[0].Date);                  // front rolled to the NEXT meeting
+            Assert.Equal(2.30, run.Rows[0].MidPct, 6);            // old rung 2 — the shift kept the pairing
+            Assert.Equal(2.25, run.RefPct!.Value, 6);             // re-based intraday, not tomorrow
+            Assert.Equal(5.0, run.Rows[0].PricedBp!.Value, 6);
+        }
+
+        [Fact]
+        public void BeforeTheAnnouncement_TheFrontStaysAndTheFixingStands()
+        {
+            // Same geometry, but no announcement time on file: the intraday state is unknowable,
+            // so decision day itself keeps the front and the fixing until the next morning.
+            var snap = new RatesSnapshot();
+            const string p = "TESTPRE{N}";
+            var dec = DateTime.Today;
+            var eff = DateTime.Today.AddDays(6);
+            var nxt = eff.AddDays(42);
+
+            Rung(snap, p, 0, DateTime.Today.AddDays(-30), eff);
+            Rung(snap, p, 1, eff, nxt);
+            Rung(snap, p, 2, nxt, nxt.AddDays(42));
+            snap.Update(p.Replace("{N}", "1") + " Curncy", null, null, 2.25);
+            snap.Update(p.Replace("{N}", "2") + " Curncy", null, null, 2.30);
+            snap.Update("TESTFIX Index", null, null, 2.00);
+
+            var sched = new MeetingScheduleDef
+            {
+                Name = "TESTPRE", Ccy = "USD", Header = "t",
+                Tickers = new List<string> { p },
+                RefTicker = "TESTFIX Index",
+                DecisionDates = new List<DateTime> { dec },
+                DecisionTimeLondon = "",
+                Dates = new List<DateTime> { eff, nxt, nxt.AddDays(42) },
+            };
+
+            var run = Service(snap).MeetingRun(sched);
+
+            Assert.Equal(eff, run.Rows[0].Date);                  // the decided-today period still fronts
+            Assert.Equal(2.25, run.Rows[0].MidPct, 6);
+            Assert.Equal(2.00, run.RefPct!.Value, 6);             // fixing, not the re-base
+        }
+
+        [Fact]
+        public void RepointedFeed_DoesNotDoubleRoll()
+        {
+            // Later on decision day Bloomberg HAS re-pointed: the new front pairs only with the
+            // NEXT (unannounced) decision, so the clock gate must self-disarm — dropping again
+            // would skip a real meeting.
+            var snap = new RatesSnapshot();
+            const string p = "TESTNEW{N}";
+            var dec = DateTime.Today;
+            var eff = DateTime.Today.AddDays(6);
+            var nxt = eff.AddDays(42);
+
+            Rung(snap, p, 0, eff, nxt);                           // NEW run-down: the decided period
+            Rung(snap, p, 1, nxt, nxt.AddDays(42));               // new #1 = the next meeting
+            Rung(snap, p, 2, nxt.AddDays(42), nxt.AddDays(84));
+            snap.Update(p.Replace("{N}", "0") + " Curncy", null, null, 2.24);
+            snap.Update(p.Replace("{N}", "1") + " Curncy", null, null, 2.30);
+            snap.Update(p.Replace("{N}", "2") + " Curncy", null, null, 2.35);
+            snap.Update("TESTFIX Index", null, null, 2.00);
+
+            var sched = new MeetingScheduleDef
+            {
+                Name = "TESTNEW", Ccy = "USD", Header = "t",
+                Tickers = new List<string> { p },
+                RefTicker = "TESTFIX Index",
+                DecisionDates = new List<DateTime> { dec },
+                DecisionTimeLondon = "00:00",
+                Dates = new List<DateTime> { eff, nxt, nxt.AddDays(42), nxt.AddDays(84) },
+            };
+
+            var run = Service(snap).MeetingRun(sched);
+
+            Assert.Equal(nxt, run.Rows[0].Date);                  // once, not twice
+            Assert.Equal(2.30, run.Rows[0].MidPct, 6);
+            Assert.Equal(2.24, run.RefPct!.Value, 6);             // re-base off the new run-down
+        }
+
+        [Fact]
         public void AnImplausibleEffectiveDate_IsIgnoredRatherThanTrusted()
         {
             // a start before the previous maturity, or past its own end, is a bad field — not a

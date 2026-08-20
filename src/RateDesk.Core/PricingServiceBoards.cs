@@ -73,6 +73,18 @@ namespace RateDesk.Core
         /// <summary>STIR futures pattern ({MY} = month code + year digit, e.g. SSY{MY} Comdty) used
         /// for mids when the meeting OIS has no quote — SNB periods map onto the quarterly SARON strip.</summary>
         public string? FuturesPattern { get; set; }
+        /// <summary>Exchange-settled futures family used ONLY as an independent cross-check of the
+        /// meeting rows (FuturesGuard) — never as a mid source, which is what FuturesPattern is.
+        /// Must settle on the SAME overnight index the meeting OIS fixes on (FF↔EFFR, IB↔AUD cash
+        /// rate, SFI↔SONIA, COR↔CORRA), or the guard measures basis instead of faults.</summary>
+        public string? GuardFutures { get; set; }
+        /// <summary>"monthavg" = 30-day cash-rate future settling on the delivery month's average
+        /// (FF, IB); "imm3m" = 3M future compounding the index over an IMM quarter (SFI, COR).</summary>
+        public string GuardFuturesKind { get; set; } = "monthavg";
+        /// <summary>Breach threshold in bp between the futures-implied rate and the meeting-row
+        /// blend. The wired families are index-matched, so the honest gap is ~1-3bp; 8bp default
+        /// keeps quiet weeks quiet while a mis-rolled front (a full step, 25bp+) always trips.</summary>
+        public double GuardFuturesTolBp { get; set; } = 8.0;
         public string? RefTicker { get; set; }
         /// <summary>Ladder name whose strip is the POLICY curve for this central bank, when that is a
         /// different index from the currency's default OIS curve. USD is the case: tenor swaps and forwards
@@ -462,6 +474,20 @@ namespace RateDesk.Core
                         q = q.AddMonths(3);
                     }
                 }
+                if (!string.IsNullOrEmpty(sched.GuardFutures))
+                {
+                    // cross-check contracts: monthly for month-average families, IMM quarters for
+                    // 3M ones — enough forward months that FuturesGuard always finds a covered,
+                    // not-yet-started window inside the run
+                    bool imm = sched.GuardFuturesKind.Equals("imm3m", StringComparison.OrdinalIgnoreCase);
+                    var m = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+                    for (int i = 0; i < 12; i++)
+                    {
+                        m = m.AddMonths(1);
+                        if (imm && m.Month % 3 != 0) continue;
+                        yield return sched.GuardFutures.Replace("{MY}", FutMy(m));
+                    }
+                }
             }
         }
 
@@ -651,6 +677,37 @@ namespace RateDesk.Core
                     res.Warning = "no meeting tickers and schedule exhausted — update config\\meetings.json";
                     return res;
                 }
+
+                // TIME-GATED FRONT ROLL (desk 2026-08-20). The generics re-point at the decision,
+                // but non-uniformly through the day — a run minutes after the statement can still
+                // be entirely old-numbered, leaving the just-decided period on the front (live
+                // RIKSBANK, 20-Aug-26 08:30). Once the calendar says the front period's decision
+                // is ANNOUNCED (decision date + decisionTimeLondon), that period rolls off here
+                // regardless of the feed. The drop is a uniform SHIFT: under old numbering
+                // quotes[k] covers the period starting dates[k], so shifting both keeps every
+                // row's date↔quote pairing intact — and quotes[0] becomes the just-decided
+                // period's own OIS, exactly the rung the re-base below reads. When the feed HAS
+                // re-pointed, the new front pairs only with the NEXT (unannounced) decision, so
+                // the gate self-disarms and nothing double-rolls.
+                var nowLdn = Dates.DecisionClock.LondonNow();
+                {
+                    int roll = 0;
+                    while (meetDates.TryGetValue(roll + 1, out var f)
+                           && Dates.DecisionClock.DecisionFor(sched.DecisionDates, f) is { } fd
+                           && Dates.DecisionClock.Announced(fd, sched.DecisionTimeLondon, nowLdn))
+                        roll++;
+                    if (roll > 0)
+                    {
+                        quotes = quotes.Skip(roll).ToArray();
+                        meetDates = meetDates.Where(kv => kv.Key > roll)
+                            .ToDictionary(kv => kv.Key - roll, kv => kv.Value);
+                        if (meetDates.Count == 0)
+                        {
+                            res.Warning = "every resolved meeting is already decided — top up config\\meetings.json";
+                            return res;
+                        }
+                    }
+                }
                 if (meetDates.TryGetValue(1, out var next)) res.NextDecision = next;
 
                 // ANNOUNCED-BUT-NOT-YET-EFFECTIVE compensation (RATESWEEKLY DIVERGENCE, desk
@@ -663,21 +720,24 @@ namespace RateDesk.Core
                 // OIS: the live run-down mid when the family quotes one, else that contract's
                 // last close BEFORE the decision day (the pre-roll rung 1 — decision-day closes
                 // are unanchorable). No policy-rate ticker, no rate calendar: the market print
-                // carries the new rate, surprises included. Strictly-after-the-decision-day
-                // gating keeps the intraday announcement hours on the fixing, matching the
-                // board's existing next-day fixing-lag behaviour. A manual override still wins.
+                // carries the new rate, surprises included. Gated on the ANNOUNCEMENT (decision
+                // date + decisionTimeLondon), the same clock as the front roll above, so the
+                // re-base starts the moment the just-decided period leaves the front — priced-in
+                // must never spend the rest of decision day measured against the stale fixing
+                // (desk 2026-08-20; previously next-day). A manual override still wins.
                 if (!res.RefOverridden && sched.DecisionDates.Count > 0)
                 {
-                    var today = DateTime.Today;
+                    var today = nowLdn.Date;
                     DateTime? lastDec = null;
                     foreach (var d in sched.DecisionDates.OrderBy(d => d))
-                        if (d.Date <= today) lastDec = d.Date;
+                        if (Dates.DecisionClock.Announced(d.Date, sched.DecisionTimeLondon, nowLdn))
+                            lastDec = d.Date;
                     if (lastDec is { } dec)
                     {
                         DateTime? effStart = null;
                         foreach (var d in sched.Dates.OrderBy(d => d))
                             if (d.Date >= dec) { effStart = d.Date; break; }
-                        if (effStart is { } eff && today > dec && today < eff
+                        if (effStart is { } eff && today < eff
                             && (eff - dec).TotalDays <= 10)
                         {
                             double? pending = quotes[0]?.Effective is { } e0 && e0.Date >= dec

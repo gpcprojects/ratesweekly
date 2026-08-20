@@ -1,17 +1,23 @@
-# Handoff — 2026-08-11
+# Handoff — 2026-08-20
 
 Read `CLAUDE.md` (team conventions) and `DESIGN.md` (full spec + decision log) with this.
 Chat transcripts do NOT travel between machines — what matters is written down here or there.
 
 ## Where things stand
 
-- **v0.4.3**, 197/197 tests green. `master` = PR 326 (email consolidation + OIS-date audit +
-  Movers hub). Branch `localised-delivery` = PR **#327, open** — single-file dashboards pack,
-  CREATE EMAIL (Outlook draft with the pack attached), three one-line forward grids, movers hub
-  two-column, roll-correctness hardening (DESIGN §12), % 25bp column on the CB front table.
-  Merge #327 before building on master.
+- **v0.6.0**, 224/224 tests green. `master` through PR 331; branch `decision-day-roll` carries
+  v0.5.0 + v0.6.0 (2026-08-20, the live Riksbank decision day). v0.5.0: TIME-GATED FRONT ROLL —
+  decisionTimeLondon gates the decision-day roll (DecisionClock; the just-decided period leaves
+  the boards/strips at the announcement, feed re-point or not), the Priced re-base moves to the
+  same clock (was next day), and the meeting cards carry a **1d Chg** column off the stitched
+  series. v0.6.0: FUTURES GUARD — FOMC/RBA/MPC/BOC meeting rows cross-checked against FF/IB/
+  SFI/COR futures on every email build ("FUTURES GUARD TRIGGERED" note = the flag), and the
+  decision calendars topped up through mid-2027 for every run (Riksbank from Bloomberg ECO,
+  FOMC/MPC/SNB from the official calendars). DESIGN §12 has the full mechanics and is the
+  dodgeball cherry-pick bundle.
 - The desk email + all dashboards are BUILT AND VERIFIED from this repo. dodgeball's standalone
-  DodgeballWeekly.exe is slated for removal once the desk runs this app.
+  DodgeballWeekly.exe was REMOVED (2026-08-20, dodgeball PR 359) and local copies deleted —
+  this repo is the only weekly app.
 - Source lives on Azure DevOps (`origin`, JBDHServices/DraxSwaps → `ratesweekly`), mirrored to
   GitHub `gpcprojects/ratesweekly` (public — that repo also carries the desk RELEASES:
   assets named `RatesWeekly.exe` / `RatesWeekly_v*.exe` ONLY).
@@ -47,18 +53,24 @@ Chat transcripts do NOT travel between machines — what matters is written down
 ## Verification battery (run against a live terminal after touching dates/rolls/pricing)
 
 - `python tools\audit_email_dates.py` — every date the RENDERED email lists vs each rung's own
-  SW_EFF_DT. Last run 2026-08-11: 76 verified, 0 mismatches.
+  SW_EFF_DT; understands the v0.5.0 announced-shift (rows pair with rung N+shift on a decision
+  day until the family re-points). Last run 2026-08-20 (live Riksbank decision day, family not
+  yet re-pointed): 75 verified, 0 mismatches.
 - `python tools\verify_strip_changes.py` — independent raw-BDH restitch of every rendered
-  meeting row (level/1w/1m) + a Fed Funds futures cross-check. Last run: 58/58, 0 mismatches.
-  Run AFTER a fresh `RatesWeeklyCli render`; both scripts fail loudly on positive-control gaps.
-- 197 unit tests: `dotnet test tests\RateDesk.Tests\RateDesk.Tests.csproj -c Release`.
+  meeting row (level/1w/1m) + futures cross-checks for every guardFutures run (FF/IB/SFI/COR,
+  level and 1w change). Last run 2026-08-20: 67/67 reconciled, all four guards ok (gaps ≤1.6bp),
+  0 mismatches. Run AFTER a fresh `RatesWeeklyCli render`; both scripts fail loudly on
+  positive-control gaps.
+- 224 unit tests: `dotnet test tests\RateDesk.Tests\RateDesk.Tests.csproj -c Release`.
 
 ## Open items (nobody is blocked, but know these)
 
 1. **PR #327** awaits Complete.
-2. **decisionDates calendars need topping up** from the official CB calendars (config
-   \meetings.json). The code degrades honestly (front shows `start *`), but real decision dates
-   are better. Never hand-estimate SWAP-period dates — probe (`dodgeball tools\probe_all_meetings.py`).
+2. **decisionDates calendars**: topped up through mid-2027 for every run on 2026-08-20
+   (RIKSBANK from Bloomberg ECO — the riksbank.se calendar page is JS-rendered, read it off the
+   terminal; FOMC/MPC/SNB from the official calendars). Since v0.5.0 these power the
+   decision-day front roll, so keep CalendarHealth's 90-day runway warnings at zero. Never
+   hand-estimate SWAP-period dates — probe (`dodgeball tools\probe_all_meetings.py`).
 3. **Real-Outlook paste/send test** — CREATE EMAIL and the `.html` attachment have never been
    sent to an external recipient; some gateways quarantine html attachments (PDF pack is the
    designed fallback, not yet built).
@@ -68,8 +80,12 @@ Chat transcripts do NOT travel between machines — what matters is written down
 5. **Store depth** — 45d by desk decision; corr charts + strict weekly-σ movers light up as it
    deepens (DESIGN §0a). Deepen out-of-hours only, desk sign-off first.
 6. **Cherry-picks owed to dodgeball** (it has these bugs/lacks these fixes live):
-   the RBA decision-week date fix (ResolveMeetingDates 3-day tolerance) and the
-   announced-but-not-yet-effective Priced re-base (replaces its manual MeetingRefOverrides).
+   the RBA decision-week date fix (ResolveMeetingDates 3-day tolerance), the
+   announced-but-not-yet-effective Priced re-base (replaces its manual MeetingRefOverrides),
+   and the v0.5.0 bundle — DecisionClock time-gated front roll, announcement-gated re-base,
+   1d meeting column, observation-window CalendarHealth. Its standalone DodgeballWeekly.exe
+   showed all the symptoms live on 2026-08-20 (Riksbank front not rolled, stale base, wrong
+   1m changes) — the desk answer is switching to RatesWeekly.exe, not patching it twice.
    Target its `history-basis-guard` line — dodgeball master does NOT contain v7.1.0 yet.
 7. **Movers refinement with the desk** — hero diversity caps, slope set, beta-conditional
    "things to flag" rules (pending ~6m history), then reintegration into dodgeball.

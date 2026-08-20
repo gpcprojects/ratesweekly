@@ -42,8 +42,8 @@ offline); COPY EMAIL remains the clipboard fallback (a paste cannot carry attach
 per desk spec 2026-08-11: three one-line forward grids (DM / EM · LATAM / ASIA EM), 26px spacing
 unit everywhere, Priced heat on the meeting cards, NO movers strip in the email. Currency headers
 hyperlink only when %APPDATA%\RatesWeekly\publish.json carries {"siteBase": …} — links are
-OMITTED, never guessed. dodgeball's standalone DodgeballWeekly.exe is slated for REMOVAL over
-there once the desk runs this app — do not improve the email in two repos.
+OMITTED, never guessed. dodgeball's standalone DodgeballWeekly.exe was REMOVED over there
+(2026-08-20, dodgeball PR 359) — this repo is the ONLY weekly app; never rebuild one there.
 
 PRESENTATION RULES (desk, 2026-08-11 — same discipline as dodgeball's weekly): NO footer/source
 line in the email ("dashboards updated … · source: Bloomberg" is gone — never re-add), NO blurb

@@ -211,33 +211,102 @@ def main():
             else:
                 ok += 1
                 print(f"   {contract}  ok  ({len(checks)} figures)")
-            if name == "FOMC":
-                ff_needed[contract] = (w1, m1)
+            ff_needed[name] = [(c, l, w) for (c, s, l, w, m) in rows if not s]
 
-    # ---- Fed Funds futures cross-check (shares nothing with the OIS machinery) ----
+    # ---- exchange-settled futures cross-check (shares nothing with the OIS machinery) ----
+    # Generalised 2026-08-20 from the hardcoded FFV6/Oct-26 check to every run that carries
+    # guardFutures in meetings.json (FF/IB month-average, SFI/COR IMM-quarter compounded — the
+    # same families the in-app FuturesGuard watches). Two figures per family:
+    #   level: futures-implied rate vs the day-weighted blend of the page LEVELS over the window
+    #   1w:    futures close-to-close 1w change vs the day-weighted blend of the page 1w columns
+    def third_wed(y, m):
+        d = dt.date(y, m, 1)
+        return d + dt.timedelta(days=(2 - d.weekday()) % 7 + 14)
+
+    def fut_my(y, m):
+        return "FGHJKMNQUVXZ"[m - 1] + str(y % 10)
+
     print("\n" + "=" * 88)
-    fomc = sorted(ff_needed.items())
-    if len(fomc) >= 2 and all(v[0] is not None for v in fomc[:2]):
-        (c1, (w1a, _)), (c2, (w1b, _)) = fomc[0], fomc[1]
-        # October 2026 sits across the first two FOMC periods
-        oct_start, oct_end = dt.date(2026, 10, 1), dt.date(2026, 10, 31)
-        days_p1 = (min(c2, oct_end + dt.timedelta(days=1)) - oct_start).days
-        days_p2 = 31 - days_p1
-        if 0 < days_p1 <= 31:
-            ff = bdh(session, ["FFV6 Comdty"])["FFV6 Comdty"]
-            if ff:
-                as_of = max(ff)
-                week_ago = max((d for d in ff if d <= as_of - dt.timedelta(days=7)), default=None)
-                if week_ago:
-                    dff = ((100 - ff[as_of]) - (100 - ff[week_ago])) * 100.0
-                    blend = (days_p1 * w1a + days_p2 * w1b) / 31.0
-                    verdict = "ok" if abs(dff - blend) <= 1.5 else "MISMATCH"
-                    if verdict != "ok":
-                        problems.append(f"FF futures: FFV6 1w {dff:+.1f}bp vs blended FOMC {blend:+.1f}bp")
-                    print(f"FF futures cross-check: FFV6 implied 1w {dff:+.1f}bp vs "
-                          f"day-weighted FOMC rows {blend:+.1f}bp  ({days_p1}/{days_p2} day split) — {verdict}")
-    else:
-        controls.append("FOMC rows unavailable for the futures cross-check")
+    guards_run = 0
+    for run in load_runs():
+        pat_g, name = run.get("guardFutures"), run["name"]
+        if not pat_g:
+            continue
+        rows3 = ff_needed.get(name) or []
+        if len(rows3) < 2:
+            controls.append(f"{name}: guardFutures configured but no usable page rows")
+            continue
+        imm = run.get("guardFuturesKind", "monthavg") == "imm3m"
+        today = dt.date.today()
+        picked = None
+        y, m = today.year, today.month
+        for _ in range(12):
+            m += 1
+            if m > 12: y, m = y + 1, 1
+            if imm and m % 3:
+                continue
+            a = third_wed(y, m) if imm else dt.date(y, m, 1)
+            b = third_wed(y + (1 if m + 3 > 12 else 0), (m + 2) % 12 + 1) if imm \
+                else (dt.date(y + 1, 1, 1) if m == 12 else dt.date(y, m + 1, 1))
+            if a <= today or rows3[0][0] > a or rows3[-1][0] < b:
+                continue
+            picked = (a, b, pat_g.replace("{MY}", fut_my(y, m)))
+            break
+        if picked is None:
+            controls.append(f"{name}: no covered future window for the guard")
+            continue
+        a, b, tk = picked
+        h = bdh(session, [tk])[tk]
+        if not h:
+            controls.append(f"{name}: {tk} returned no history")
+            continue
+        f_asof = max(h)
+        f_week = max((d for d in h if d <= f_asof - dt.timedelta(days=7)), default=None)
+
+        def blend(sel):
+            """day-weighted blend of sel(row) over [a, b) using the page's own periods"""
+            total = wsum = 0.0
+            d = a
+            while d < b:
+                covering = [r for r in rows3 if r[0] <= d]
+                if not covering:
+                    return None
+                r = covering[-1]
+                nxt = min([x[0] for x in rows3 if x[0] > d] + [b])
+                v = sel(r)
+                if v is None:
+                    return None
+                days = (nxt - d).days
+                wsum += v * days
+                total += days
+                d = nxt
+            return wsum / total
+
+        lvl_blend = blend(lambda r: r[1])
+        w1_blend = blend(lambda r: r[2])
+        tol_lvl = float(run.get("guardFuturesTolBp", 8.0))
+        parts, bad = [], []
+        if lvl_blend is not None:
+            gap = ((100.0 - h[f_asof]) - lvl_blend) * 100.0
+            parts.append(f"level d{gap:+.1f}bp")
+            if abs(gap) > tol_lvl:
+                bad.append(f"level gap {gap:+.1f}bp > {tol_lvl}")
+        if w1_blend is not None and f_week is not None:
+            dfut = (h[f_week] - h[f_asof]) * 100.0     # price down = rate up
+            gap = dfut - w1_blend
+            parts.append(f"1w d{gap:+.1f}bp")
+            # 2.5bp: two 0.1bp-rounded columns blended + futures-close vs 16:30-snap timing skew
+            if abs(gap) > 2.5:
+                bad.append(f"1w gap {gap:+.1f}bp > 2.5")
+        window = f"{a}..{b}" if imm else a.strftime("%b-%y")
+        if bad:
+            problems.append(f"{name} futures guard {tk} {window}: " + "; ".join(bad))
+        else:
+            guards_run += 1
+        print(f"{name} futures guard: {tk} {window} — {', '.join(parts) or 'nothing comparable'} — "
+              f"{'MISMATCH' if bad else 'ok'}")
+    if guards_run == 0:
+        controls.append("no futures guard produced a verdict — cross-check proves nothing")
 
     print("=" * 88)
     print(f"RESULT: {ok} rows fully reconciled, {skipped} skipped (guarded/unreadable), "

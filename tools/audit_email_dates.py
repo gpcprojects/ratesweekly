@@ -82,6 +82,34 @@ def d_iso(s):
     return datetime.date.fromisoformat(s) if s else None
 
 
+def london_now():
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.datetime.now(ZoneInfo("Europe/London"))
+    except Exception:
+        return datetime.datetime.now()   # the desk machines run on London time anyway
+
+
+def announced(dec, time_s, now_ldn):
+    """Independent copy of the app's DecisionClock.Announced: out from the configured London
+    time on the decision day, from the NEXT day when no time is on file."""
+    if now_ldn.date() > dec:
+        return True
+    if now_ldn.date() < dec:
+        return False
+    try:
+        hh, mm = (int(x) for x in time_s.split(":"))
+    except Exception:
+        return False
+    return (now_ldn.hour, now_ldn.minute) >= (hh, mm)
+
+
+def decision_for(decisions, start):
+    """The decision that belongs to the period starting `start` (settlement lag <= 10d)."""
+    c = [d for d in decisions if d and d <= start and (start - d).days <= 10]
+    return max(c) if c else None
+
+
 def d_email(s):
     return datetime.datetime.strptime(s.strip(), "%d-%b-%y").date()
 
@@ -160,6 +188,27 @@ def main():
                 eff[n] = (d_iso(q["SW_EFF_DT"]), tk)
         truth[r["name"]] = eff
 
+    # TIME-GATED FRONT ROLL (app v0.5.0): once a period's decision is ANNOUNCED (decisionDates +
+    # decisionTimeLondon, London clock) the app rolls it off the boards even while Bloomberg's
+    # generics still point at it — the live RIKSBANK case, 20-Aug-26 08:30. On such a day the
+    # rendered rows pair with rung N+shift, where shift counts the leading rungs whose own
+    # SW_EFF_DT period is already decided. Any other day shift is 0 and this is a no-op.
+    now_ldn = london_now()
+    shifts = {}
+    for r in runs:
+        eff, s = truth[r["name"]], 0
+        decs = [d_iso(x) for x in r.get("decisionDates", [])]
+        t = r.get("decisionTimeLondon", "")
+        while (1 + s) in eff:
+            dec = decision_for(decs, eff[1 + s][0])
+            if dec is None or not announced(dec, t, now_ldn):
+                break
+            s += 1
+        shifts[r["name"]] = s
+        if s:
+            print(f"NOTE: {r['name']} decision announced (per {t} London) but the family has not "
+                  f"re-pointed — rendered rows pair with rung N+{s} (time-gated front roll)")
+
     front, cards = parse_email(email_path)
     ok = unver = 0
     problems = []
@@ -183,14 +232,15 @@ def main():
         known = name in truth
         print(f"\n{name}  ({len(dates)} rows{'' if known else ' — NOT A CONFIG RUN'})")
         for i, sd in enumerate(dates, start=1):
-            print(f"   {i:>2} {sd}  {check('meeting card', name, i, sd, truth.get(name, {}).get(i))}")
+            print(f"   {i:>2} {sd}  "
+                  f"{check('meeting card', name, i, sd, truth.get(name, {}).get(i + shifts.get(name, 0)))}")
 
     print("\n" + "=" * 96)
     print("EMAIL CB FRONT — start must be rung 1's SW_EFF_DT; decision sane vs start")
     print("=" * 96)
     for bank, ccy, dec, start in front:
         line = f"{bank:<10} {ccy}  start {start}  "
-        line += check("front", bank, 1, start, truth.get(bank, {}).get(1))
+        line += check("front", bank, 1, start, truth.get(bank, {}).get(1 + shifts.get(bank, 0)))
         if dec is None:
             line += "   decision: start shown with * (no calendar)"
         elif dec > start:

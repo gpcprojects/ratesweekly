@@ -96,11 +96,16 @@ namespace RateDesk.Weekly.Core
             }
         }
 
-        /// <summary>Days on which a ticker's RECORDED maturity changed — the observed roll days.
-        /// Grows a measured boundary history as updates accumulate; CalendarHealth validates the
-        /// configured calendars against it, so a re-point the calendar doesn't know about is
-        /// flagged on the very next update instead of silently mis-shifting a lookback.</summary>
-        public List<DateTime> MaturityChanges(string ticker, int sinceDays = 400)
+        /// <summary>Windows in which a ticker's RECORDED maturity changed: the change was OBSERVED
+        /// on Date, and the previous observation (still on the old maturity) was PrevSeen — the
+        /// actual re-point happened somewhere in (PrevSeen, Date]. Grows a measured boundary
+        /// history as updates accumulate; CalendarHealth validates the configured calendars
+        /// against it, so a re-point the calendar doesn't know about is flagged on the very next
+        /// update instead of silently mis-shifting a lookback. The window matters: updates are
+        /// WEEKLY, so a roll at an 11-Aug decision is often first observed on the 20th — judging
+        /// the observation date alone false-flags every roll seen late (live RBA/NORGES,
+        /// 2026-08-20).</summary>
+        public List<(DateTime Date, DateTime PrevSeen)> MaturityChanges(string ticker, int sinceDays = 400)
         {
             lock (_gate)
             {
@@ -110,15 +115,18 @@ namespace RateDesk.Weekly.Core
                 cmd.CommandText = "SELECT date, maturity FROM maturity WHERE ticker=@t AND date>=@c ORDER BY date;";
                 cmd.Parameters.AddWithValue("@t", ticker);
                 cmd.Parameters.AddWithValue("@c", cutoff);
-                var changes = new List<DateTime>();
+                var changes = new List<(DateTime, DateTime)>();
                 string? prev = null;
+                DateTime prevDate = default;
                 using var r = cmd.ExecuteReader();
                 while (r.Read())
                 {
                     var mat = r.GetString(1);
+                    var d = DateTime.ParseExact(r.GetString(0), "yyyy-MM-dd", CultureInfo.InvariantCulture);
                     if (prev != null && mat != prev)
-                        changes.Add(DateTime.ParseExact(r.GetString(0), "yyyy-MM-dd", CultureInfo.InvariantCulture));
+                        changes.Add((d, prevDate));
                     prev = mat;
+                    prevDate = d;
                 }
                 return changes;
             }

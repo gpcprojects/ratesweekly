@@ -147,6 +147,39 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void ForMeetings_AnnouncedDecision_RollsTheFrontOffTheStrip()
+        {
+            // The live RIKSBANK shape on the dashboards: store as-of 19-Aug, decision 20-Aug at
+            // 08:30 London, decided period starts 26-Aug, next meeting 24-Sep → 30-Sep. Before
+            // the statement the 26-Aug row fronts the strip; after it, the strip opens at 30-Sep —
+            // and 30-Sep's mid must still read rung 2, the ticker that points at it AT asOf
+            // (the store knows nothing of the intraday re-point).
+            using var store = Store();
+            var asOf = new DateTime(2026, 8, 19);
+            Put(store, 1, asOf, 1.66);   // rung 1 @ asOf = the 26-Aug (decided-today) period
+            Put(store, 2, asOf, 1.74);   // rung 2 @ asOf = the 30-Sep period
+
+            var sched = new RateDesk.Core.MeetingScheduleDef
+            {
+                Name = "TESTRIKS", Ccy = "SEK", Header = "t",
+                Tickers = new List<string> { "XX{N}" },
+                Dates = new List<DateTime> { new(2026, 8, 26), new(2026, 9, 30), new(2026, 11, 11) },
+                DecisionDates = new List<DateTime> { new(2026, 8, 20), new(2026, 9, 24) },
+                DecisionTimeLondon = "08:30",
+            };
+
+            var before = RollingStrip.ForMeetings(sched, store, asOf,
+                nowLondon: new DateTime(2026, 8, 20, 7, 0, 0));
+            Assert.Equal(new DateTime(2026, 8, 26), before.Rows[0].Contract);
+            Assert.Equal(1.66, before.Rows[0].Mid!.Value, 10);
+
+            var after = RollingStrip.ForMeetings(sched, store, asOf,
+                nowLondon: new DateTime(2026, 8, 20, 9, 0, 0));
+            Assert.Equal(new DateTime(2026, 9, 30), after.Rows[0].Contract);
+            Assert.Equal(1.74, after.Rows[0].Mid!.Value, 10);   // rung 2, not rung 1
+        }
+
+        [Fact]
         public void TrailingUnquotedRowsAreDropped_NotPublishedBlank()
         {
             using var store = Store();

@@ -151,7 +151,7 @@ namespace RateDesk.Core
         var runs = rep.Runs;
         for (int i = 0; i < runs.Count; i += 3)
         {
-            sb.Append(TableOpen(new[] { 372, 8, 372, 8, 372 }, "0 0 8px 0"));
+            sb.Append(TableOpen(new[] { 428, 8, 428, 8, 428 }, "0 0 8px 0"));
             sb.Append("<tr>");
             for (int k = 0; k < 3; k++)
             {
@@ -165,12 +165,12 @@ namespace RateDesk.Core
                 sb.Append($"<div style=\"{EmFont}font-weight:bold;font-size:12.5px;color:{EmTxt};margin:0 0 3px 1px;\">{run.Title}" +
                           (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">ref {rp:0.000}</span>" : "")
                           + "</div>");
-                sb.Append(TableOpen(new[] { 76, 56, 58, 52, 60, 60 }, "0"));
+                sb.Append(TableOpen(new[] { 76, 56, 58, 52, 56, 60, 60 }, "0"));
                 string MH(string s, bool right = true) =>
                     Td($"<b>{s}</b>", $"background:{EmHead};{(right ? "text-align:right;" : "")}" +
                                       $"border-bottom:2px solid {EmAccent};padding:4px 8px;");
                 sb.Append("<tr>" + MH("StartDate", false) + MH("Mid") + MH("Priced") + MH("Step")
-                    + MH("1w Chg") + MH("1m Chg") + "</tr>");
+                    + MH("1d Chg") + MH("1w Chg") + MH("1m Chg") + "</tr>");
                 int mr = 0;
                 foreach (var m in run.Rows)
                 {
@@ -182,6 +182,7 @@ namespace RateDesk.Core
                         Td($"<b>{m.MidPct:0.000}</b>", $"text-align:right;{rb}") +
                         Td(m.PricedBp is double p ? p.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
                         Td(m.StepBp is double st ? st.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
+                        ChgTd(m.D1Bp, false, false, mr - 1) +
                         ChgTd(m.W1Bp, false, false, mr - 1) + ChgTd(m.M1Bp, false, false, mr - 1) + "</tr>");
                 }
                 sb.Append("</table></td>");
@@ -299,9 +300,10 @@ namespace RateDesk.Core
         {
             sb.AppendLine();
             sb.AppendLine(run.Title + (run.RefPct is double rp ? $"  ref {rp:0.000}" : ""));
-            sb.AppendLine("StartDate\tMid\tPriced\tStep\t1w Chg\t1m Chg");
+            sb.AppendLine("StartDate\tMid\tPriced\tStep\t1d Chg\t1w Chg\t1m Chg");
             foreach (var m in run.Rows)
                 sb.AppendLine($"{m.Date.ToString("dd-MMM-yy", inv)}\t{m.MidPct:0.000}\t{m.PricedBp:+0.0;-0.0}\t{m.StepBp:+0.0;-0.0}\t" +
+                    $"{(m.D1Bp is double d1 ? d1.ToString("+0.0;-0.0") : "")}\t" +
                     $"{(m.W1Bp is double w ? w.ToString("+0.0;-0.0") : "")}\t{(m.M1Bp is double m1 ? m1.ToString("+0.0;-0.0") : "")}");
         }
 
