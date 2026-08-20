@@ -24,9 +24,9 @@ namespace RateDesk.Weekly
             VersionText.Text = "v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?");
             Directory.CreateDirectory(AppDataDir);
             Directory.CreateDirectory(OutDir);
-            // one line per button; the first UPDATE clears these and takes the box over
+            // one line per button; the first WEEKLY RUN clears these and takes the box over
             LogBox.Text =
-                "UPDATE — pulls Bloomberg, brings the history current, redraws every dashboard and builds the desk email.\r\n" +
+                "WEEKLY RUN — pulls Bloomberg, brings the history current, redraws every dashboard and builds the desk email.\r\n" +
                 "CREATE EMAIL — opens a ready Outlook draft: body filled in, dashboards file attached.\r\n" +
                 "COPY EMAIL — copies the built email to the clipboard, for pasting into an existing draft.\r\n" +
                 "OPEN OUTPUT — opens the dashboards in your browser.\r\n" +
@@ -35,8 +35,8 @@ namespace RateDesk.Weekly
                 "COPY BLAST — copies the built blast text to the clipboard, for the Bloomberg chats.\r\n" +
                 "DAILY EMAIL — opens a ready Outlook draft with the workbook attached.\r\n" +
                 "\r\n" +
-                "Only UPDATE and DAILY RUN are live until this session has built what the other\r\n" +
-                "buttons serve. They unlock on \"UPDATE COMPLETE\" / \"DAILY COMPLETE\".\r\n";
+                "Only WEEKLY RUN and DAILY RUN are live until this session has built what the other\r\n" +
+                "buttons serve. They unlock on \"WEEKLY COMPLETE\" / \"DAILY COMPLETE\".\r\n";
         }
 
         private void Log(string s) => Dispatcher.Invoke(() =>
@@ -62,7 +62,7 @@ namespace RateDesk.Weekly
             UpdateBtn.IsEnabled = false;
             SetOutputButtons(false, false);   // re-lock during the rebuild — mid-update output is mixed-state
             LogBox.Clear();   // the startup instructions give way to the run log
-            StatusText.Text = "updating...";
+            StatusText.Text = "running weekly...";
             try
             {
                 var (result, pages, emailErr) = await Task.Run(() =>
@@ -92,17 +92,17 @@ namespace RateDesk.Weekly
                 foreach (var w in result.Warnings) Log("! " + w);
                 SetOutputButtons(email: emailErr == null, output: pages > 0);
                 Log(emailErr == null && pages > 0
-                    ? "UPDATE COMPLETE — email and dashboards rebuilt; all buttons unlocked."
+                    ? "WEEKLY COMPLETE — email and dashboards rebuilt; all buttons unlocked."
                     : emailErr != null && pages > 0
-                        ? "UPDATE PARTIAL — dashboards rebuilt (OPEN OUTPUT unlocked) but the email " +
-                          "FAILED, so the email buttons stay locked. Fix and UPDATE again."
-                        : "UPDATE PARTIAL — nothing rendered; buttons stay locked. See the log.");
+                        ? "WEEKLY PARTIAL — dashboards rebuilt (OPEN OUTPUT unlocked) but the email " +
+                          "FAILED, so the email buttons stay locked. Fix and run WEEKLY again."
+                        : "WEEKLY PARTIAL — nothing rendered; buttons stay locked. See the log.");
             }
             catch (Exception ex)
             {
                 StatusText.Text = "update failed: " + ex.Message;
                 Log("! update failed: " + ex.Message);
-                Log("UPDATE FAILED — buttons stay locked (they would serve stale output). Fix and UPDATE again.");
+                Log("WEEKLY FAILED — buttons stay locked (they would serve stale output). Fix and run WEEKLY again.");
             }
             finally
             {
@@ -162,7 +162,7 @@ namespace RateDesk.Weekly
             var frag = Path.Combine(OutDir, EmailBuilder.FragmentFile);
             if (!File.Exists(frag))
             {
-                StatusText.Text = "no email built yet — run UPDATE first.";
+                StatusText.Text = "no email built yet — run WEEKLY RUN first.";
                 return;
             }
             try
@@ -179,20 +179,20 @@ namespace RateDesk.Weekly
                 if (attached) mail.Attachments.Add(pack);
                 mail.Display();
                 StatusText.Text = "draft opened in Outlook — add recipients and send."
-                    + (attached ? " Dashboards pack attached." : " (no dashboards pack found — run UPDATE)");
+                    + (attached ? " Dashboards pack attached." : " (no dashboards pack found — run WEEKLY RUN)");
             }
             catch (Exception ex) { StatusText.Text = "create email failed: " + ex.Message; }
         }
 
         private void CopyEmail_Click(object sender, RoutedEventArgs e)
         {
-            // Copies the PERSISTED fragment — never rebuilds. What UPDATE wrote is what pastes,
+            // Copies the PERSISTED fragment — never rebuilds. What WEEKLY RUN wrote is what pastes,
             // and it still pastes after an app restart.
             var frag = Path.Combine(OutDir, EmailBuilder.FragmentFile);
             var txt = Path.Combine(OutDir, EmailBuilder.PlainTextFile);
             if (!File.Exists(frag))
             {
-                StatusText.Text = "no email built yet — run UPDATE first.";
+                StatusText.Text = "no email built yet — run WEEKLY RUN first.";
                 return;
             }
             try
