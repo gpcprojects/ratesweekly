@@ -5,7 +5,10 @@ Chat transcripts do NOT travel between machines — what matters is written down
 
 ## Where things stand
 
-- **v0.6.0**, 224/224 tests green. `master` through PR 331; branch `decision-day-roll` carries
+- **v0.6.1**, 224/224 tests green. v0.6.1 (2026-08-20): STALE-OUTPUT GATE in the app — on open
+  only UPDATE is clickable; CREATE/COPY EMAIL and OPEN OUTPUT unlock when THIS session's update
+  rebuilt what they serve ("UPDATE COMPLETE" in the log; a failed email leg keeps the email
+  buttons locked). Earlier same day: `master` through PR 331; branch `decision-day-roll` carries
   v0.5.0 + v0.6.0 (2026-08-20, the live Riksbank decision day). v0.5.0: TIME-GATED FRONT ROLL —
   decisionTimeLondon gates the decision-day roll (DecisionClock; the just-decided period leaves
   the boards/strips at the announcement, feed re-point or not), the Priced re-base moves to the

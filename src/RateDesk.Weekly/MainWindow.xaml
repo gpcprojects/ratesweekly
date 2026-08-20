@@ -3,6 +3,16 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="RatesWeekly" Width="760" Height="520"
         Background="#14171c" WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <!-- a disabled button must LOOK disabled on the dark theme, or the gate reads as a bug -->
+        <Style TargetType="Button">
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.35"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
     <Grid Margin="14">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -21,14 +31,19 @@
             <Button x:Name="UpdateBtn" Content="UPDATE" Click="Update_Click"
                     Width="120" Height="34" FontWeight="Bold"
                     Background="#1f6feb" Foreground="White" BorderThickness="0"/>
+            <!-- STALE-OUTPUT SAFEGUARD (desk 2026-08-20): only UPDATE is live on open — the
+                 other buttons serve whatever a PREVIOUS session left in out\, and sending
+                 yesterday's email because a button happened to be clickable is exactly the
+                 fault class this app exists to remove. They unlock when THIS session's
+                 update has rebuilt what they serve. -->
             <Button x:Name="CreateEmailBtn" Content="CREATE EMAIL" Click="CreateEmail_Click"
-                    Width="120" Height="34" Margin="8,0,0,0"
+                    Width="120" Height="34" Margin="8,0,0,0" IsEnabled="False"
                     Background="#2a3038" Foreground="#e8ecf2" BorderThickness="0"/>
             <Button x:Name="CopyEmailBtn" Content="COPY EMAIL" Click="CopyEmail_Click"
-                    Width="120" Height="34" Margin="8,0,0,0"
+                    Width="120" Height="34" Margin="8,0,0,0" IsEnabled="False"
                     Background="#2a3038" Foreground="#e8ecf2" BorderThickness="0"/>
             <Button x:Name="OpenOutBtn" Content="OPEN OUTPUT" Click="OpenOutput_Click"
-                    Width="120" Height="34" Margin="8,0,0,0"
+                    Width="120" Height="34" Margin="8,0,0,0" IsEnabled="False"
                     Background="#2a3038" Foreground="#e8ecf2" BorderThickness="0"/>
         </StackPanel>
 

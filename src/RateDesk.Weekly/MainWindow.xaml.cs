@@ -29,7 +29,10 @@ namespace RateDesk.Weekly
                 "UPDATE — pulls Bloomberg, brings the history current, redraws every dashboard and builds the desk email.\r\n" +
                 "CREATE EMAIL — opens a ready Outlook draft: body filled in, dashboards file attached.\r\n" +
                 "COPY EMAIL — copies the built email to the clipboard, for pasting into an existing draft.\r\n" +
-                "OPEN OUTPUT — opens the dashboards in your browser.\r\n";
+                "OPEN OUTPUT — opens the dashboards in your browser.\r\n" +
+                "\r\n" +
+                "Only UPDATE is live until this session has updated — the other buttons would serve\r\n" +
+                "whatever an earlier run left behind. They unlock on \"UPDATE COMPLETE\".\r\n";
         }
 
         private void Log(string s) => Dispatcher.Invoke(() =>
@@ -38,11 +41,22 @@ namespace RateDesk.Weekly
             LogBox.ScrollToEnd();
         });
 
+        /// <summary>The output buttons unlock only when what they SERVE was rebuilt by this
+        /// session (desk 2026-08-20): the email buttons need a built email, OPEN OUTPUT needs
+        /// rendered pages. A failed leg keeps its buttons dark rather than serving stale files.</summary>
+        private void SetOutputButtons(bool email, bool output)
+        {
+            CreateEmailBtn.IsEnabled = email;
+            CopyEmailBtn.IsEnabled = email;
+            OpenOutBtn.IsEnabled = output;
+        }
+
         private async void Update_Click(object sender, RoutedEventArgs e)
         {
             if (_updating) return;
             _updating = true;
             UpdateBtn.IsEnabled = false;
+            SetOutputButtons(false, false);   // re-lock during the rebuild — mid-update output is mixed-state
             LogBox.Clear();   // the startup instructions give way to the run log
             StatusText.Text = "updating...";
             try
@@ -72,11 +86,19 @@ namespace RateDesk.Weekly
                                   $"({result.Elapsed.TotalSeconds:F0}s)" +
                                   (result.Warnings.Count > 0 ? $" · {result.Warnings.Count} warning(s) in log" : "");
                 foreach (var w in result.Warnings) Log("! " + w);
+                SetOutputButtons(email: emailErr == null, output: pages > 0);
+                Log(emailErr == null && pages > 0
+                    ? "UPDATE COMPLETE — email and dashboards rebuilt; all buttons unlocked."
+                    : emailErr != null && pages > 0
+                        ? "UPDATE PARTIAL — dashboards rebuilt (OPEN OUTPUT unlocked) but the email " +
+                          "FAILED, so the email buttons stay locked. Fix and UPDATE again."
+                        : "UPDATE PARTIAL — nothing rendered; buttons stay locked. See the log.");
             }
             catch (Exception ex)
             {
                 StatusText.Text = "update failed: " + ex.Message;
                 Log("! update failed: " + ex.Message);
+                Log("UPDATE FAILED — buttons stay locked (they would serve stale output). Fix and UPDATE again.");
             }
             finally
             {
