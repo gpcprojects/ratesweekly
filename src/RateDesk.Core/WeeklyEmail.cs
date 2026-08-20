@@ -212,8 +212,11 @@ namespace RateDesk.Core
         // ASIA EM — every currency of the line side by side, a 26px spacer column between currency
         // groups and 26px of air between the lines (the CB cards' own spacing unit). Each line
         // still stops at its own last populated row: a capped line must not print empty rows.
-        sb.Append(Sp(6));
-        sb.Append(H2("Forward Rates Summary"));
+        if (rep.Sections.Count > 0)
+        {
+            sb.Append(Sp(6));
+            sb.Append(H2("Forward Rates Summary"));
+        }
         foreach (var sec in rep.Sections)
         {
             var group = sec.Ccys;
@@ -329,8 +332,11 @@ namespace RateDesk.Core
                       $"{(m.W1Bp is double w ? w.ToString("+0.0;-0.0") : "")}\t{(m.M1Bp is double m1 ? m1.ToString("+0.0;-0.0") : "")}");
         }
 
-        sb.AppendLine();
-        sb.AppendLine("Forward Rates Summary");
+        if (rep.Sections.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Forward Rates Summary");
+        }
         foreach (var sec in rep.Sections)
         {
             var labels = sec.Ccys[0].Cells.Select(cl => cl.Label).ToList();
