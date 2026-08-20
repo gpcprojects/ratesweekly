@@ -5,7 +5,7 @@ Chat transcripts do NOT travel between machines — what matters is written down
 
 ## Where things stand
 
-- **v0.6.1**, 224/224 tests green. v0.6.1 (2026-08-20): STALE-OUTPUT GATE in the app — on open
+- **v0.6.2**, 225/225 tests green. v0.6.2 (2026-08-20): 1m = same-day-last-month everywhere (was fixed 31d; matches the sheet's intended convention), ECB futures guard on ICE 3M ESTR (TKY, index-matched, 0.0bp live; basis knob available for ER/TKYER if wanted). v0.6.1 (2026-08-20): STALE-OUTPUT GATE in the app — on open
   only UPDATE is clickable; CREATE/COPY EMAIL and OPEN OUTPUT unlock when THIS session's update
   rebuilt what they serve ("UPDATE COMPLETE" in the log; a failed email leg keeps the email
   buttons locked). Earlier same day: `master` through PR 331; branch `decision-day-roll` carries

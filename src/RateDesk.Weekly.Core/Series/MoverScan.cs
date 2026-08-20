@@ -88,7 +88,7 @@ namespace RateDesk.Weekly.Core.Series
             if (At(asOf) is not { } now) return null;
             if (At(asOf.AddDays(-WeeklyCurves.WeekDays)) is not { } wAgo) return null;
             double w1 = (now - wAgo) * scaleToBp;
-            double? m1 = At(asOf.AddDays(-WeeklyCurves.MonthDays)) is { } mAgo
+            double? m1 = At(WeeklyCurves.MonthAgo(asOf)) is { } mAgo
                 ? (now - mAgo) * scaleToBp : null;
 
             var diffs = new List<double>(h.Count);

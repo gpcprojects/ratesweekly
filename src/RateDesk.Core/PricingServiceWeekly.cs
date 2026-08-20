@@ -200,9 +200,9 @@ namespace RateDesk.Core
                             // which also gives it the boundary-day rules (decision-day closes
                             // excluded, 16:30 snaps included) for free
                             var s = series(row.Date);
-                            wm.D1Bp = ChangeToBp(s, row.MidPct, 1);
-                            wm.W1Bp = ChangeToBp(s, row.MidPct, 7);
-                            wm.M1Bp = ChangeToBp(s, row.MidPct, 31);
+                            wm.D1Bp = ChangeToBp(s, row.MidPct, DateTime.Today.AddDays(-1));
+                            wm.W1Bp = ChangeToBp(s, row.MidPct, DateTime.Today.AddDays(-7));
+                            wm.M1Bp = ChangeToBp(s, row.MidPct, MonthAgo(DateTime.Today));
                         }
                         catch { /* changes are best-effort per meeting */ }
                         wr.Rows.Add(wm);
@@ -310,18 +310,17 @@ namespace RateDesk.Core
                     if (Snapshot.TryGetMid(ovrTk, out var om))
                     {
                         cell.Mid = om;
-                        double? OChg(int daysBack)
+                        double? OChg(DateTime tgt)
                         {
                             var h = History?.GetDaily(ovrTk, 220);
                             if (h == null || h.Count == 0) return null;
-                            var tgt = DateTime.Today.AddDays(-daysBack);
                             for (int i = h.Count - 1; i >= 0; i--)
                                 if (h[i].Date <= tgt)
                                     return (tgt - h[i].Date).TotalDays > 10 ? null : (om - h[i].Value) * 100.0;
                             return null;
                         }
-                        cell.W1Bp = OChg(7);
-                        cell.M1Bp = OChg(31);
+                        cell.W1Bp = OChg(DateTime.Today.AddDays(-7));
+                        cell.M1Bp = OChg(MonthAgo(DateTime.Today));
                     }
                     continue;   // an override cell never falls through to the curve path
                 }
@@ -378,13 +377,12 @@ namespace RateDesk.Core
                 }
                 catch { continue; }
 
-                double? Chg(int daysBack)
+                double? Chg(DateTime tgt)
                 {
                     double? CloseAt(string t)
                     {
                         var h = History?.GetDaily(t, 220);
                         if (h == null || h.Count == 0) return null;
-                        var tgt = DateTime.Today.AddDays(-daysBack);
                         for (int i = h.Count - 1; i >= 0; i--)
                             if (h[i].Date <= tgt)
                                 return (tgt - h[i].Date).TotalDays > 10 ? null : h[i].Value;
@@ -397,21 +395,30 @@ namespace RateDesk.Core
                     if (ca == null) return null;
                     return ((aY + tY) * (nb - cb.Value) - aY * (na - ca.Value)) / tY * 100.0;
                 }
-                cell.W1Bp = Chg(7);
-                cell.M1Bp = Chg(31);
+                cell.W1Bp = Chg(DateTime.Today.AddDays(-7));
+                cell.M1Bp = Chg(MonthAgo(DateTime.Today));
             }
             return col;
         }
 
-        /// <summary>Live mid vs the stitched series' close at/before N calendar days back, in bp.
-        /// STALENESS-BOUNDED: when a regime window gapped (a far generic's BDH failed), the naive
-        /// "latest close at/before target" walks back into a MUCH older regime — BOJ's far rows
-        /// printed +62.6bp "1w changes" that were live-minus-a-year-ago. A close more than 10 days
-        /// older than the target is a different world: publish a blank, never that.</summary>
-        private static double? ChangeToBp(IReadOnlyList<HistPoint> s, double liveMid, int daysBack)
+        /// <summary>The 1m LOOKBACK CONVENTION (desk 2026-08-20): same day last month (Excel
+        /// EDATE-style, clamped at month ends), anchored at the last close AT OR BEFORE it — the
+        /// convention the desk's incumbent sheet targets. Not a fixed 30/31 days: those drift a
+        /// day or two against "a month ago" as month lengths change. NOTE the sheet itself only
+        /// STORES rows when someone updates it, so its realized 1m anchor can sit up to a week
+        /// earlier than this (measured 2026-08-20: its FOMC anchor was 15-Jul for a 19-Aug sheet);
+        /// ours is calendar-true against daily closes — small gaps vs the sheet on stale weeks are
+        /// the sheet's cadence, not a fault.</summary>
+        internal static DateTime MonthAgo(DateTime d) => d.AddMonths(-1);
+
+        /// <summary>Live mid vs the stitched series' close at/before <paramref name="target"/>, in
+        /// bp. STALENESS-BOUNDED: when a regime window gapped (a far generic's BDH failed), the
+        /// naive "latest close at/before target" walks back into a MUCH older regime — BOJ's far
+        /// rows printed +62.6bp "1w changes" that were live-minus-a-year-ago. A close more than 10
+        /// days older than the target is a different world: publish a blank, never that.</summary>
+        private static double? ChangeToBp(IReadOnlyList<HistPoint> s, double liveMid, DateTime target)
         {
             if (s.Count == 0) return null;
-            var target = DateTime.Today.AddDays(-daysBack);
             for (int i = s.Count - 1; i >= 0; i--)
                 if (s[i].Date <= target)
                     return (target - s[i].Date).TotalDays > 10 ? null : (liveMid - s[i].Value) * 100.0;

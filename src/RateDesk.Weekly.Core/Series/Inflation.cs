@@ -69,7 +69,7 @@ namespace RateDesk.Weekly.Core.Series
                 if (now is null) continue;
                 rows.Add(new LadderPoint(p.Tenor, now,
                     store.ValueAsOf(tk, asOf.AddDays(-WeeklyCurves.WeekDays)),
-                    store.ValueAsOf(tk, asOf.AddDays(-WeeklyCurves.MonthDays))));
+                    store.ValueAsOf(tk, WeeklyCurves.MonthAgo(asOf))));
             }
             return rows;
         }
@@ -120,7 +120,7 @@ namespace RateDesk.Weekly.Core.Series
                 if (now is null) continue;
                 rows.Add(new LadderPoint($"{s}y{t}y", now,
                     store.ValueAsOf(tk, asOf.AddDays(-WeeklyCurves.WeekDays)),
-                    store.ValueAsOf(tk, asOf.AddDays(-WeeklyCurves.MonthDays))));
+                    store.ValueAsOf(tk, WeeklyCurves.MonthAgo(asOf))));
             }
             return rows;
         }

@@ -56,7 +56,7 @@ namespace RateDesk.Weekly.Core.Series
                     if (now is null) continue;
                     rows.Add(new LadderPoint(p.Tenor.ToUpperInvariant(), now,
                         store.ValueAsOf(tk, asOf.AddDays(-WeeklyCurves.WeekDays)),
-                        store.ValueAsOf(tk, asOf.AddDays(-WeeklyCurves.MonthDays))));
+                        store.ValueAsOf(tk, WeeklyCurves.MonthAgo(asOf))));
                 }
                 notes.Add("rolling month pairs (e.g. 1X7) — these do not roll positionally, so changes are like-for-like");
                 return (rows, notes);

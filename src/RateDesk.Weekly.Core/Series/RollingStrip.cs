@@ -79,7 +79,7 @@ namespace RateDesk.Weekly.Core.Series
                 if (mids[i] is { } raw && Math.Abs(raw - mid) > 1e-9) { guarded++; label += "*"; }
 
                 double? w = RolledValue(store, ticker, bounds, contract, asOf.AddDays(-WeeklyCurves.WeekDays), maxIndexProbe);
-                double? m = RolledValue(store, ticker, bounds, contract, asOf.AddDays(-WeeklyCurves.MonthDays), maxIndexProbe);
+                double? m = RolledValue(store, ticker, bounds, contract, WeeklyCurves.MonthAgo(asOf), maxIndexProbe);
 
                 res.Rows.Add(new StripRow(label, contract, mid, w, m, tkNow));
             }
@@ -91,7 +91,7 @@ namespace RateDesk.Weekly.Core.Series
                 res.Notes.Add($"{guarded} interior row(s) replaced by the neighbour midpoint — the quoted " +
                               "print was implausible against both neighbours");
 
-            int rolls1m = bounds.Count(b => b > asOf.AddDays(-WeeklyCurves.MonthDays) && b <= asOf);
+            int rolls1m = bounds.Count(b => b > WeeklyCurves.MonthAgo(asOf) && b <= asOf);
             if (rolls1m > 0)
                 res.Notes.Add($"{rolls1m} roll(s) inside the 1m window — changes are measured against the " +
                               "ticker that pointed at the same contract then, not against this ticker's own close");

@@ -82,9 +82,19 @@ namespace RateDesk.Core
         /// (FF, IB); "imm3m" = 3M future compounding the index over an IMM quarter (SFI, COR).</summary>
         public string GuardFuturesKind { get; set; } = "monthavg";
         /// <summary>Breach threshold in bp between the futures-implied rate and the meeting-row
-        /// blend. The wired families are index-matched, so the honest gap is ~1-3bp; 8bp default
-        /// keeps quiet weeks quiet while a mis-rolled front (a full step, 25bp+) always trips.</summary>
+        /// blend (after subtracting GuardFuturesBasisBp). The index-matched families' honest gap
+        /// is ~1-3bp; 8bp default keeps quiet weeks quiet while a mis-rolled front (a full step,
+        /// 25bp+) always trips.</summary>
         public double GuardFuturesTolBp { get; set; } = 8.0;
+        /// <summary>Expected futures-minus-OIS spread in bp, for guard futures that settle on a
+        /// DIFFERENT index than the meeting OIS (EUR: Euribor futures vs ESTR meetings — the desk
+        /// hedges with them, so they guard here too, ~+14bp measured 2026-08-20). The guard tests
+        /// |gap − basis| ≤ tol; re-centre this knob when the basis regime shifts. 0 for the
+        /// index-matched families.</summary>
+        public double GuardFuturesBasisBp { get; set; }
+        /// <summary>Day-count denominator for the imm3m compounding/annualization: 365 (GBP SONIA,
+        /// CAD CORRA) or 360 (EUR Euribor/ESTR, USD money markets).</summary>
+        public int GuardFuturesDcc { get; set; } = 365;
         public string? RefTicker { get; set; }
         /// <summary>Ladder name whose strip is the POLICY curve for this central bank, when that is a
         /// different index from the currency's default OIS curve. USD is the case: tenor swaps and forwards

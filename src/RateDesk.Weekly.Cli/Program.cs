@@ -68,7 +68,7 @@ switch (cmd)
                 : $"  {probe,-22} {h.Count,5} closes  {h[0].Date:yyyy-MM-dd} .. {h[^1].Date:yyyy-MM-dd}  " +
                   $"last {h[^1].Value.ToString("F4", CultureInfo.InvariantCulture)}");
         }
-        var covered = store.TickersCoveringDate(DateTime.Today.AddDays(-WeeklyCurves.MonthDays));
+        var covered = store.TickersCoveringDate(WeeklyCurves.MonthAgo(DateTime.Today));
         Console.WriteLine($"1m lookback resolvable for {covered:N0} of {store.TickerCount():N0} tickers");
         return 0;
     }

@@ -131,6 +131,43 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void BasisBearingGuard_JudgesAgainstTheExpectedSpread_NotZero()
+        {
+            // The EUR shape: Euribor futures settle ~14bp over the ESTR meeting blend. At the
+            // expected basis the guard is quiet; the SAME price with no basis configured trips —
+            // proving the knob is what keeps a basis-bearing family honest rather than a wide
+            // tolerance that would also swallow real faults.
+            var snap = new RatesSnapshot();
+            const string p = "TESTGB{N}";
+            var q = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            do { q = q.AddMonths(1); }
+            while (q.Month % 3 != 0 || FuturesGuard.ThirdWednesday(q) <= DateTime.Today);
+            var a = FuturesGuard.ThirdWednesday(q);
+            var b = FuturesGuard.ThirdWednesday(q.AddMonths(3));
+
+            Rung(snap, p, 0, a.AddDays(-52), a.AddDays(-10), null);
+            Rung(snap, p, 1, a.AddDays(-10), b.AddDays(5), 2.50);   // constant → blend = 2.50 exactly
+            Rung(snap, p, 2, b.AddDays(5), b.AddDays(47), 2.60);
+            snap.Update("TESTGX" + My(q) + " Comdty", null, null, 100.0 - 2.64);  // 14bp over the blend
+
+            var sched = new MeetingScheduleDef
+            {
+                Name = "TESTGB", Ccy = "USD", Header = "t",
+                Tickers = new List<string> { p },
+                GuardFutures = "TESTGX{MY} Comdty",
+                GuardFuturesKind = "imm3m",
+                GuardFuturesDcc = 360,
+                GuardFuturesBasisBp = 14.0,
+                GuardFuturesTolBp = 10.0,
+                Dates = new List<DateTime> { a.AddDays(-10), b.AddDays(5), b.AddDays(47) },
+            };
+            Assert.StartsWith("futures guard TESTGB ok", FuturesGuard.CheckRun(Service(snap), sched));
+
+            sched.GuardFuturesBasisBp = 0.0;   // same price, no expected basis → the 14bp is a fault
+            Assert.StartsWith(FuturesGuard.TriggerPrefix, FuturesGuard.CheckRun(Service(snap), sched));
+        }
+
+        [Fact]
         public void CompoundedBlend_IsExactForAConstantRate_AndOrdersSegmentsCorrectly()
         {
             var rows = new List<MeetingRow>

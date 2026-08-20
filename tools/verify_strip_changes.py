@@ -194,10 +194,13 @@ def main():
                 print(f"   {contract}  no independent read (family/history ends) — skipped")
                 continue
             checks = [("level", lvl, mine_now, TOL_LVL)]
-            for (label, shown, days) in (("1w", w1, 7), ("1m", m1, 31)):
+            # 1m = same day last month (EDATE-style, clamped), matching the app (desk 2026-08-20)
+            m1_target = (as_of.replace(day=1) - dt.timedelta(days=1)).replace(
+                day=min(as_of.day, ((as_of.replace(day=1) - dt.timedelta(days=1)).day)))
+            for (label, shown, then_t) in (("1w", w1, as_of - dt.timedelta(days=7)), ("1m", m1, m1_target)):
                 if shown is None:
                     continue
-                then_v = value_at(contract, as_of - dt.timedelta(days=days))
+                then_v = value_at(contract, then_t)
                 if then_v is None:
                     continue
                 checks.append((label, shown, (mine_now - then_v) * 100.0, TOL_BP))
@@ -285,10 +288,14 @@ def main():
         lvl_blend = blend(lambda r: r[1])
         w1_blend = blend(lambda r: r[2])
         tol_lvl = float(run.get("guardFuturesTolBp", 8.0))
+        # basis-bearing guards (EUR: Euribor vs the ESTR meetings) are judged against their
+        # expected spread. The linear blend under-reads the compounded rate by ~1-2bp at these
+        # levels; the in-app FuturesGuard compounds properly — this is the coarse cross-check.
+        basis = float(run.get("guardFuturesBasisBp", 0.0))
         parts, bad = [], []
         if lvl_blend is not None:
-            gap = ((100.0 - h[f_asof]) - lvl_blend) * 100.0
-            parts.append(f"level d{gap:+.1f}bp")
+            gap = ((100.0 - h[f_asof]) - lvl_blend) * 100.0 - basis
+            parts.append(f"level d{gap:+.1f}bp" + (f" (over {basis:+.0f}bp basis)" if basis else ""))
             if abs(gap) > tol_lvl:
                 bad.append(f"level gap {gap:+.1f}bp > {tol_lvl}")
         if w1_blend is not None and f_week is not None:
