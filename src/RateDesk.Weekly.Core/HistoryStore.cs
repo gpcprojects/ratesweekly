@@ -80,6 +80,23 @@ namespace RateDesk.Weekly.Core
             }
         }
 
+        /// <summary>The most recent day a maturity was RECORDED for this ticker — null if never.
+        /// The hard-data rule's discriminator: a rung is Bloomberg-documented right now only if
+        /// its record day matches the family front rung's (a stale historical record means the
+        /// field has since gone dark).</summary>
+        public DateTime? MaturityRecordDay(string ticker)
+        {
+            lock (_gate)
+            {
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "SELECT MAX(date) FROM maturity WHERE ticker=@t;";
+                cmd.Parameters.AddWithValue("@t", ticker);
+                return cmd.ExecuteScalar() is string s2
+                    ? DateTime.ParseExact(s2, "yyyy-MM-dd", CultureInfo.InvariantCulture)
+                    : null;
+            }
+        }
+
         /// <summary>What the ticker means NOW — the most recently recorded maturity, whatever day
         /// that was. Use this to identify and order contracts; use <see cref="MaturityAsOf"/> only
         /// to ask what it meant on some past date (i.e. to detect a roll).</summary>

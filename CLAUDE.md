@@ -21,6 +21,12 @@ with hardwired links. Investor-facing output: pages are viewable by external peo
   Do NOT run deep BDH backfills without the desk's say-so — terminal data limits are shared.
 - Get sign-off before building on inferred quantities (tenors/structures/conventions) — the ⚠
   backlog in DESIGN.md §10 is the list.
+- HARD-DATA RULE (desk 2026-08-20, FINAL — applies to PRICING AND DATES): every published
+  meeting-board number comes from documented Bloomberg data only — 16:30-London snaps and real
+  closes/prints for values, the tickers' own SW_EFF_DT/MATURITY fields for dates. NO curve-implied
+  mids, NO curve-anchored changes, NO config-dated rows: the run ENDS where Bloomberg's
+  documentation ends. Config dates still drive roll boundaries and decision gating internally.
+  A historical-curve 1w/1m anchor was built and SCRAPPED the same day — do not re-add it.
 
 ## Provenance of src/RateDesk.Core and src/RateDesk.Bloomberg
 Copied VERBATIM from the dodgeball repo at commit 0324397 (v7.0.0, 2026-08-05), REFRESHED to

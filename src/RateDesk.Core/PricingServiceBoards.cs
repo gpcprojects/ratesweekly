@@ -225,66 +225,6 @@ namespace RateDesk.Core
             catch { return null; }
         }
 
-        private readonly Dictionary<(string ccy, string src, DateTime day), CurveSet?> _histCurveCache = new();
-
-        /// <summary>Curve-implied meeting forward AS OF a historical date — the like-for-like
-        /// 1w/1m anchor for rows whose mid is curve-implied because the quoted meeting family has
-        /// run out (SEK/NOK tails; desk 2026-08-20). The curve is bootstrapped at evaluation date
-        /// <paramref name="asOfDate"/> from each pillar's own close at-or-before it (10-day
-        /// staleness bound, same as every lookback). ALL-OR-NOTHING: if any pillar lacks a usable
-        /// historical close the whole curve is discarded — a curve mixing historical and live
-        /// pillars would publish a change that is partly today's market. Null = no anchor, and
-        /// the cell stays honestly blank.</summary>
-        internal double? HistoricalCurveFwd(CurrencyConfig cfg, string src, DateTime asOfDate, DateTime a, DateTime b)
-        {
-            // a weekend anchor resolves to the preceding business day, like every other lookback
-            while (asOfDate.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
-                asOfDate = asOfDate.AddDays(-1);
-            lock (_gate)
-            {
-                var key = (cfg.Ccy.ToUpperInvariant(), src.ToUpperInvariant(), asOfDate.Date);
-                if (!_histCurveCache.TryGetValue(key, out var curves))
-                {
-                    try
-                    {
-                        bool complete = true;
-                        curves = CurveBuilder.Build(cfg, src, Snapshot,
-                            new Date(asOfDate.Day, (Month)asOfDate.Month, asOfDate.Year),
-                            (full, r) =>
-                            {
-                                var h = History?.GetDaily(full, 260);
-                                if (h != null)
-                                    for (int i = h.Count - 1; i >= 0; i--)
-                                        if (h[i].Date.Date <= asOfDate.Date)
-                                        {
-                                            if ((asOfDate.Date - h[i].Date.Date).TotalDays > 10) break;
-                                            return h[i].Value / 100.0;
-                                        }
-                                complete = false;
-                                return r;   // placeholder so the build finishes; discarded below
-                            },
-                            ExternalDiscountFor(cfg));
-                        if (!complete) curves = null;
-                    }
-                    catch { curves = null; }
-                    _histCurveCache[key] = curves;
-                }
-                if (curves?.Ois is not { } ts) return null;
-                try
-                {
-                    Settings.setEvaluationDate(curves.AsOf);
-                    var cal = curves.Cal;
-                    var dcc = SwapBuilder.MakeOvernightIndex(cfg, cfg.Ois!, cal,
-                        new Handle<YieldTermStructure>()).dayCounter();
-                    Date Q(DateTime d) => cal.adjust(new Date(d.Day, (Month)d.Month, d.Year),
-                        BusinessDayConvention.Following);
-                    return ts.forwardRate(Q(a), Q(b), dcc, Compounding.Simple, Frequency.Annual).value() * 100.0;
-                }
-                catch { return null; }
-                finally { Settings.setEvaluationDate(AdjustedToday(cfg)); }
-            }
-        }
-
         // ---------- rates monitor ----------
 
         /// <summary>Mids + change-on-day for one currency's headline curve (default product's quotes,
@@ -591,6 +531,11 @@ namespace RateDesk.Core
             public Dictionary<int, DateTime> Dates { get; init; } = new();
             /// <summary>True when ticker MATURITY fields carried the run (rather than meetings.json).</summary>
             public bool FromTickers { get; init; }
+            /// <summary>Indices whose date came from the TICKERS' OWN FIELDS (maturity chain /
+            /// SW_EFF_DT) — the only rows the boards may publish under the hard-data rule
+            /// (desk 2026-08-20): dates and prices from documented Bloomberg data only, never
+            /// config fills or curves.</summary>
+            public HashSet<int> TickerDated { get; init; } = new();
         }
 
         /// <summary>Future meeting DATES only — no curve, no mids, no live data required beyond what
@@ -621,6 +566,7 @@ namespace RateDesk.Core
             // first violation. Numbering is never evidence; a rung's own MATURITY is.
             var quotes = new Market.QuoteData?[maxRows + 2];
             var meetDates = new Dictionary<int, DateTime>();
+            var tickerDated = new HashSet<int>();
             var lastMat = DateTime.MinValue;
             for (int n = 0; n <= maxRows + 1; n++)
             {
@@ -628,7 +574,7 @@ namespace RateDesk.Core
                 quotes[n] = q;
                 if (q?.Maturity is DateTime m)
                 {
-                    if (m > lastMat) { meetDates[n + 1] = m; lastMat = m; }
+                    if (m > lastMat) { meetDates[n + 1] = m; tickerDated.Add(n + 1); lastMat = m; }
                     else { quotes[n] = null; break; }
                 }
             }
@@ -660,6 +606,7 @@ namespace RateDesk.Core
                 if (quotes[n]?.Maturity is DateTime own && eff.Date >= own.Date) continue;
                 if (eff.Date > viaMat.Date) laggedFamily = true;
                 meetDates[n] = eff.Date;
+                tickerDated.Add(n);
             }
 
             // The last rung the family quotes has no NEXT rung to read a start from — its own row
@@ -696,7 +643,10 @@ namespace RateDesk.Core
                 prevDate = fill;
                 havePrev = true;
             }
-            return new MeetingDatesResult { Quotes = quotes, Dates = meetDates, FromTickers = tickerDates };
+            return new MeetingDatesResult
+            {
+                Quotes = quotes, Dates = meetDates, FromTickers = tickerDates, TickerDated = tickerDated,
+            };
         }
 
         /// <summary>Date of the meeting a month (and optional year) names, for anchoring a swap.
@@ -728,14 +678,12 @@ namespace RateDesk.Core
             {
                 var cfg = Configs.Get(sched.Ccy);
                 var src = SourceFor(sched.Ccy);
-                // OIS curve is only needed for curve-implied fallback mids — the board must still
-                // run ticker-only when the curve won't build (e.g. an OIS-family quote outage)
+                // the curve is only needed for its CALENDAR (roll-boundary business days) — the
+                // hard-data rule (desk 2026-08-20) removed curve-implied mids from published rows
                 CurveSet? curves = null;
-                bool curveBuildFailed = false;
                 if (cfg.Ois != null)
                     try { curves = GetCurvesUnlocked(cfg, src); }
-                    catch { curveBuildFailed = true; /* ticker-only run */ }
-                var ts = curves?.Ois;
+                    catch { /* ticker-only run */ }
 
                 var res = new MeetingRunResult
                 {
@@ -755,6 +703,7 @@ namespace RateDesk.Core
                 var resolved = ResolveMeetingDates(sched, maxRows);
                 var quotes = resolved.Quotes;
                 var meetDates = resolved.Dates;
+                var tickerDated = resolved.TickerDated;
                 bool tickerDates = resolved.FromTickers;
 
                 if (meetDates.Count == 0)
@@ -786,6 +735,7 @@ namespace RateDesk.Core
                         quotes = quotes.Skip(roll).ToArray();
                         meetDates = meetDates.Where(kv => kv.Key > roll)
                             .ToDictionary(kv => kv.Key - roll, kv => kv.Value);
+                        tickerDated = tickerDated.Where(i => i > roll).Select(i => i - roll).ToHashSet();
                         if (meetDates.Count == 0)
                         {
                             res.Warning = "every resolved meeting is already decided — top up config\\meetings.json";
@@ -840,22 +790,10 @@ namespace RateDesk.Core
                 }
 
                 Calendar? cal = null;
-                DayCounter? dcc = null;
                 if (curves != null && cfg.Ois != null)
                 {
                     Settings.setEvaluationDate(curves.AsOf);
                     cal = curves.Cal;
-                    dcc = SwapBuilder.MakeOvernightIndex(cfg, cfg.Ois, cal, new Handle<YieldTermStructure>()).dayCounter();
-                }
-                Date Q(DateTime d) => cal!.adjust(new Date(d.Day, (Month)d.Month, d.Year), BusinessDayConvention.Following);
-                double Fwd(YieldTermStructure c, DateTime a, DateTime b) =>
-                    c.forwardRate(Q(a), Q(b), dcc!, Compounding.Simple, Frequency.Annual).value() * 100.0;
-                CurveSet? prev = null;
-                bool prevTried = false;
-                YieldTermStructure? PrevTs()
-                {
-                    if (!prevTried) { prev = GetPrevCloseCurvesUnlocked(cfg, src); prevTried = true; }
-                    return prev?.Ois;
                 }
 
                 // a decision settled since the previous close ⇒ every numbered ticker re-pointed:
@@ -889,6 +827,11 @@ namespace RateDesk.Core
                 for (int n = 1; n <= maxRows; n++)
                 {
                     if (!meetDates.TryGetValue(n, out var d0)) break;
+                    // HARD-DATA RULE (desk 2026-08-20, final): a published row needs its DATE from
+                    // the tickers' own fields and its PRICE from a real print. The run ends where
+                    // Bloomberg's documentation ends — config dates still drive roll boundaries
+                    // and decision gating internally, but never label a published row.
+                    if (!tickerDated.Contains(n)) break;
                     // Y/E TURN periods are detected FIRST: a print far from its neighbours is what
                     // a year-end-spanning period legitimately looks like (SWESTR), so the interior
                     // misprint guard must stand down for it — the real print stays on the row and
@@ -922,16 +865,9 @@ namespace RateDesk.Core
                     }
                     else
                     {
-                        // curve-implied between this meeting and the next (last resort when nothing quotes)
-                        if (ts == null) break; // no OIS curve (none configured, or build failed) — stop at the last quoted ticker
-                        var d1 = meetDates.TryGetValue(n + 1, out var nx) ? nx : d0.AddDays(42);
-                        try { mid = Fwd(ts, d0, d1); }
-                        catch { break; }
-                        midSrc = "curve";
-                        if (PrevTs() is { } tp)
-                        {
-                            try { cod = (mid - Fwd(tp, d0, d1)) * 100.0; } catch { /* gap */ }
-                        }
+                        // HARD-DATA RULE: no curve-implied mids on published rows — a curve is a
+                        // model, not a print. The run ends at the last real quote.
+                        break;
                     }
                     double? priced = res.RefPct.HasValue ? (mid - res.RefPct.Value) * 100.0 : null;
                     // Y/E TURN (desk 2026-08-20): a period straddling a year-end carries the turn
@@ -944,7 +880,8 @@ namespace RateDesk.Core
                     bool turn = turn0;
                     res.Rows.Add(new MeetingRow
                     {
-                        Date = d0, EndDate = haveEnd ? dEnd0 : null, MidPct = mid, PricedBp = priced,
+                        Date = d0, EndDate = haveEnd && tickerDated.Contains(n + 1) ? dEnd0 : null,
+                        MidPct = mid, PricedBp = priced,
                         StepBp = !turn && priced.HasValue && prevPriced.HasValue ? priced - prevPriced : null,
                         CoDBp = cod, MidSource = midSrc, TurnPeriod = turn,
                     });
@@ -956,10 +893,8 @@ namespace RateDesk.Core
                     res.Warning = "dates from config\\meetings.json";
                 if (res.Rows.Count == 0)
                     res.Warning = "no future meetings resolved — check config\\meetings.json";
-                // silent truncation is worse than a warning: without the curve fallback the run
-                // stops at the last quoted ticker, which reads like a complete run
-                if (curveBuildFailed && res.Warning == null)
-                    res.Warning = "curve build failed — run truncated to quoted tickers";
+                // hard-data rule: every run ends at the last ticker-dated, ticker-priced row by
+                // design, so a curve-build failure no longer changes what is published
                 return res;
             }
         }
