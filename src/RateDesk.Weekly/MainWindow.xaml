@@ -29,7 +29,7 @@
         </StackPanel>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
-            <Button x:Name="UpdateBtn" Content="UPDATE" Click="Update_Click"
+            <Button x:Name="UpdateBtn" Content="WEEKLY RUN" Click="Update_Click"
                     Width="120" Height="34" FontWeight="Bold"
                     Background="#1f6feb" Foreground="White" BorderThickness="0"/>
             <!-- STALE-OUTPUT SAFEGUARD (desk 2026-08-20): only UPDATE is live on open — the
