@@ -7,8 +7,10 @@ namespace RateDesk.Weekly.Core.Render
 {
     /// <summary>One labelled point of a ladder at three times. Every section on a currency page —
     /// par curve, forward ladder, meeting run, FRA strip, inflation curve — reduces to a list of
-    /// these, which is why they all share one renderer and one interaction model.</summary>
-    public sealed record LadderPoint(string Label, double? Now, double? Week, double? Month)
+    /// these, which is why they all share one renderer and one interaction model.
+    /// A non-null Flag renders as a LABEL row (e.g. "Y/E Turn") with no values — the point also
+    /// stays off the chart so a dislocated level cannot stretch the y-scale.</summary>
+    public sealed record LadderPoint(string Label, double? Now, double? Week, double? Month, string? Flag = null)
     {
         public double? W1Bp => Now.HasValue && Week.HasValue ? (Now.Value - Week.Value) * 100.0 : null;
         public double? M1Bp => Now.HasValue && Month.HasValue ? (Now.Value - Month.Value) * 100.0 : null;
@@ -49,6 +51,14 @@ namespace RateDesk.Weekly.Core.Render
             for (int i = 0; i < pts.Count; i++)
             {
                 var p = pts[i];
+                if (p.Flag is { } flag)
+                {
+                    // a labelled row (Y/E Turn): the date stays visible, the numbers do not
+                    sb.Append($"<tr class=\"rw-row\" data-i=\"{i}\" tabindex=\"0\">")
+                      .Append($"<td class=\"rw-lab\">{Viz.Esc(p.Label)}</td>")
+                      .Append($"<td class=\"rw-flag\" colspan=\"3\"><i>{Viz.Esc(flag)}</i></td></tr>");
+                    continue;
+                }
                 if (!p.Now.HasValue) continue;
                 sb.Append($"<tr class=\"rw-row\" data-i=\"{i}\" tabindex=\"0\">")
                   .Append($"<td class=\"rw-lab\">{Viz.Esc(p.Label)}</td>")
@@ -188,7 +198,9 @@ namespace RateDesk.Weekly.Core.Render
         }
 
         public static List<LadderPoint> From(StripTable s) =>
-            s.Rows.Select(r => new LadderPoint(r.Label, r.Mid, r.WeekLevel, r.MonthLevel)).ToList();
+            s.Rows.Select(r => r.Turn
+                ? new LadderPoint(r.Label, null, null, null, "Y/E Turn")
+                : new LadderPoint(r.Label, r.Mid, r.WeekLevel, r.MonthLevel)).ToList();
 
         private static double? Find(List<CurvePoint> pts, double years)
         {

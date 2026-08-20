@@ -457,6 +457,75 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void AYearEndSpanningPeriod_IsMarkedAsTurn_AndBreaksTheStepChain()
+        {
+            // SEK/SWESTR: the period straddling 31-Dec averages the year-end dislocation, so it
+            // renders as "Y/E Turn" — and the NEXT row's Step must not difference off it either.
+            var snap = new RatesSnapshot();
+            const string p = "TESTYE{N}";
+            int y = DateTime.Today.Year + 1;
+            var a = new DateTime(y, 11, 15);
+            var b = new DateTime(y, 12, 20);      // period [b, c) spans the year-end
+            var c = new DateTime(y + 1, 2, 1);
+            var d = new DateTime(y + 1, 3, 15);
+
+            Rung(snap, p, 0, a.AddDays(-42), a);
+            Rung(snap, p, 1, a, b);
+            Rung(snap, p, 2, b, c);
+            Rung(snap, p, 3, c, d);
+            snap.Update(p.Replace("{N}", "1") + " Curncy", null, null, 2.00);
+            snap.Update(p.Replace("{N}", "2") + " Curncy", null, null, 1.50);   // the turn print
+            snap.Update(p.Replace("{N}", "3") + " Curncy", null, null, 2.10);
+            snap.Update("TESTFIX Index", null, null, 2.00);
+
+            var sched = new MeetingScheduleDef
+            {
+                Name = "TESTYE", Ccy = "USD", Header = "t",
+                Tickers = new List<string> { p },
+                RefTicker = "TESTFIX Index",
+                Dates = new List<DateTime> { a, b, c, d },
+                MarkTurnPeriods = true,
+            };
+
+            var run = Service(snap).MeetingRun(sched);
+
+            Assert.False(run.Rows[0].TurnPeriod);
+            Assert.True(run.Rows[1].TurnPeriod);      // [20-Dec, 01-Feb) spans the year-end
+            Assert.False(run.Rows[2].TurnPeriod);
+            Assert.Equal(1.50, run.Rows[1].MidPct, 6); // the real print stays on the row object...
+            Assert.Null(run.Rows[1].StepBp);           // ...but no step onto it
+            Assert.Null(run.Rows[2].StepBp);           // and no step OFF it either
+        }
+
+        [Fact]
+        public void WithoutTheFlag_TheSamePeriodKeepsItsNumbers()
+        {
+            var snap = new RatesSnapshot();
+            const string p = "TESTNY{N}";
+            int y = DateTime.Today.Year + 1;
+            var a = new DateTime(y, 11, 15);
+            var b = new DateTime(y, 12, 20);
+            var c = new DateTime(y + 1, 2, 1);
+            Rung(snap, p, 0, a.AddDays(-42), a);
+            Rung(snap, p, 1, a, b);
+            Rung(snap, p, 2, b, c);
+            snap.Update(p.Replace("{N}", "1") + " Curncy", null, null, 2.00);
+            snap.Update(p.Replace("{N}", "2") + " Curncy", null, null, 1.50);
+            snap.Update("TESTFIX Index", null, null, 2.00);
+
+            var run = Service(snap).MeetingRun(new MeetingScheduleDef
+            {
+                Name = "TESTNY", Ccy = "USD", Header = "t",
+                Tickers = new List<string> { p },
+                RefTicker = "TESTFIX Index",
+                Dates = new List<DateTime> { a, b, c },
+            });
+
+            Assert.All(run.Rows, r => Assert.False(r.TurnPeriod));
+            Assert.NotNull(run.Rows[1].StepBp);
+        }
+
+        [Fact]
         public void AnImplausibleEffectiveDate_IsIgnoredRatherThanTrusted()
         {
             // a start before the previous maturity, or past its own end, is a bad field — not a

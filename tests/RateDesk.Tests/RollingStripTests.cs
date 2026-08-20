@@ -180,6 +180,37 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void ForMeetings_MarksYearEndSpanningPeriods_AndPanelsLabelThem()
+        {
+            using var store = Store();
+            int y = 2026;
+            var asOf = new DateTime(y, 8, 19);
+            Put(store, 1, asOf, 1.77);
+            Put(store, 2, asOf, 1.47);   // the turn-dominated period
+            Put(store, 3, asOf, 2.10);
+
+            var sched = new RateDesk.Core.MeetingScheduleDef
+            {
+                Name = "TESTYE", Ccy = "SEK", Header = "t",
+                Tickers = new List<string> { "XX{N}" },
+                Dates = new List<DateTime>
+                    { new(y, 9, 30), new(y, 12, 23), new(y + 1, 2, 10), new(y + 1, 3, 24) },
+                MarkTurnPeriods = true,
+            };
+            var t = RollingStrip.ForMeetings(sched, store, asOf,
+                nowLondon: new DateTime(y, 8, 19, 12, 0, 0));
+
+            Assert.False(t.Rows[0].Turn);
+            Assert.True(t.Rows[1].Turn);     // [23-Dec, 10-Feb) spans the year-end
+            Assert.False(t.Rows[2].Turn);
+
+            var pts = RateDesk.Weekly.Core.Render.Panels.From(t);
+            Assert.Equal("Y/E Turn", pts[1].Flag);
+            Assert.Null(pts[1].Now);         // stays off the chart — no y-scale distortion
+            Assert.Null(pts[0].Flag);
+        }
+
+        [Fact]
         public void TrailingUnquotedRowsAreDropped_NotPublishedBlank()
         {
             using var store = Store();

@@ -377,6 +377,21 @@ automatically, surprises included. What is wired:
   (ER{MY}) carries the Euribor/ESTR basis, quoted live as TKYER{MY} Comdty (+14.75bp U6,
   2026-08-20); guardFuturesBasisBp + guardFuturesDcc were added and tested so a basis-bearing
   family can be wired if ever wanted.
+- Y/E TURN LABELLING (v0.6.3, desk 2026-08-20): a meeting period that SPANS A YEAR-END on a
+  marked run (meetings.json markTurnPeriods — SEK only for now) renders as "Y/E Turn" instead
+  of numbers, everywhere: front table, meeting cards (html + plaintext), dashboard strips
+  (label row, point off the chart so the y-scale survives), and the movers ranking excludes it.
+  WHY: SWESTR drops sharply on the LAST BUSINESS DAY of the year (banks shed deposits over the
+  balance-sheet reporting date; the Riksbank opened an investigation into the distortion in
+  June 2023), so an OIS averaging a turn-spanning period prints far below the policy path —
+  REAL market pricing of the turn, not a policy expectation and NOT a misprint (live
+  2026-08-20: Bloomberg SKSF Dec-26 rung ~1.47 vs ~1.93 on Coremont — the desk identified it
+  as the turn). MECHANICS: the row keeps its real print internally (MeetingRow.TurnPeriod) but
+  the interior neighbour-misprint guard STANDS DOWN for it (a turn print legitimately sits far
+  from its neighbours), Step is suppressed on the turn row AND the row after it (a step off a
+  turn-dominated Priced measures the turn), and verify_strip_changes.py simply doesn't parse
+  label rows. Other currencies' turns are ~bp-scale within the period average — mark a run
+  only when its o/n index has a SWESTR-scale dislocation.
 - 1d CHANGE COLUMN (v0.5.0, desk 2026-08-20): the meeting cards carry 1d alongside 1w/1m,
   computed off the SAME stitched series (ChangeToBp at 1 day) so it inherits the roll shift,
   decision-day-close exclusion, and 16:30-London snap rules. Cards are 7 columns

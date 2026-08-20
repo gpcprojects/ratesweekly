@@ -127,6 +127,34 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void TurnPeriodRows_RenderTheLabel_NeverTheNumbers()
+        {
+            var rep = new WeeklyReport();
+            var run = new WeeklyRun { Title = "RIKSBANK · SEK", RefPct = 1.75 };
+            run.Rows.Add(new WeeklyMeeting
+            {
+                Date = new DateTime(2026, 12, 23), MidPct = 1.468, PricedBp = -21.7,
+                TurnPeriod = true,   // the SWESTR year-end turn, not a policy expectation
+            });
+            rep.Runs.Add(run);
+            rep.Fronts.Add(new WeeklyFront
+            {
+                Bank = "RIKSBANK", Ccy = "SEK",
+                Decision = new DateTime(2026, 12, 16), StartDate = new DateTime(2026, 12, 23),
+                MidPct = 1.468, RefPct = 1.75, PricedBp = -21.7, TurnPeriod = true,
+            });
+
+            var html = WeeklyEmail.Html(rep);
+            Assert.Contains("Y/E Turn", html);
+            Assert.DoesNotContain("1.468", html);    // the turn-dominated level never prints
+            Assert.DoesNotContain("-21.7", html);
+
+            var txt = WeeklyEmail.PlainText(rep);
+            Assert.Contains("Y/E Turn", txt);
+            Assert.DoesNotContain("1.468", txt);
+        }
+
+        [Fact]
         public void MeetingCards_CarryTheSpacingUnitVertically()
         {
             var rep = new WeeklyReport();
