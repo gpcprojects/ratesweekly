@@ -130,7 +130,7 @@ namespace RateDesk.Weekly.Core.Series
         /// families re-point NON-uniformly during the decision day (probed in dodgeball at 16:30
         /// London: #1 had rolled, #2-#4 had not), so that day's close is unattributable to either
         /// contract and must never source a change.</summary>
-        private static double? RolledValue(
+        public static double? RolledValue(
             HistoryStore store, Func<int, string> ticker, List<DateTime> bounds,
             DateTime contract, DateTime then, int maxIndex)
         {

@@ -112,12 +112,16 @@ namespace RateDesk.Core
         /// mids, same pillar-history changes) at 1w and 1m horizons, plus every central-bank run with
         /// roll-safe 1w/1m changes from the stitched meeting series. Blank cells are DELIBERATE:
         /// a currency without a quoted 30Y pillar publishes nothing there rather than an
-        /// extrapolation — we would rather leave it blank than publish a number that is wrong.</summary>
-        public WeeklyReport BuildWeekly(int meetingsPerRun = 8)
+        /// extrapolation — we would rather leave it blank than publish a number that is wrong.
+        /// <paramref name="meetingsOnly"/> skips the forward-grid sections entirely — the DAILY
+        /// surface (desk 2026-08-20) needs only the front table and the meeting runs, and the
+        /// forward columns cost a full curve bootstrap per currency.</summary>
+        public WeeklyReport BuildWeekly(int meetingsPerRun = 8, bool meetingsOnly = false)
         {
             var rep = new WeeklyReport { AsOf = DateTime.Now };
 
-            foreach (var (title, ccys) in WeeklyGroups)
+            foreach (var (title, ccys) in meetingsOnly
+                         ? Array.Empty<(string, string[])>() : WeeklyGroups)
             {
                 var sec = new WeeklySection { Title = title };
                 foreach (var ccy in ccys)

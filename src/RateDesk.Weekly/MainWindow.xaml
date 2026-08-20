@@ -17,6 +17,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -47,12 +48,27 @@
                     Background="#2a3038" Foreground="#e8ecf2" BorderThickness="0"/>
         </StackPanel>
 
-        <TextBox Grid.Row="2" x:Name="LogBox" IsReadOnly="True"
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
+            <!-- the DAILY surface (desk 2026-08-20): DAILY RUN builds fresh so it is live on
+                 open; COPY BLAST and CREATE DAILY EMAIL serve what a run wrote, so they unlock
+                 only once THIS session has built one — same stale-output gate as the weekly. -->
+            <Button x:Name="DailyBtn" Content="DAILY RUN" Click="Daily_Click"
+                    Width="120" Height="34" FontWeight="Bold"
+                    Background="#238636" Foreground="White" BorderThickness="0"/>
+            <Button x:Name="CopyBlastBtn" Content="COPY BLAST" Click="CopyBlast_Click"
+                    Width="120" Height="34" Margin="8,0,0,0" IsEnabled="False"
+                    Background="#2a3038" Foreground="#e8ecf2" BorderThickness="0"/>
+            <Button x:Name="DailyEmailBtn" Content="DAILY EMAIL" Click="DailyEmail_Click"
+                    Width="120" Height="34" Margin="8,0,0,0" IsEnabled="False"
+                    Background="#2a3038" Foreground="#e8ecf2" BorderThickness="0"/>
+        </StackPanel>
+
+        <TextBox Grid.Row="3" x:Name="LogBox" IsReadOnly="True"
                  Background="#0d1015" Foreground="#c9cfd8" BorderThickness="0"
                  FontFamily="Consolas" FontSize="12" Padding="8"
                  VerticalScrollBarVisibility="Auto" TextWrapping="NoWrap"/>
 
-        <TextBlock Grid.Row="3" x:Name="StatusText" Margin="0,8,0,0"
+        <TextBlock Grid.Row="4" x:Name="StatusText" Margin="0,8,0,0"
                    Foreground="#66707f" FontSize="12"
                    Text="Bloomberg terminal must be running and logged in (localhost:8194)."/>
     </Grid>

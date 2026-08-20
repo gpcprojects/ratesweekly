@@ -30,9 +30,13 @@ namespace RateDesk.Weekly
                 "CREATE EMAIL — opens a ready Outlook draft: body filled in, dashboards file attached.\r\n" +
                 "COPY EMAIL — copies the built email to the clipboard, for pasting into an existing draft.\r\n" +
                 "OPEN OUTPUT — opens the dashboards in your browser.\r\n" +
+                "DAILY RUN — pulls a live snapshot and builds the daily OIS run: chat blast, OIS_Runs\r\n" +
+                "  workbook (+ copy to the shared drive when publish.json has dailyDir), daily email.\r\n" +
+                "COPY BLAST — copies the built blast text to the clipboard, for the Bloomberg chats.\r\n" +
+                "DAILY EMAIL — opens a ready Outlook draft with the workbook attached.\r\n" +
                 "\r\n" +
-                "Only UPDATE is live until this session has updated — the other buttons would serve\r\n" +
-                "whatever an earlier run left behind. They unlock on \"UPDATE COMPLETE\".\r\n";
+                "Only UPDATE and DAILY RUN are live until this session has built what the other\r\n" +
+                "buttons serve. They unlock on \"UPDATE COMPLETE\" / \"DAILY COMPLETE\".\r\n";
         }
 
         private void Log(string s) => Dispatcher.Invoke(() =>
@@ -197,6 +201,86 @@ namespace RateDesk.Weekly
                 StatusText.Text = $"email copied (built {File.GetLastWriteTime(frag):ddd HH:mm}) — paste into the email body.";
             }
             catch (Exception ex) { StatusText.Text = "copy failed: " + ex.Message; }
+        }
+
+        private bool _dailyRunning;
+
+        private async void Daily_Click(object sender, RoutedEventArgs e)
+        {
+            if (_dailyRunning) return;
+            _dailyRunning = true;
+            DailyBtn.IsEnabled = false;
+            CopyBlastBtn.IsEnabled = false;
+            DailyEmailBtn.IsEnabled = false;
+            StatusText.Text = "building daily OIS run...";
+            try
+            {
+                var output = await Task.Run(() =>
+                {
+                    var rep = Core.Daily.DailyBuilder.Build(Log);
+                    using var store = new HistoryStore(Path.Combine(AppDataDir, "history.db"));
+                    return Core.Daily.DailyBuilder.Render(rep, store, OutDir, AppDataDir, Log);
+                });
+                CopyBlastBtn.IsEnabled = true;
+                DailyEmailBtn.IsEnabled = true;
+                StatusText.Text = $"daily built {DateTime.Now:HH:mm:ss} — blast + workbook" +
+                                  (output.DailyDirCopy != null ? " (+ shared drive)" : "") + " + email ready";
+                Log("DAILY COMPLETE — blast, workbook and email rebuilt; COPY BLAST / DAILY EMAIL unlocked.");
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = "daily failed: " + ex.Message;
+                Log("! daily failed: " + ex.Message);
+                Log("DAILY FAILED — COPY BLAST / DAILY EMAIL stay locked (they would serve stale output).");
+            }
+            finally
+            {
+                _dailyRunning = false;
+                DailyBtn.IsEnabled = true;
+            }
+        }
+
+        private void CopyBlast_Click(object sender, RoutedEventArgs e)
+        {
+            var blast = Path.Combine(OutDir, Core.Daily.DailyBuilder.BlastFile);
+            if (!File.Exists(blast))
+            {
+                StatusText.Text = "no blast built yet — run DAILY RUN first.";
+                return;
+            }
+            try
+            {
+                Clipboard.SetText(File.ReadAllText(blast));
+                StatusText.Text = $"blast copied (built {File.GetLastWriteTime(blast):HH:mm}) — paste into the Bloomberg chat.";
+            }
+            catch (Exception ex) { StatusText.Text = "copy failed: " + ex.Message; }
+        }
+
+        private void DailyEmail_Click(object sender, RoutedEventArgs e)
+        {
+            var frag = Path.Combine(OutDir, Core.Daily.DailyBuilder.FragmentFile);
+            if (!File.Exists(frag))
+            {
+                StatusText.Text = "no daily email built yet — run DAILY RUN first.";
+                return;
+            }
+            try
+            {
+                var t = Type.GetTypeFromProgID("Outlook.Application")
+                    ?? throw new InvalidOperationException("Outlook is not installed on this machine");
+                dynamic outlook = Activator.CreateInstance(t)!;
+                dynamic mail = outlook.CreateItem(0); // olMailItem
+                mail.Subject = $"DRAX Swaps — Daily OIS Run — {File.GetLastWriteTime(frag):dd MMM yyyy}";
+                mail.HTMLBody = "<html><body style=\"margin:14px;background:#ffffff;\">"
+                    + File.ReadAllText(frag) + "</body></html>";
+                var book = Directory.EnumerateFiles(OutDir, "OIS_Runs_*.xlsx")
+                    .OrderByDescending(File.GetLastWriteTime).FirstOrDefault();
+                if (book != null) mail.Attachments.Add(book);
+                mail.Display();
+                StatusText.Text = "daily draft opened in Outlook — add recipients and send."
+                    + (book != null ? " Workbook attached." : " (no workbook found — run DAILY RUN)");
+            }
+            catch (Exception ex) { StatusText.Text = "daily email failed: " + ex.Message; }
         }
 
         private void OpenOutput_Click(object sender, RoutedEventArgs e)

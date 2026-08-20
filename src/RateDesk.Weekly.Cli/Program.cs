@@ -161,7 +161,36 @@ switch (cmd)
         }
     }
 
+    case "daily":
+    {
+        var outDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly", "out");
+        for (int i = 1; i < args.Length - 1; i++)
+            if (args[i].Equals("--out", StringComparison.OrdinalIgnoreCase)) outDir = args[i + 1];
+        try
+        {
+            var appData = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly");
+            var rep = RateDesk.Weekly.Core.Daily.DailyBuilder.Build(Console.WriteLine);
+            using var store = new HistoryStore(dbPath);
+            var o = RateDesk.Weekly.Core.Daily.DailyBuilder.Render(rep, store, outDir, appData, Console.WriteLine);
+            Console.WriteLine($"as of {rep.AsOf:yyyy-MM-dd HH:mm:ss} — {rep.Runs.Count} CB runs, " +
+                              $"{rep.Fronts.Count} front rows");
+            Console.WriteLine($"blast:     {o.BlastPath}");
+            Console.WriteLine($"workbook:  {o.BookPath}" + (o.DailyDirCopy != null ? $"  (+ {o.DailyDirCopy})" : ""));
+            Console.WriteLine($"email:     {o.FragmentPath}");
+            Console.WriteLine();
+            Console.WriteLine(File.ReadAllText(o.BlastPath));
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("DAILY BUILD FAILED: " + ex.Message);
+            return 1;
+        }
+    }
+
     default:
-        Console.WriteLine("RatesWeekly CLI — usage: update [--db <path>] | status [--db <path>] | render [ccy] [--out <dir>] | email [--out <dir>]");
+        Console.WriteLine("RatesWeekly CLI — usage: update [--db <path>] | status [--db <path>] | render [ccy] [--out <dir>] | email [--out <dir>] | daily [--out <dir>]");
         return cmd == "help" ? 0 : 1;
 }
