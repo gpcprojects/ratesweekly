@@ -34,8 +34,15 @@ Chat transcripts do NOT travel between machines — what matters is written down
 3. `git config windows.appendAtomically false` on a OneDrive-synced clone.
 4. Python 3.12 + `pip install blpapi --index-url https://blpapi.bloomberg.com/repository/releases/python/simple/`
    for the `tools\*.py` audits. Bloomberg terminal logged in on localhost:8194 to run them.
-5. Build/test/publish: see README. ALWAYS verify the published exe's `FileVersion` — never trust
-   build output. Bump the csproj versions (app + CLI in lockstep) on every user-visible change.
+5. Build/test/publish: see README. ALWAYS verify the published exe's `FileVersion` AND SIZE
+   (~172MB single-file; ~9.6MB = a bare apphost whose bundling step failed) — never trust build
+   output. Bump the csproj versions (app + CLI in lockstep) on every user-visible change.
+   RELEASE STAGING (lesson, 2026-08-20): publish each version into a FRESH staging dir and never
+   write into a dir a `gh release` upload is still reading from — v0.6.4's bundle step failed on
+   the lock held by v0.6.3's in-flight upload, produced a 9.6MB apphost that passed the
+   FileVersion check, and shipped broken until the size check caught it (fixed with
+   `gh release upload --clobber`). After every release: exit the running RatesWeekly.exe, swap
+   publish\RatesWeekly.exe to the verified build, relaunch (desk instruction 2026-08-20).
 
 ## How the desk gets a build
 
