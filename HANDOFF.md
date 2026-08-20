@@ -5,7 +5,7 @@ Chat transcripts do NOT travel between machines — what matters is written down
 
 ## Where things stand
 
-- **v0.6.3**, 229/229 tests green. v0.6.3 (2026-08-20): Y/E TURN labelling — year-end-spanning meeting periods on marked runs (SEK/SWESTR) render "Y/E Turn" instead of numbers everywhere, guard stands down, movers/charts skip (DESIGN has the mechanics). v0.6.2 (2026-08-20): 1m = same-day-last-month everywhere (was fixed 31d; matches the sheet's intended convention), ECB futures guard on ICE 3M ESTR (TKY, index-matched, 0.0bp live; basis knob available for ER/TKYER if wanted). v0.6.1 (2026-08-20): STALE-OUTPUT GATE in the app — on open
+- **v0.6.3**, 229/229 tests green. v0.6.3 (2026-08-20): Y/E TURN labelling — year-end-spanning meeting periods on marked runs (SEK/SWESTR) render "Y/E Turn" instead of numbers everywhere, guard stands down, movers/charts skip; v0.6.4: the step chain SKIPS turn rows — the next row shows the cumulative move across the masked meeting + its own (DESIGN has the mechanics). v0.6.2 (2026-08-20): 1m = same-day-last-month everywhere (was fixed 31d; matches the sheet's intended convention), ECB futures guard on ICE 3M ESTR (TKY, index-matched, 0.0bp live; basis knob available for ER/TKYER if wanted). v0.6.1 (2026-08-20): STALE-OUTPUT GATE in the app — on open
   only UPDATE is clickable; CREATE/COPY EMAIL and OPEN OUTPUT unlock when THIS session's update
   rebuilt what they serve ("UPDATE COMPLETE" in the log; a failed email leg keeps the email
   buttons locked). Earlier same day: `master` through PR 331; branch `decision-day-roll` carries

@@ -388,8 +388,11 @@ automatically, surprises included. What is wired:
   2026-08-20: Bloomberg SKSF Dec-26 rung ~1.47 vs ~1.93 on Coremont — the desk identified it
   as the turn). MECHANICS: the row keeps its real print internally (MeetingRow.TurnPeriod) but
   the interior neighbour-misprint guard STANDS DOWN for it (a turn print legitimately sits far
-  from its neighbours), Step is suppressed on the turn row AND the row after it (a step off a
-  turn-dominated Priced measures the turn), and verify_strip_changes.py simply doesn't parse
+  from its neighbours), and the STEP CHAIN SKIPS IT (desk 2026-08-20): the turn row's own Step
+  is blank, and the NEXT row's Step differences the last clean Priced — the CUMULATIVE move
+  priced across the masked meeting plus its own, clean by construction because neither
+  neighbouring period contains the turn days (the drag cancels). Only the masked meeting's own
+  step is unrecoverable from these contracts. verify_strip_changes.py simply doesn't parse
   label rows. Other currencies' turns are ~bp-scale within the period average — mark a run
   only when its o/n index has a SWESTR-scale dislocation.
 - 1d CHANGE COLUMN (v0.5.0, desk 2026-08-20): the meeting cards carry 1d alongside 1w/1m,
