@@ -133,10 +133,16 @@ namespace RateDesk.Core
                     Td($"<b>{f.Bank}</b> <span style=\"color:{EmMut};font-size:10px;\">{CcyLabel(f.Ccy)}</span>", rb) +
                     Td(f.Decision is { } dd ? Inv(dd) : Inv(f.StartDate) + " *", rb) +
                     Td(Inv(f.StartDate), rb) +
-                    Td($"<b>{f.MidPct:0.000}</b>", $"text-align:right;{rb}") +
-                    Td(f.RefPct is double rp2 ? rp2.ToString("0.000") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
-                    Td(f.PricedBp is double p2 ? p2.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
-                    Td($"<b>{pct}</b>", $"text-align:right;{rb}") +
+                    // a year-end-spanning front period prints the turn, not the policy path —
+                    // label it rather than publish a number that reads as a cut (desk 2026-08-20)
+                    (f.TurnPeriod
+                        ? Td($"<i>Y/E Turn</i>", $"text-align:right;color:{EmMut};{rb}") +
+                          Td(f.RefPct is double rp3 ? rp3.ToString("0.000") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
+                          Td("&nbsp;", rb) + Td("&nbsp;", rb)
+                        : Td($"<b>{f.MidPct:0.000}</b>", $"text-align:right;{rb}") +
+                          Td(f.RefPct is double rp2 ? rp2.ToString("0.000") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
+                          Td(f.PricedBp is double p2 ? p2.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
+                          Td($"<b>{pct}</b>", $"text-align:right;{rb}")) +
                     "</tr>");
             }
             sb.Append("</table>");
@@ -175,6 +181,17 @@ namespace RateDesk.Core
                 foreach (var m in run.Rows)
                 {
                     string rb = RowBg(mr++);
+                    if (m.TurnPeriod)
+                    {
+                        // year-end-spanning period: the average carries the SWESTR-style turn
+                        // dislocation — label it, never publish it as a policy expectation
+                        sb.Append("<tr>" +
+                            Td(Inv(m.Date), rb) +
+                            Td($"<i>Y/E Turn</i>", $"text-align:right;color:{EmMut};{rb}") +
+                            Td("&nbsp;", rb) + Td("&nbsp;", rb) + Td("&nbsp;", rb) + Td("&nbsp;", rb) + Td("&nbsp;", rb) +
+                            "</tr>");
+                        continue;
+                    }
                     // Priced stays plain muted text — the heat experiment was reverted on the
                     // desk's read (2026-08-11); heat belongs to the CHANGE columns only
                     sb.Append("<tr>" +
@@ -291,8 +308,11 @@ namespace RateDesk.Core
             sb.AppendLine("Central Bank\tDecision Date\tStart Date\tOIS Mid\tBase Rate\tPriced (bp)");
             foreach (var f in rep.Fronts)
                 sb.AppendLine($"{f.Bank} {f.Ccy}\t{(f.Decision ?? f.StartDate).ToString("dd-MMM-yy", inv)}{(f.Decision == null ? " *" : "")}\t" +
-                    $"{f.StartDate.ToString("dd-MMM-yy", inv)}\t{f.MidPct:0.000}\t{(f.RefPct is double rr ? rr.ToString("0.000") : "")}\t" +
-                    $"{(f.PricedBp is double p ? p.ToString("+0.0;-0.0") : "")}");
+                    $"{f.StartDate.ToString("dd-MMM-yy", inv)}\t" +
+                    (f.TurnPeriod
+                        ? $"Y/E Turn\t{(f.RefPct is double rt ? rt.ToString("0.000") : "")}\t"
+                        : $"{f.MidPct:0.000}\t{(f.RefPct is double rr ? rr.ToString("0.000") : "")}\t" +
+                          $"{(f.PricedBp is double p ? p.ToString("+0.0;-0.0") : "")}"));
         }
         sb.AppendLine();
         sb.AppendLine("Central Bank OIS Meetings");
@@ -302,9 +322,11 @@ namespace RateDesk.Core
             sb.AppendLine(run.Title + (run.RefPct is double rp ? $"  ref {rp:0.000}" : ""));
             sb.AppendLine("StartDate\tMid\tPriced\tStep\t1d Chg\t1w Chg\t1m Chg");
             foreach (var m in run.Rows)
-                sb.AppendLine($"{m.Date.ToString("dd-MMM-yy", inv)}\t{m.MidPct:0.000}\t{m.PricedBp:+0.0;-0.0}\t{m.StepBp:+0.0;-0.0}\t" +
-                    $"{(m.D1Bp is double d1 ? d1.ToString("+0.0;-0.0") : "")}\t" +
-                    $"{(m.W1Bp is double w ? w.ToString("+0.0;-0.0") : "")}\t{(m.M1Bp is double m1 ? m1.ToString("+0.0;-0.0") : "")}");
+                sb.AppendLine(m.TurnPeriod
+                    ? $"{m.Date.ToString("dd-MMM-yy", inv)}\tY/E Turn\t\t\t\t\t"
+                    : $"{m.Date.ToString("dd-MMM-yy", inv)}\t{m.MidPct:0.000}\t{m.PricedBp:+0.0;-0.0}\t{m.StepBp:+0.0;-0.0}\t" +
+                      $"{(m.D1Bp is double d1 ? d1.ToString("+0.0;-0.0") : "")}\t" +
+                      $"{(m.W1Bp is double w ? w.ToString("+0.0;-0.0") : "")}\t{(m.M1Bp is double m1 ? m1.ToString("+0.0;-0.0") : "")}");
         }
 
         sb.AppendLine();

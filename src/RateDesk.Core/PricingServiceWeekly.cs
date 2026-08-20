@@ -44,6 +44,9 @@ namespace RateDesk.Core
         public double? D1Bp { get; set; }
         public double? W1Bp { get; set; }
         public double? M1Bp { get; set; }
+        /// <summary>Render "Y/E Turn" instead of the numbers — the period spans a year-end and
+        /// its average carries the turn dislocation (SEK/SWESTR; desk 2026-08-20).</summary>
+        public bool TurnPeriod { get; init; }
     }
 
     public sealed class WeeklyRun
@@ -67,6 +70,9 @@ namespace RateDesk.Core
         /// <summary>The run's reference (policy/fixing) rate — the "Base Rate" column.</summary>
         public double? RefPct { get; init; }
         public double? PricedBp { get; init; }
+        /// <summary>The front period spans a year-end (marked run): the front line shows
+        /// "Y/E Turn" for its market-pricing cells.</summary>
+        public bool TurnPeriod { get; init; }
     }
 
     public sealed class WeeklyReport
@@ -186,12 +192,18 @@ namespace RateDesk.Core
                             Bank = sched.Name, Ccy = run.Ccy,
                             Decision = dec, StartDate = front.Date,
                             MidPct = front.MidPct, RefPct = run.RefPct, PricedBp = front.PricedBp,
+                            TurnPeriod = front.TurnPeriod,
                         });
                     }
                     var series = MeetingSeriesBuilder(sched, run.Rows.Select(r => r.Date));
                     foreach (var row in run.Rows)
                     {
-                        var wm = new WeeklyMeeting { Date = row.Date, MidPct = row.MidPct, PricedBp = row.PricedBp, StepBp = row.StepBp };
+                        var wm = new WeeklyMeeting
+                        {
+                            Date = row.Date, MidPct = row.MidPct, PricedBp = row.PricedBp,
+                            StepBp = row.StepBp, TurnPeriod = row.TurnPeriod,
+                        };
+                        if (row.TurnPeriod) { wr.Rows.Add(wm); continue; }   // no changes for a label row
                         try
                         {
                             // the stitched series is meeting-CONSTANT across ticker rolls, so a

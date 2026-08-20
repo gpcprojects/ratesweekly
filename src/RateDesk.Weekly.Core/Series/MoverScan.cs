@@ -303,6 +303,8 @@ namespace RateDesk.Weekly.Core.Series
                 foreach (var row in strip.Rows)
                 {
                     if (row.Label.EndsWith("*", StringComparison.Ordinal)) { excluded++; continue; }
+                    // a year-end-turn period's "move" is the turn breathing, not policy repricing
+                    if (row.Turn) { excluded++; continue; }
                     var series = MeetingSeries(store, bounds,
                         n => pat.Replace("{N}", n.ToString()) + " Curncy",
                         row.Contract, asOf, SparkDays + 40);

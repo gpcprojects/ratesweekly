@@ -490,6 +490,11 @@
         "2027-06-22"
       ],
       "decisionTimeLondon": "08:30",
+      // SWESTR drops hard on the last business day of the year (a documented dislocation the
+      // Riksbank opened an investigation into, 2023), so the meeting period that SPANS a
+      // year-end averages the turn, not the policy path — live 2026-08-20 the Dec-26 rung
+      // printed ~1.47 vs ~1.93 on Coremont. Renders as "Y/E Turn" (desk 2026-08-20).
+      "markTurnPeriods": true,
       "pastDates": [
         "2025-08-20",
         "2025-09-23",

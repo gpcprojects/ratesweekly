@@ -42,6 +42,10 @@ namespace RateDesk.Core
         public double? CoDBp { get; init; }
         /// <summary>Where the mid came from: the meeting-dated OIS ticker, or "curve" when implied.</summary>
         public string MidSource { get; init; } = "";
+        /// <summary>The period spans a year-end and the schedule marks turn periods: renderers
+        /// print "Y/E Turn" instead of the numbers (which stay populated — they are the real,
+        /// turn-dominated market prints, still valid as blend inputs).</summary>
+        public bool TurnPeriod { get; init; }
     }
 
     public sealed class MeetingRunResult
@@ -95,6 +99,14 @@ namespace RateDesk.Core
         /// <summary>Day-count denominator for the imm3m compounding/annualization: 365 (GBP SONIA,
         /// CAD CORRA) or 360 (EUR Euribor/ESTR, USD money markets).</summary>
         public int GuardFuturesDcc { get; set; } = 365;
+        /// <summary>Mark meeting periods that SPAN A YEAR-END as "Y/E Turn" instead of publishing
+        /// their numbers (desk 2026-08-20, SEK). SWESTR drops sharply on the last business day of
+        /// the year (a documented dislocation the Riksbank opened an investigation into in 2023),
+        /// so a meeting OIS averaging over the turn prints far below the policy path — real market
+        /// pricing of the turn, not policy expectation, and not a misprint. The date stays on the
+        /// boards (the decision is real); the level/priced/changes are suppressed in every
+        /// rendering and the row is excluded from movers ranking and chart scaling.</summary>
+        public bool MarkTurnPeriods { get; set; }
         public string? RefTicker { get; set; }
         /// <summary>Ladder name whose strip is the POLICY curve for this central bank, when that is a
         /// different index from the currency's default OIS curve. USD is the case: tenor swaps and forwards
@@ -814,13 +826,19 @@ namespace RateDesk.Core
                 for (int n = 1; n <= maxRows; n++)
                 {
                     if (!meetDates.TryGetValue(n, out var d0)) break;
+                    // Y/E TURN periods are detected FIRST: a print far from its neighbours is what
+                    // a year-end-spanning period legitimately looks like (SWESTR), so the interior
+                    // misprint guard must stand down for it — the real print stays on the row and
+                    // the renderers label it instead of publishing it.
+                    var dEnd0 = meetDates.TryGetValue(n + 1, out var nx0) ? nx0 : d0.AddDays(42);
+                    bool turn0 = sched.MarkTurnPeriods && d0.Year != dEnd0.Year;
                     var q = quotes[n];
                     double mid;
                     string midSrc;
                     double? cod = null;
                     if (q?.Mid is double qm)
                     {
-                        var (gm, rej) = GuardedMid(n);
+                        var (gm, rej) = turn0 ? (qm, false) : GuardedMid(n);
                         mid = gm;
                         midSrc = rej ? $"interp (ticker {SignedBp((qm - gm) * 100.0)}bp off — rejected)" : "ticker";
                         cod = rej ? null
@@ -852,13 +870,18 @@ namespace RateDesk.Core
                         }
                     }
                     double? priced = res.RefPct.HasValue ? (mid - res.RefPct.Value) * 100.0 : null;
+                    // Y/E TURN (desk 2026-08-20): a period straddling a year-end carries the turn
+                    // dislocation in its average (SWESTR's is extreme), so it renders as a label,
+                    // and the FOLLOWING row's Step is suppressed too - a step off a turn-dominated
+                    // Priced measures the turn, not a meeting increment.
+                    bool turn = turn0;
                     res.Rows.Add(new MeetingRow
                     {
                         Date = d0, MidPct = mid, PricedBp = priced,
-                        StepBp = priced.HasValue && prevPriced.HasValue ? priced - prevPriced : null,
-                        CoDBp = cod, MidSource = midSrc,
+                        StepBp = !turn && priced.HasValue && prevPriced.HasValue ? priced - prevPriced : null,
+                        CoDBp = cod, MidSource = midSrc, TurnPeriod = turn,
                     });
-                    prevPriced = priced;
+                    prevPriced = turn ? null : priced;
                 }
 
                 res.DatesSource = tickerDates ? "tickers" : "schedule";

@@ -3,9 +3,12 @@ using RateDesk.Core;
 namespace RateDesk.Weekly.Core.Series
 {
     /// <summary>Levels, not changes: WeekLevel/MonthLevel are what THIS contract was quoted at
-    /// then, already roll-corrected, so the renderer differences them like any other ladder.</summary>
+    /// then, already roll-corrected, so the renderer differences them like any other ladder.
+    /// Turn = the period spans a year-end on a marked run (SEK/SWESTR): renderers print
+    /// "Y/E Turn" instead of the numbers and movers/charts skip the row.</summary>
     public sealed record StripRow(
-        string Label, DateTime Contract, double? Mid, double? WeekLevel, double? MonthLevel, string Ticker);
+        string Label, DateTime Contract, double? Mid, double? WeekLevel, double? MonthLevel,
+        string Ticker, bool Turn = false);
 
     public sealed class StripTable
     {
@@ -191,6 +194,18 @@ namespace RateDesk.Weekly.Core.Series
             // stitcher's benefit; see TickerUniverse.
             var t = RollingStrip.Build($"{sched.Name} · {sched.Ccy}", store, asOf, contracts, bounds,
                 n => pat.Replace("{N}", n.ToString()) + " Curncy");
+            // Y/E TURN (desk 2026-08-20): on marked runs, a period spanning a year-end renders
+            // as a label — its average carries the turn dislocation (SWESTR's is extreme)
+            if (sched.MarkTurnPeriods)
+            {
+                var all = sched.Dates.Select(d => d.Date).OrderBy(d => d).ToList();
+                for (int i = 0; i < t.Rows.Count; i++)
+                {
+                    var end = all.FirstOrDefault(d => d > t.Rows[i].Contract);
+                    if (end == default) end = t.Rows[i].Contract.AddDays(42);
+                    if (t.Rows[i].Contract.Year != end.Year) t.Rows[i] = t.Rows[i] with { Turn = true };
+                }
+            }
             return t;
         }
     }
