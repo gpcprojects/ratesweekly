@@ -48,7 +48,7 @@ namespace RateDesk.Weekly.Core.Daily
                 if (run.RefPct is { } rp) ws.Cell(r, 2).Value = rp;
                 ws.Cell(r, 2).Style.NumberFormat.Format = "0.000";
                 r++;
-                string[] hdr = { "Start_date", "Maturity", "T", "Δ 1d (bp)", "Δ 1w (bp)", "Step (bp)", "Priced (bp)" };
+                string[] hdr = { "Start_date", "Maturity", "T", "Δ 1d (bp)", "Δ 1w (bp)", "Δ 1m (bp)", "Step (bp)", "Priced (bp)" };
                 for (int c = 0; c < hdr.Length; c++)
                 {
                     ws.Cell(r, c + 1).Value = hdr[c];
@@ -60,9 +60,10 @@ namespace RateDesk.Weekly.Core.Daily
                 {
                     var m = run.Rows[i];
                     ws.Cell(r, 1).Value = m.Date; ws.Cell(r, 1).Style.DateFormat.Format = "dd-mmm-yy";
-                    if (i + 1 < run.Rows.Count)
+                    var end0 = m.EndDate ?? (i + 1 < run.Rows.Count ? run.Rows[i + 1].Date : (DateTime?)null);
+                    if (end0 is { } e0)
                     {
-                        ws.Cell(r, 2).Value = run.Rows[i + 1].Date;
+                        ws.Cell(r, 2).Value = e0;
                         ws.Cell(r, 2).Style.DateFormat.Format = "dd-mmm-yy";
                     }
                     if (m.TurnPeriod)
@@ -75,15 +76,16 @@ namespace RateDesk.Weekly.Core.Daily
                         ws.Cell(r, 3).Value = m.MidPct; ws.Cell(r, 3).Style.NumberFormat.Format = "0.000";
                         SetBp(ws.Cell(r, 4), m.D1Bp);
                         SetBp(ws.Cell(r, 5), m.W1Bp);
-                        SetBp(ws.Cell(r, 6), m.StepBp);
-                        SetBp(ws.Cell(r, 7), m.PricedBp);
+                        SetBp(ws.Cell(r, 6), m.M1Bp);
+                        SetBp(ws.Cell(r, 7), m.StepBp);
+                        SetBp(ws.Cell(r, 8), m.PricedBp);
                     }
                     r++;
                 }
                 r++;   // blank separator
             }
             ws.Columns(1, 2).Width = 12;
-            ws.Columns(3, 7).Width = 10;
+            ws.Columns(3, 8).Width = 10;
 
             // ---- per-bank history sheets: roll-corrected daily rate per current meeting ----
             foreach (var sched in MeetingsStore.Schedules.Where(s => string.IsNullOrEmpty(s.Kind)))
@@ -96,7 +98,7 @@ namespace RateDesk.Weekly.Core.Daily
                 if (run == null || pat == null || run.Rows.Count == 0) continue;
 
                 var hs = wb.Worksheets.Add("Hist_" + sched.Name);
-                string[] hh = { "Date", "StartDate", "Rate", "Δ 1d (bp)" };
+                string[] hh = { "Date", "StartDate", "EndDate", "Rate", "Δ 1d (bp)", "Δ 1w (bp)", "Δ 1m (bp)" };
                 // one column-group per meeting would sprawl; long format instead — filterable
                 for (int c = 0; c < hh.Length; c++)
                 {
@@ -115,24 +117,35 @@ namespace RateDesk.Weekly.Core.Daily
                     .Where(d => d.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday));
                 foreach (var day in days)
                 {
-                    foreach (var m in run.Rows)
+                    for (int ri = 0; ri < run.Rows.Count; ri++)
                     {
+                        var m = run.Rows[ri];
                         double? v = RollingStrip.RolledValue(store,
                             n => pat.Replace("{N}", n.ToString()) + " Curncy",
                             clustered, m.Date, day, 13);
                         if (v is null) continue;
-                        double? prev = RollingStrip.RolledValue(store,
-                            n => pat.Replace("{N}", n.ToString()) + " Curncy",
-                            clustered, m.Date, PrevBd(day), 13);
+                        Func<int, string> tk = n => pat.Replace("{N}", n.ToString()) + " Curncy";
+                        double? prev = RollingStrip.RolledValue(store, tk, clustered, m.Date, PrevBd(day), 13);
+                        double? week = RollingStrip.RolledValue(store, tk, clustered, m.Date, day.AddDays(-7), 13);
+                        double? month = RollingStrip.RolledValue(store, tk, clustered, m.Date,
+                            WeeklyCurves.MonthAgo(day), 13);
                         hs.Cell(hr, 1).Value = day; hs.Cell(hr, 1).Style.DateFormat.Format = "dd-mmm-yy";
                         hs.Cell(hr, 2).Value = m.Date; hs.Cell(hr, 2).Style.DateFormat.Format = "dd-mmm-yy";
-                        hs.Cell(hr, 3).Value = v.Value; hs.Cell(hr, 3).Style.NumberFormat.Format = "0.000";
-                        if (prev is { } pv) SetBp(hs.Cell(hr, 4), (v.Value - pv) * 100.0);
+                        var hEnd = m.EndDate ?? (ri + 1 < run.Rows.Count ? run.Rows[ri + 1].Date : (DateTime?)null);
+                        if (hEnd is { } he)
+                        {
+                            hs.Cell(hr, 3).Value = he;
+                            hs.Cell(hr, 3).Style.DateFormat.Format = "dd-mmm-yy";
+                        }
+                        hs.Cell(hr, 4).Value = v.Value; hs.Cell(hr, 4).Style.NumberFormat.Format = "0.000";
+                        if (prev is { } pv) SetBp(hs.Cell(hr, 5), (v.Value - pv) * 100.0);
+                        if (week is { } wv) SetBp(hs.Cell(hr, 6), (v.Value - wv) * 100.0);
+                        if (month is { } mv) SetBp(hs.Cell(hr, 7), (v.Value - mv) * 100.0);
                         hr++;
                     }
                 }
-                hs.Columns(1, 2).Width = 12;
-                hs.Columns(3, 4).Width = 10;
+                hs.Columns(1, 3).Width = 12;
+                hs.Columns(4, 7).Width = 10;
                 log?.Invoke($"daily book: {sched.Name} history {hr - 2} rows");
             }
 

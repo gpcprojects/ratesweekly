@@ -36,6 +36,9 @@ namespace RateDesk.Core
     public sealed class MeetingRow
     {
         public DateTime Date { get; init; }
+        /// <summary>END of the period this row's quote covers (the next meeting boundary) —
+        /// null when the run has no resolved next date (never a guess).</summary>
+        public DateTime? EndDate { get; init; }
         public double MidPct { get; init; }
         public double? PricedBp { get; init; }
         public double? StepBp { get; init; }
@@ -830,7 +833,8 @@ namespace RateDesk.Core
                     // a year-end-spanning period legitimately looks like (SWESTR), so the interior
                     // misprint guard must stand down for it — the real print stays on the row and
                     // the renderers label it instead of publishing it.
-                    var dEnd0 = meetDates.TryGetValue(n + 1, out var nx0) ? nx0 : d0.AddDays(42);
+                    bool haveEnd = meetDates.TryGetValue(n + 1, out var nx0);
+                    var dEnd0 = haveEnd ? nx0 : d0.AddDays(42);
                     bool turn0 = sched.MarkTurnPeriods && d0.Year != dEnd0.Year;
                     var q = quotes[n];
                     double mid;
@@ -880,7 +884,7 @@ namespace RateDesk.Core
                     bool turn = turn0;
                     res.Rows.Add(new MeetingRow
                     {
-                        Date = d0, MidPct = mid, PricedBp = priced,
+                        Date = d0, EndDate = haveEnd ? dEnd0 : null, MidPct = mid, PricedBp = priced,
                         StepBp = !turn && priced.HasValue && prevPriced.HasValue ? priced - prevPriced : null,
                         CoDBp = cod, MidSource = midSrc, TurnPeriod = turn,
                     });

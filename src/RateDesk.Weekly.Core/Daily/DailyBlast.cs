@@ -52,8 +52,8 @@ namespace RateDesk.Weekly.Core.Daily
                 {
                     var m = run.Rows[i];
                     string start = m.Date.ToString("dd-MMM-yy", inv);
-                    string end = i + 1 < run.Rows.Count
-                        ? run.Rows[i + 1].Date.ToString("dd-MMM-yy", inv) : "—";
+                    string end = (m.EndDate ?? (i + 1 < run.Rows.Count ? run.Rows[i + 1].Date : null))
+                        ?.ToString("dd-MMM-yy", inv) ?? "—";
                     if (m.TurnPeriod)
                     {
                         sb.AppendLine($"{start,-10} {end,-10} {"Y/E Turn",7}");

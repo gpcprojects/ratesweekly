@@ -38,6 +38,8 @@ namespace RateDesk.Core
         /// <summary>START of the meeting-period swap (the family's own period boundary — for ECB/BOJ
         /// this is the effective date days after the announcement, for FOMC/MPC the decision day).</summary>
         public DateTime Date { get; init; }
+        /// <summary>End of the period (next meeting boundary); null when unresolved.</summary>
+        public DateTime? EndDate { get; init; }
         public double MidPct { get; init; }
         public double? PricedBp { get; init; }
         public double? StepBp { get; init; }
@@ -204,8 +206,8 @@ namespace RateDesk.Core
                     {
                         var wm = new WeeklyMeeting
                         {
-                            Date = row.Date, MidPct = row.MidPct, PricedBp = row.PricedBp,
-                            StepBp = row.StepBp, TurnPeriod = row.TurnPeriod,
+                            Date = row.Date, EndDate = row.EndDate, MidPct = row.MidPct,
+                            PricedBp = row.PricedBp, StepBp = row.StepBp, TurnPeriod = row.TurnPeriod,
                         };
                         if (row.TurnPeriod) { wr.Rows.Add(wm); continue; }   // no changes for a label row
                         try

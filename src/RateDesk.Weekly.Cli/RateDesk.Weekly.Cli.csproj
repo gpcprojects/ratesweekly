@@ -11,8 +11,8 @@
     <Company>Gabriel Pycroft</Company>
     <Copyright>© 2026 Gabriel Pycroft</Copyright>
     <ApplicationIcon>..\RateDesk.Weekly\app.ico</ApplicationIcon>
-    <Version>0.7.2</Version>
-    <FileVersion>0.7.2.0</FileVersion>
+    <Version>0.7.3</Version>
+    <FileVersion>0.7.3.0</FileVersion>
     <NoWarn>$(NoWarn);NU1701</NoWarn>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <DebugType>none</DebugType>
