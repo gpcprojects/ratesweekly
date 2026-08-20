@@ -225,6 +225,66 @@ namespace RateDesk.Core
             catch { return null; }
         }
 
+        private readonly Dictionary<(string ccy, string src, DateTime day), CurveSet?> _histCurveCache = new();
+
+        /// <summary>Curve-implied meeting forward AS OF a historical date — the like-for-like
+        /// 1w/1m anchor for rows whose mid is curve-implied because the quoted meeting family has
+        /// run out (SEK/NOK tails; desk 2026-08-20). The curve is bootstrapped at evaluation date
+        /// <paramref name="asOfDate"/> from each pillar's own close at-or-before it (10-day
+        /// staleness bound, same as every lookback). ALL-OR-NOTHING: if any pillar lacks a usable
+        /// historical close the whole curve is discarded — a curve mixing historical and live
+        /// pillars would publish a change that is partly today's market. Null = no anchor, and
+        /// the cell stays honestly blank.</summary>
+        internal double? HistoricalCurveFwd(CurrencyConfig cfg, string src, DateTime asOfDate, DateTime a, DateTime b)
+        {
+            // a weekend anchor resolves to the preceding business day, like every other lookback
+            while (asOfDate.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+                asOfDate = asOfDate.AddDays(-1);
+            lock (_gate)
+            {
+                var key = (cfg.Ccy.ToUpperInvariant(), src.ToUpperInvariant(), asOfDate.Date);
+                if (!_histCurveCache.TryGetValue(key, out var curves))
+                {
+                    try
+                    {
+                        bool complete = true;
+                        curves = CurveBuilder.Build(cfg, src, Snapshot,
+                            new Date(asOfDate.Day, (Month)asOfDate.Month, asOfDate.Year),
+                            (full, r) =>
+                            {
+                                var h = History?.GetDaily(full, 260);
+                                if (h != null)
+                                    for (int i = h.Count - 1; i >= 0; i--)
+                                        if (h[i].Date.Date <= asOfDate.Date)
+                                        {
+                                            if ((asOfDate.Date - h[i].Date.Date).TotalDays > 10) break;
+                                            return h[i].Value / 100.0;
+                                        }
+                                complete = false;
+                                return r;   // placeholder so the build finishes; discarded below
+                            },
+                            ExternalDiscountFor(cfg));
+                        if (!complete) curves = null;
+                    }
+                    catch { curves = null; }
+                    _histCurveCache[key] = curves;
+                }
+                if (curves?.Ois is not { } ts) return null;
+                try
+                {
+                    Settings.setEvaluationDate(curves.AsOf);
+                    var cal = curves.Cal;
+                    var dcc = SwapBuilder.MakeOvernightIndex(cfg, cfg.Ois!, cal,
+                        new Handle<YieldTermStructure>()).dayCounter();
+                    Date Q(DateTime d) => cal.adjust(new Date(d.Day, (Month)d.Month, d.Year),
+                        BusinessDayConvention.Following);
+                    return ts.forwardRate(Q(a), Q(b), dcc, Compounding.Simple, Frequency.Annual).value() * 100.0;
+                }
+                catch { return null; }
+                finally { Settings.setEvaluationDate(AdjustedToday(cfg)); }
+            }
+        }
+
         // ---------- rates monitor ----------
 
         /// <summary>Mids + change-on-day for one currency's headline curve (default product's quotes,

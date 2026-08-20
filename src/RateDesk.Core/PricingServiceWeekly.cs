@@ -230,6 +230,23 @@ namespace RateDesk.Core
                         // (vs the prev-close curve) alike. Close-based rather than snap-based,
                         // which beats a hole in the sheet (desk 2026-08-20).
                         wm.D1Bp ??= row.CoDBp;
+                        // 1w/1m for CURVE-IMPLIED rows (desk 2026-08-20, SEK/NOK tails): the
+                        // period was never directly quoted, so its history is anchored the same
+                        // way its mid is made — the meeting-window forward off a curve
+                        // bootstrapped from that date's own pillar closes. Like-for-like
+                        // (curve vs curve); quoted rows never take this path — mixing a quoted
+                        // mid with a curve anchor is the false-flag lesson in reverse.
+                        if (row.MidSource == "curve" && row.EndDate is { } dEndC
+                            && Configs.TryGet(sched.Ccy, out var mcfg))
+                        {
+                            var msrc = SourceFor(sched.Ccy);
+                            if (wm.W1Bp is null
+                                && HistoricalCurveFwd(mcfg, msrc, DateTime.Today.AddDays(-7), row.Date, dEndC) is { } hw)
+                                wm.W1Bp = (row.MidPct - hw) * 100.0;
+                            if (wm.M1Bp is null
+                                && HistoricalCurveFwd(mcfg, msrc, MonthAgo(DateTime.Today), row.Date, dEndC) is { } hm)
+                                wm.M1Bp = (row.MidPct - hm) * 100.0;
+                        }
                         wr.Rows.Add(wm);
                     }
                     rep.Runs.Add(wr);
