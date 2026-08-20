@@ -171,8 +171,8 @@ switch (cmd)
         {
             var appData = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly");
-            var rep = RateDesk.Weekly.Core.Daily.DailyBuilder.Build(Console.WriteLine);
             using var store = new HistoryStore(dbPath);
+            var rep = RateDesk.Weekly.Core.Daily.DailyBuilder.Build(store, Console.WriteLine);
             var o = RateDesk.Weekly.Core.Daily.DailyBuilder.Render(rep, store, outDir, appData, Console.WriteLine);
             Console.WriteLine($"as of {rep.AsOf:yyyy-MM-dd HH:mm:ss} — {rep.Runs.Count} CB runs, " +
                               $"{rep.Fronts.Count} front rows");

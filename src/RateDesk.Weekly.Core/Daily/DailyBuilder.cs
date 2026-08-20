@@ -40,8 +40,12 @@ namespace RateDesk.Weekly.Core.Daily
         }
 
         /// <summary>Snapshot live and build the meetings-only report (same universe and guard
-        /// pass as the weekly email — one definition of the boards, two cadences).</summary>
-        public static WeeklyReport Build(Action<string>? log = null)
+        /// pass as the weekly email — one definition of the boards, two cadences). When a store
+        /// is passed, the meeting-ticker closes the run already fetched are UPSERTED into it, so
+        /// the workbook's history sheets stay current on daily cadence alone — a desk that skips
+        /// WEEKLY RUN for weeks still gets full history sheets, at zero extra Bloomberg cost
+        /// (the stitcher prefetched these series anyway; desk question 2026-08-20).</summary>
+        public static WeeklyReport Build(HistoryStore? store = null, Action<string>? log = null)
         {
             var configs = RateDesk.Core.Config.ConfigStore.LoadDefault();
             var snap = new RatesSnapshot();
@@ -55,6 +59,31 @@ namespace RateDesk.Weekly.Core.Daily
             var rep = svc.BuildWeekly(meetingsOnly: true);
             rep.Notes.AddRange(FuturesGuard.Check(svc));
             foreach (var n in rep.Notes) log?.Invoke("  daily note: " + n);
+
+            if (store != null)
+            {
+                int wrote = 0;
+                foreach (var sched in MeetingsStore.Schedules.Where(s => string.IsNullOrEmpty(s.Kind)))
+                {
+                    var pat = sched.Tickers.FirstOrDefault(t => t.Contains("{N}"));
+                    if (pat == null) continue;
+                    for (int n = 1; n <= 13; n++)
+                    {
+                        // the COMPOSITE spelling — the store key the stitcher and the workbook's
+                        // history sheets read (TickerUniverse's both-spellings lesson)
+                        var tkr = pat.Replace("{N}", n.ToString()) + " Curncy";
+                        try
+                        {
+                            var h = refData.GetDaily(tkr, 70);
+                            if (h.Count == 0) continue;
+                            store.UpsertDaily(tkr, h, excludeToday: true);
+                            wrote++;
+                        }
+                        catch { /* a dead far rung is not an error */ }
+                    }
+                }
+                log?.Invoke($"daily: upserted {wrote} meeting series into the store (history sheets self-sufficient)");
+            }
             return rep;
         }
 
