@@ -453,7 +453,20 @@ roll-corrected changes instead of NA gaps · decision-day front roll · futures 
 SEK from Bloomberg SKSF (vs manual Coremont paste) · unbounded store (they prune at 61 days) ·
 one click for all banks (vs 10 buttons + overwrite prompts).
 
-### Build shape (⚠ pending desk sign-off on the questions below)
+### STATUS v0.7.0 (2026-08-20) — BUILT per desk answers (all four questions resolved)
+Channels = ALL THREE. Format = improved immediately (bp columns, 1w, Priced). T−1 = yesterday's
+16:30 snap. SEK = Bloomberg SKSF. Wired: DailyBuilder (live snapshot → meetings-only report +
+futures guards) → daily_blast.txt (DailyBlast — incumbent title verbatim, improved blocks,
+Y/E Turn automatic), OIS_Runs_{d}{MMMM}{yy}.xlsx (DailyBook/ClosedXML — Runs sheet + one
+roll-corrected 60-day history sheet per bank; incumbent name pattern; copied to publish.json
+"dailyDir" when set), daily_email.html (the weekly's CB front + cards rendering, workbook
+attached via DAILY EMAIL). App: DAILY RUN / COPY BLAST / DAILY EMAIL button row (builders live
+on open, servers gated on DAILY COMPLETE). CLI: `daily`. The incumbent
+Central Bank OIS MAIN.xlsm is UNTOUCHED as the manual break-glass fallback; a NEW cleaned-up
+fallback workbook (same mechanics, one update button, SKSF SEK) is the next piece — the app
+never writes into a live macro workbook.
+
+### Build shape (original proposal, superseded by the STATUS above)
 A DAILY surface beside the WEEKLY one: one click → live snapshot → MeetingRun per bank →
 (a) chat-blast text in the sheet's exact block format (title flags, T/T−1/Δ on day/Step,
 Y/E Turn rows labelled), (b) a compact daily email (Screenshot-sheet layout, CF_HTML/Outlook

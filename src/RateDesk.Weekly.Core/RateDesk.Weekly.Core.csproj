@@ -15,6 +15,9 @@
   <ItemGroup>
     <!-- embedded engine, single native e_sqlite3 — bundles into a single-file publish -->
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+    <!-- the daily OIS workbook (runs + history sheets). MIT; bundles into the single-file
+         publish like everything else — no runtime file dependencies. -->
+    <PackageReference Include="ClosedXML" Version="0.104.2" />
   </ItemGroup>
 
 </Project>
