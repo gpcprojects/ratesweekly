@@ -16,7 +16,8 @@ Chat transcripts do NOT travel between machines — what matters is written down
   FOMC/MPC/SNB from the official calendars). DESIGN §12 has the full mechanics and is the
   dodgeball cherry-pick bundle.
 - The desk email + all dashboards are BUILT AND VERIFIED from this repo. dodgeball's standalone
-  DodgeballWeekly.exe is slated for removal once the desk runs this app.
+  DodgeballWeekly.exe was REMOVED (2026-08-20, dodgeball PR 359) and local copies deleted —
+  this repo is the only weekly app.
 - Source lives on Azure DevOps (`origin`, JBDHServices/DraxSwaps → `ratesweekly`), mirrored to
   GitHub `gpcprojects/ratesweekly` (public — that repo also carries the desk RELEASES:
   assets named `RatesWeekly.exe` / `RatesWeekly_v*.exe` ONLY).

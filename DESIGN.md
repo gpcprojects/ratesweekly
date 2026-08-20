@@ -13,7 +13,7 @@
   (Weekly.Core) builds the email live during UPDATE and persists it to out\; COPY EMAIL pastes the
   persisted fragment (CF_HTML). Dashboard links per §4 come from publish.json `siteBase` and are
   omitted when unset. The movers strip stays dark until the movers page ships. DodgeballWeekly.exe
-  to be REMOVED from the dodgeball repo once the desk has switched to RatesWeekly.exe.
+  was REMOVED from the dodgeball repo 2026-08-20 (dodgeball PR 359) — this repo is the only weekly app.
 
 - **Users**: some desk members have Dodgeball, some don't. RatesWeekly ships as its own
   standalone exe with its own release channel — a user needs ONLY RatesWeekly + a Bloomberg
