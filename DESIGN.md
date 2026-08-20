@@ -377,6 +377,17 @@ automatically, surprises included. What is wired:
   (ER{MY}) carries the Euribor/ESTR basis, quoted live as TKYER{MY} Comdty (+14.75bp U6,
   2026-08-20); guardFuturesBasisBp + guardFuturesDcc were added and tested so a basis-bearing
   family can be wired if ever wanted.
+- HARD-DATA RULE (v0.7.6, desk 2026-08-20, FINAL — pricing AND dates): published meeting rows
+  need their DATE from the tickers' own fields (maturity chain / SW_EFF_DT) and their PRICE from
+  a real print (meeting OIS quote / STIR future). The run ends where Bloomberg's documentation
+  ends: no curve-implied mids, no config-dated rows, no manufactured change anchors. Config dates
+  keep driving roll boundaries and decision gating INTERNALLY (ResolveMeetingDates.TickerDated is
+  the published-row gate; dashboards discriminate via the store's maturity record day). A row
+  whose start is documented but whose end is not publishes with a BLANK end. Consequence accepted
+  by the desk: SEK shows 3 rows (SKSF5A/6A price without dates → dropped), NOK 6. v0.7.5's
+  historical-curve 1w/1m anchors were SCRAPPED under this rule hours after shipping (the curve is
+  a model, not a print); the 1d CoD fallback survives for ticker/future rows only (a real close
+  of a real contract, the desk's own board CoD convention) and never for curve anything.
 - Y/E TURN LABELLING (v0.6.3, desk 2026-08-20): a meeting period that SPANS A YEAR-END on a
   marked run (meetings.json markTurnPeriods — SEK only for now) renders as "Y/E Turn" instead
   of numbers, everywhere: front table, meeting cards (html + plaintext), dashboard strips

@@ -192,6 +192,32 @@ namespace RateDesk.Weekly.Core.Series
 
             // The composite (source-less) spelling is what the store keys these under for the
             // stitcher's benefit; see TickerUniverse.
+            // HARD-DATA RULE (desk 2026-08-20): a strip row is published only while the rung that
+            // carries it has a Bloomberg-DOCUMENTED contract (a recorded MATURITY in the store).
+            // Config dates still order the roll boundaries internally, but they never label a
+            // published row past where Bloomberg's own fields stop.
+            {
+                var bl = bounds.Select(d => d.Date).OrderBy(d => d).ToList();
+                var clustered = new List<DateTime>();
+                foreach (var d in bl)
+                    if (clustered.Count == 0 || (d - clustered[^1]).TotalDays > 14) clustered.Add(d);
+                string Rung(int n) => pat.Replace("{N}", n.ToString()) + " Curncy";
+                // the family's current recording day, from the front rung; a family with NO
+                // maturity records at all (fixtures, families the engine has never snapped)
+                // cannot be discriminated and keeps the legacy behaviour
+                if (store.MaturityRecordDay(Rung(1)) is { } famDay)
+                {
+                    int keep = 0;
+                    foreach (var (_, c) in contracts)
+                    {
+                        int rung = Math.Max(1, clustered.Count(b => b > asOf.Date && b <= c.Date));
+                        if (store.MaturityRecordDay(Rung(rung)) != famDay) break;
+                        keep++;
+                    }
+                    if (keep < contracts.Count) contracts = contracts.Take(keep).ToList();
+                }
+            }
+
             var t = RollingStrip.Build($"{sched.Name} · {sched.Ccy}", store, asOf, contracts, bounds,
                 n => pat.Replace("{N}", n.ToString()) + " Curncy");
             // Y/E TURN (desk 2026-08-20): on marked runs, a period spanning a year-end renders

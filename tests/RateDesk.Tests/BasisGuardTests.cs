@@ -529,6 +529,49 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void HardDataRule_TheRunEndsWhereBloombergsDocumentationEnds()
+        {
+            // desk 2026-08-20 (final): published rows need DATES from the tickers' own fields and
+            // PRICES from real prints. Config dates fill roll boundaries internally but never
+            // label a row; curve-implied mids never publish. Here the family documents two
+            // periods; config extends three more and a price exists without a date — none of
+            // that may appear.
+            var snap = new RatesSnapshot();
+            const string p = "TESTHD{N}";
+            var a = DateTime.Today.AddDays(20);
+            var b0 = a.AddDays(42);
+            var c = b0.AddDays(42);
+
+            Rung(snap, p, 0, a.AddDays(-42), a);          // run-down → first period start
+            Rung(snap, p, 1, a, b0);                      // documented period [a, b)
+            snap.Update(p.Replace("{N}", "1") + " Curncy", null, null, 2.10);
+            snap.Update(p.Replace("{N}", "2") + " Curncy", null, null, 2.20);   // price, NO date fields
+            snap.Update("TESTFIX Index", null, null, 2.00);
+
+            var sched = new MeetingScheduleDef
+            {
+                Name = "TESTHD", Ccy = "USD", Header = "t",
+                Tickers = new List<string> { p },
+                RefTicker = "TESTFIX Index",
+                Dates = new List<DateTime> { a, b0, c, c.AddDays(42), c.AddDays(84) },
+            };
+
+            var run = Service(snap).MeetingRun(sched);
+
+            // two rows publish: [a, b) fully documented, and [b, ?) whose START is documented
+            // (rung 1's own maturity) with a real print — its unknown end stays blank. The
+            // config-dated rows at c and beyond never appear.
+            Assert.Equal(2, run.Rows.Count);
+            Assert.Equal(a, run.Rows[0].Date);
+            Assert.Equal(b0, run.Rows[0].EndDate);
+            Assert.Equal(2.10, run.Rows[0].MidPct, 6);
+            Assert.Equal(b0, run.Rows[1].Date);
+            Assert.Null(run.Rows[1].EndDate);              // config's c must not label it
+            Assert.Equal(2.20, run.Rows[1].MidPct, 6);
+            Assert.DoesNotContain(run.Rows, r => r.Date == c);
+        }
+
+        [Fact]
         public void AnImplausibleEffectiveDate_IsIgnoredRatherThanTrusted()
         {
             // a start before the previous maturity, or past its own end, is a bad field — not a
