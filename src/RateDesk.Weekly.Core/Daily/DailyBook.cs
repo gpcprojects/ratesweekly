@@ -30,8 +30,7 @@ namespace RateDesk.Weekly.Core.Daily
             // ---- Runs sheet: today's blocks, improved format ----
             var ws = wb.Worksheets.Add("Runs");
             int r = 1;
-            ws.Cell(r, 1).Value = $"London EOD OIS Runs — {rep.AsOf.ToString("dd-MMM-yy HH:mm", inv)} " +
-                                  "(T = live mid; changes in bp vs 16:30-London snaps, roll-corrected)";
+            ws.Cell(r, 1).Value = $"London EOD OIS Runs — {rep.AsOf.ToString("dd-MMM-yy", inv)}";
             ws.Cell(r, 1).Style.Font.SetBold();
             r += 2;
 
