@@ -494,7 +494,10 @@ namespace RateDesk.Tests
             Assert.False(run.Rows[2].TurnPeriod);
             Assert.Equal(1.50, run.Rows[1].MidPct, 6); // the real print stays on the row object...
             Assert.Null(run.Rows[1].StepBp);           // ...but no step onto it
-            Assert.Null(run.Rows[2].StepBp);           // and no step OFF it either
+            // the step chain SKIPS the turn row: the next row's Step is the CUMULATIVE move
+            // across the masked meeting and its own — clean, because neither neighbouring
+            // period contains the turn days (rung3 2.10 vs rung1 2.00 → +10bp)
+            Assert.Equal(10.0, run.Rows[2].StepBp!.Value, 6);
         }
 
         [Fact]

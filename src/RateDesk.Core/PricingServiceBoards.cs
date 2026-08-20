@@ -871,9 +871,12 @@ namespace RateDesk.Core
                     }
                     double? priced = res.RefPct.HasValue ? (mid - res.RefPct.Value) * 100.0 : null;
                     // Y/E TURN (desk 2026-08-20): a period straddling a year-end carries the turn
-                    // dislocation in its average (SWESTR's is extreme), so it renders as a label,
-                    // and the FOLLOWING row's Step is suppressed too - a step off a turn-dominated
-                    // Priced measures the turn, not a meeting increment.
+                    // dislocation in its average (SWESTR's is extreme), so it renders as a label
+                    // and the step chain SKIPS it (desk 2026-08-20): the next row differences the
+                    // last CLEAN Priced, giving the CUMULATIVE move priced across the masked
+                    // meeting and its own. That number is clean by construction — neither
+                    // neighbouring period contains the turn days, so the turn drag cancels; only
+                    // the masked meeting's OWN step is unrecoverable from these contracts.
                     bool turn = turn0;
                     res.Rows.Add(new MeetingRow
                     {
@@ -881,7 +884,7 @@ namespace RateDesk.Core
                         StepBp = !turn && priced.HasValue && prevPriced.HasValue ? priced - prevPriced : null,
                         CoDBp = cod, MidSource = midSrc, TurnPeriod = turn,
                     });
-                    prevPriced = turn ? null : priced;
+                    if (!turn) prevPriced = priced;
                 }
 
                 res.DatesSource = tickerDates ? "tickers" : "schedule";
