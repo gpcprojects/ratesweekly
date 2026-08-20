@@ -45,12 +45,26 @@
       ],
       // decision ANNOUNCEMENT dates where they differ from the swap-period grid above
       // (hand-curated from the official calendars; the weekly front table reads these).
+      // 2027 from federalreserve.gov/monetarypolicy/fomccalendars.htm (fetched 2026-08-20;
+      // statement day = second meeting day, 2pm ET). Note Jun-27 is the 8-9 meeting, not mid-June.
       "decisionDates": [
         "2026-09-16",
         "2026-10-28",
-        "2026-12-09"
+        "2026-12-09",
+        "2027-01-27",
+        "2027-03-17",
+        "2027-04-28",
+        "2027-06-09",
+        "2027-07-28",
+        "2027-09-15",
+        "2027-10-27",
+        "2027-12-08"
       ],
       "decisionTimeLondon": "19:00",
+      // 30-day Fed Funds futures settle on average EFFR — the same index as USSOFED. Probed
+      // by NAME 2026-08-20 ("FFV6 Comdty" = 30DAY FED FUND). Cross-check only, never a mid.
+      "guardFutures": "FF{MY} Comdty",
+      "guardFuturesKind": "monthavg",
       "pastDates": [
         "2025-07-30",
         "2025-09-17",
@@ -137,12 +151,26 @@
       ],
       // decision ANNOUNCEMENT dates where they differ from the swap-period grid above
       // (hand-curated from the official calendars; the weekly front table reads these).
+      // 2027 from bankofengland.co.uk "MPC dates for 2027" (Dec-2025 announcement, fetched
+      // 2026-08-20; all Thursdays, decision published 12:00 UK).
       "decisionDates": [
         "2026-09-17",
         "2026-11-05",
-        "2026-12-17"
+        "2026-12-17",
+        "2027-02-04",
+        "2027-03-18",
+        "2027-04-29",
+        "2027-06-17",
+        "2027-07-29",
+        "2027-09-16",
+        "2027-11-04",
+        "2027-12-16"
       ],
       "decisionTimeLondon": "12:00",
+      // ICE 3M SONIA futures compound the same index the MPC OIS fixes on, over IMM quarters.
+      // Probed by NAME 2026-08-20 ("SFIZ6 Comdty" = ICE 3MTH SONIA FU). Cross-check only.
+      "guardFutures": "SFI{MY} Comdty",
+      "guardFuturesKind": "imm3m",
       "pastDates": [
         "2025-08-07",
         "2025-09-18",
@@ -196,6 +224,10 @@
         "2027-12-08"
       ],
       "decisionTimeLondon": "14:45",
+      // 3M CORRA futures compound the same index as the BOC meeting OIS, over IMM quarters.
+      // Probed by NAME 2026-08-20 ("CORZ6 Comdty" = 3M CORRA Futures). Cross-check only.
+      "guardFutures": "COR{MY} Comdty",
+      "guardFuturesKind": "imm3m",
       "pastDates": [
         "2025-07-30",
         "2025-09-17",
@@ -251,6 +283,10 @@
         "2027-12-14"
       ],
       "decisionTimeLondon": "05:30",
+      // ASX 30-day interbank cash rate futures settle on the average AUD overnight cash rate —
+      // the FF analog. Probed by NAME 2026-08-20 ("IBV6 Comdty" = 30-DAY INTERBANK). Cross-check only.
+      "guardFutures": "IB{MY} Comdty",
+      "guardFuturesKind": "monthavg",
       "pastDates": [
         "2025-08-12",
         "2025-09-30",
@@ -334,6 +370,17 @@
         "2028-06-23",
         "2028-09-22",
         "2028-12-15"
+      ],
+      // quarterly assessments, published 09:30 Swiss = 08:30 London the day BEFORE each period
+      // start above. Sep-26 from snb.ch (fetched 2026-08-20), Dec-26 from the MNI SNB calendar
+      // (10-Dec), 2027 from the SNB event schedule (18-Mar / 24-Jun / 23-Sep / 16-Dec).
+      "decisionDates": [
+        "2026-09-24",
+        "2026-12-10",
+        "2027-03-18",
+        "2027-06-24",
+        "2027-09-23",
+        "2027-12-16"
       ],
       "decisionTimeLondon": "08:30",
       "pastDates": [
@@ -420,12 +467,19 @@
         "2027-11-10",
         "2027-12-22"
       ],
-      // announcement dates CONFIRMED from riksbank.se 2026-08-06 (Aug meeting 19th, decision
-      // published 20th, rate applies from the 26th; Sep meeting 23rd in Gothenburg, published
-      // 24th). Nov onward not yet published by the Riksbank - top up when they are.
+      // Aug/Sep CONFIRMED from riksbank.se 2026-08-06 (Aug meeting 19th, decision published
+      // 20th, rate applies from the 26th; Sep meeting 23rd in Gothenburg, published 24th).
+      // Nov-26..Jun-27 read off Bloomberg ECO's Riksbank Policy Rate releases by the desk
+      // 2026-08-20 (all 08:30 London on the terminal).
       "decisionDates": [
         "2026-08-20",
-        "2026-09-24"
+        "2026-09-24",
+        "2026-11-04",
+        "2026-12-16",
+        "2027-02-03",
+        "2027-03-24",
+        "2027-05-05",
+        "2027-06-22"
       ],
       "decisionTimeLondon": "08:30",
       "pastDates": [

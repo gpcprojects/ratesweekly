@@ -84,6 +84,10 @@ namespace RateDesk.Weekly.Core
             refData.Snapshot(all, snap);
             try { refData.Prefetch(all, 220); } catch { /* singles fallback inside Core */ }
             var rep = svc.BuildWeekly();
+            // exchange-settled futures cross-check (FuturesGuard) — a TRIGGERED line here is the
+            // flag that the meeting rows disagree with instruments that share nothing with the
+            // OIS machinery. Notes only: the investor-facing email body never carries diagnostics.
+            rep.Notes.AddRange(FuturesGuard.Check(svc));
             foreach (var n in rep.Notes) log?.Invoke("  email note: " + n);
             return rep;
         }

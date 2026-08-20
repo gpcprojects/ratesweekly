@@ -342,6 +342,28 @@ automatically, surprises included. What is wired:
   next day) — decision day must never spend the afternoon measured against the stale fixing.
   No decisionTimeLondon on file = honest degradation to the old next-morning roll
   (CalendarHealth warns). CHERRY-PICK CANDIDATE for dodgeball, with the rest of §12.
+- FUTURES GUARD (v0.6.0, desk 2026-08-20): every email build cross-checks the meeting rows
+  against EXCHANGE-SETTLED futures that settle on the same overnight index — the in-app
+  generalisation of the audit tool's FF check. Wired (probed by NAME on the live terminal
+  2026-08-20): FOMC↔FF (30d avg EFFR), RBA↔IB (30d avg cash rate), MPC↔SFI (3M compounded
+  SONIA, IMM quarters), BOC↔COR (3M compounded CORRA, IMM quarters); config knobs
+  guardFutures/guardFuturesKind/guardFuturesTolBp (8bp default; honest gap ~1bp live).
+  Considered and REJECTED: NZD ZB (settles on 3M bank bills — BKBM-vs-OCR basis would
+  false-flag), EUR (no ESTR future resolves on the terminal; Euribor has basis), JPY (no TONA
+  future resolves), SNB (its SARON strip is the run's own MID source — self-referential).
+  THE FLAG: a breach note starting "FUTURES GUARD TRIGGERED" in the run notes / CLI / app log —
+  treat as a roll/calendar/re-base fault until proven otherwise. tools\verify_strip_changes.py
+  runs the same four guards offline (level + 1w change vs BDH closes). First live run
+  2026-08-20: all four ok, |level gap| ≤ 1.5bp, |1w gap| ≤ 1.6bp.
+- DECISION CALENDARS (v0.6.0): every meeting run now carries announcement dates + London time
+  through at least mid-2027 — FOMC/MPC/SNB topped up from the official calendars 2026-08-20,
+  RIKSBANK from Bloomberg ECO's release schedule (desk-supplied: 04-Nov-26, 16-Dec-26,
+  03-Feb-27, 24-Mar-27, 05-May-27, 22-Jun-27, all 08:30 London). CalendarHealth's 90-day
+  runway check remains the tripwire for topping up. NOTE on non-European banks' times: the
+  config's single London time is chosen as the LATEST the announcement occurs across the DST
+  year (RBA 05:30, RBNZ 03:00, BOJ 04:00) — the gate can roll up to ~2h late in the opposite
+  season, never early. BOJ has no fixed time (statement lands "around noon" JST); 04:00 is the
+  usual landing zone, and the ticker re-point path still covers a late statement.
 - 1d CHANGE COLUMN (v0.5.0, desk 2026-08-20): the meeting cards carry 1d alongside 1w/1m,
   computed off the SAME stitched series (ChangeToBp at 1 day) so it inherits the roll shift,
   decision-day-close exclusion, and 16:30-London snap rules. Cards are 7 columns

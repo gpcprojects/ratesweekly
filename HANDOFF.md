@@ -5,13 +5,16 @@ Chat transcripts do NOT travel between machines — what matters is written down
 
 ## Where things stand
 
-- **v0.5.0**, 219/219 tests green. `master` through PR 331; PRs 327 (localised delivery,
-  DESIGN §12 hardening) and 331 (download-link handoff) are MERGED. v0.5.0 (2026-08-20, the
-  live Riksbank decision day) adds: TIME-GATED FRONT ROLL — decisionTimeLondon now gates the
-  decision-day roll (DecisionClock; the just-decided period leaves the boards/strips at the
-  announcement, feed re-point or not), the Priced re-base moves to the same clock (was next
-  day), and the meeting cards carry a **1d Chg** column off the stitched series. DESIGN §12
-  has the full mechanics. All of §12 is now the dodgeball cherry-pick bundle.
+- **v0.6.0**, 224/224 tests green. `master` through PR 331; branch `decision-day-roll` carries
+  v0.5.0 + v0.6.0 (2026-08-20, the live Riksbank decision day). v0.5.0: TIME-GATED FRONT ROLL —
+  decisionTimeLondon gates the decision-day roll (DecisionClock; the just-decided period leaves
+  the boards/strips at the announcement, feed re-point or not), the Priced re-base moves to the
+  same clock (was next day), and the meeting cards carry a **1d Chg** column off the stitched
+  series. v0.6.0: FUTURES GUARD — FOMC/RBA/MPC/BOC meeting rows cross-checked against FF/IB/
+  SFI/COR futures on every email build ("FUTURES GUARD TRIGGERED" note = the flag), and the
+  decision calendars topped up through mid-2027 for every run (Riksbank from Bloomberg ECO,
+  FOMC/MPC/SNB from the official calendars). DESIGN §12 has the full mechanics and is the
+  dodgeball cherry-pick bundle.
 - The desk email + all dashboards are BUILT AND VERIFIED from this repo. dodgeball's standalone
   DodgeballWeekly.exe is slated for removal once the desk runs this app.
 - Source lives on Azure DevOps (`origin`, JBDHServices/DraxSwaps → `ratesweekly`), mirrored to
@@ -53,20 +56,19 @@ Chat transcripts do NOT travel between machines — what matters is written down
   day until the family re-points). Last run 2026-08-20 (live Riksbank decision day, family not
   yet re-pointed): 75 verified, 0 mismatches.
 - `python tools\verify_strip_changes.py` — independent raw-BDH restitch of every rendered
-  meeting row (level/1w/1m) + a Fed Funds futures cross-check. Last run 2026-08-20: 67/67
-  reconciled, 0 mismatches.
-  Run AFTER a fresh `RatesWeeklyCli render`; both scripts fail loudly on positive-control gaps.
-- 219 unit tests: `dotnet test tests\RateDesk.Tests\RateDesk.Tests.csproj -c Release`.
+  meeting row (level/1w/1m) + futures cross-checks for every guardFutures run (FF/IB/SFI/COR,
+  level and 1w change). Last run 2026-08-20: 67/67 reconciled, all four guards ok (gaps ≤1.6bp),
+  0 mismatches. Run AFTER a fresh `RatesWeeklyCli render`; both scripts fail loudly on
+  positive-control gaps.
+- 224 unit tests: `dotnet test tests\RateDesk.Tests\RateDesk.Tests.csproj -c Release`.
 
 ## Open items (nobody is blocked, but know these)
 
 1. **PR #327** awaits Complete.
-2. **decisionDates calendars need topping up** from the official CB calendars (config
-   \meetings.json). The code degrades honestly (front shows `start *`), but real decision dates
-   are better — and since v0.5.0 they also power the decision-day front roll. CalendarHealth
-   flagged on 2026-08-20: RIKSBANK has no decision for the 11-Nov-26 period (the riksbank.se
-   calendar page is JS-rendered — read it in a browser or off the terminal's RIKSBANK page;
-   announcement pattern is publish 09:30 CET, applies the following Wednesday). Never
+2. **decisionDates calendars**: topped up through mid-2027 for every run on 2026-08-20
+   (RIKSBANK from Bloomberg ECO — the riksbank.se calendar page is JS-rendered, read it off the
+   terminal; FOMC/MPC/SNB from the official calendars). Since v0.5.0 these power the
+   decision-day front roll, so keep CalendarHealth's 90-day runway warnings at zero. Never
    hand-estimate SWAP-period dates — probe (`dodgeball tools\probe_all_meetings.py`).
 3. **Real-Outlook paste/send test** — CREATE EMAIL and the `.html` attachment have never been
    sent to an external recipient; some gateways quarantine html attachments (PDF pack is the

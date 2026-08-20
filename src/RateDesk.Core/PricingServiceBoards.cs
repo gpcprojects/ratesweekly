@@ -73,6 +73,18 @@ namespace RateDesk.Core
         /// <summary>STIR futures pattern ({MY} = month code + year digit, e.g. SSY{MY} Comdty) used
         /// for mids when the meeting OIS has no quote — SNB periods map onto the quarterly SARON strip.</summary>
         public string? FuturesPattern { get; set; }
+        /// <summary>Exchange-settled futures family used ONLY as an independent cross-check of the
+        /// meeting rows (FuturesGuard) — never as a mid source, which is what FuturesPattern is.
+        /// Must settle on the SAME overnight index the meeting OIS fixes on (FF↔EFFR, IB↔AUD cash
+        /// rate, SFI↔SONIA, COR↔CORRA), or the guard measures basis instead of faults.</summary>
+        public string? GuardFutures { get; set; }
+        /// <summary>"monthavg" = 30-day cash-rate future settling on the delivery month's average
+        /// (FF, IB); "imm3m" = 3M future compounding the index over an IMM quarter (SFI, COR).</summary>
+        public string GuardFuturesKind { get; set; } = "monthavg";
+        /// <summary>Breach threshold in bp between the futures-implied rate and the meeting-row
+        /// blend. The wired families are index-matched, so the honest gap is ~1-3bp; 8bp default
+        /// keeps quiet weeks quiet while a mis-rolled front (a full step, 25bp+) always trips.</summary>
+        public double GuardFuturesTolBp { get; set; } = 8.0;
         public string? RefTicker { get; set; }
         /// <summary>Ladder name whose strip is the POLICY curve for this central bank, when that is a
         /// different index from the currency's default OIS curve. USD is the case: tenor swaps and forwards
@@ -460,6 +472,20 @@ namespace RateDesk.Core
                     {
                         yield return sched.FuturesPattern.Replace("{MY}", FutMy(q));
                         q = q.AddMonths(3);
+                    }
+                }
+                if (!string.IsNullOrEmpty(sched.GuardFutures))
+                {
+                    // cross-check contracts: monthly for month-average families, IMM quarters for
+                    // 3M ones — enough forward months that FuturesGuard always finds a covered,
+                    // not-yet-started window inside the run
+                    bool imm = sched.GuardFuturesKind.Equals("imm3m", StringComparison.OrdinalIgnoreCase);
+                    var m = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+                    for (int i = 0; i < 12; i++)
+                    {
+                        m = m.AddMonths(1);
+                        if (imm && m.Month % 3 != 0) continue;
+                        yield return sched.GuardFutures.Replace("{MY}", FutMy(m));
                     }
                 }
             }
