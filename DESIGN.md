@@ -410,3 +410,55 @@ automatically, surprises included. What is wired:
 - **P2 breadth**: all 28 ccys; meeting-curve pages with stitcher; movers page + ranking; corr charts.
 - **P3 depth**: inflation pages; invoice-spread probe → sign-off → build; polish per dataviz pass.
 - **P4 ship**: share links to desk, ops notes (HANDOFF.md discipline), first supervised weekly run.
+
+## 13. DAILY OIS RUN — the incumbent sheet, learned back to front (2026-08-20)
+
+The desk's daily product today is `Documents\Central Bank OIS MAIN.xlsm`. Every day someone
+clicks 10 per-bank "UPDATE & STORE" buttons, then copies a chat blast and generates an xlsx.
+We are absorbing this into the app. Anatomy of the sheet (verified cell-by-cell + full VBA read):
+
+### The sheet's data model
+- **Current** sheet: 10 bank blocks in pairs (AU·RBAs/NZ·RBNZ, EU·ECB/UK·MPC, USA·FOMC/CAD·BoC,
+  NOK·Norges/JPY·BOJ, SEK·Riksbank[+SNB stub]). Per block: ref fixing =BDP(refTicker,LAST_PRICE)
+  (RBACOR, NZOCRS, ESTRON, ...); per meeting row a FIXED rung ticker (ADSF1A..7A, EESF1A..,
+  USSOFED..): StartDate =BDP(rung,"SW_EFF_DT"), EndDate =BDP(rung,"MATURITY"),
+  Rate =BDP(rung,LAST_PRICE) — except AUD which reads =BDH(rung & " NABZ",LAST_PRICE,TODAY())
+  (thin composite, same NABZ lesson we learned). StepDelta=(H_n−H_{n−1})·100,
+  PricedIn=(H_n−fix)·100, Percent=PricedIn/25. 1d/1w/1m are VALUES stamped by macro.
+- **Rungs are positional generics with NO roll correction.** Their protection: a change only
+  computes when TODAY'S (StartDate,EndDate) exactly equals the HISTORY row's pair — else "NA".
+  So roll days print NA instead of phantom moves (honest but lossy; our stitcher keeps the number).
+- **UPDATE & STORE (per bank)** → VBA run(): stamps CurrentDate, computes 1d/1w/1m against the
+  history table — anchors: prev business day / today−7 / weekends(EDATE(today,−1)) — the SAME
+  same-day-last-month-rolled-back-from-weekend convention we adopted in v0.6.2 — then appends
+  today's block to history_{cc} (overwrite prompt if already stored today) and PRUNES HISTORY
+  OLDER THAN 61 DAYS. "Recalculate History" recomputes all changes in every history table.
+- **Vandit** sheet: staging for output — per bank: Start_date, Maturity, T (=Rate), T−1 (=T−Δ1d),
+  Δ on day (=1dChg/100), Step (=T_n−T_{n−1}). SEK comes from a MANUAL Coremont paste
+  ("Coremont Riskbank" sheet — SWESTR A swap mids from their risk system, "no BBG" note).
+- **Blast** sheet: the Bloomberg IB chat paste — title "{EU} {GB} {AU} {NZ} {US} {CA} {JN} {NO}
+  {SW} London EOD OIS Run", then per-bank "closing run" blocks off Vandit. A HAND-TYPED note
+  sits next to Riksbank: "Don't blast due to the year end move" — they manage the SWESTR Y/E
+  turn manually every day (we label it automatically since v0.6.3).
+- **Screenshot** sheet: compact per-bank Meeting/StartDate/Rate/1d/PricedIn tables, for chat
+  screenshots.
+- **Generate file** → CreateOISRuns(): writes `OIS_Runs_{d}{mmmm}{yy}.xlsx` to
+  `Y:\Coverage & Counterparties\OIS and Inflation Runs\Excel files` (block per bank: title,
+  fixing line, Start_date/Maturity/T/T−1/Δ on day/Step/Cumulative; Cumulative in percent,
+  matched to Current's PricedIn by StartDate). Warns on empty/missing blocks.
+
+### What we already do better (no desk action needed to claim these)
+roll-corrected changes instead of NA gaps · decision-day front roll · futures guards ·
+16:30-London snap discipline · Y/E Turn automatic (vs the hand-typed don't-blast note) ·
+SEK from Bloomberg SKSF (vs manual Coremont paste) · unbounded store (they prune at 61 days) ·
+one click for all banks (vs 10 buttons + overwrite prompts).
+
+### Build shape (⚠ pending desk sign-off on the questions below)
+A DAILY surface beside the WEEKLY one: one click → live snapshot → MeetingRun per bank →
+(a) chat-blast text in the sheet's exact block format (title flags, T/T−1/Δ on day/Step,
+Y/E Turn rows labelled), (b) a compact daily email (Screenshot-sheet layout, CF_HTML/Outlook
+draft like the weekly), (c) optionally the OIS_Runs xlsx dropped to the Y: path for continuity.
+⚠ open: delivery channels wanted; exact-format fidelity vs improvements; T−1 semantics (their
+T−1 = yesterday's SAVED snap at whatever time they clicked; ours would be yesterday's 16:30
+snap — deterministic); bank list (blast has 9, no SNB); SEK source switch (numbers will differ
+from the Coremont-based incumbent — must be announced to readers, not slipped in).
