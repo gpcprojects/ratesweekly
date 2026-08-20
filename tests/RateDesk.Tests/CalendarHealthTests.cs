@@ -23,6 +23,9 @@ namespace RateDesk.Tests
             Tickers = new List<string> { Pat },
             Dates = dates.ToList(),
             DecisionDates = (decisions ?? Array.Empty<DateTime>()).ToList(),
+            // a FULLY covered calendar now includes the announcement time — the decision-day
+            // front roll is gated on it (2026-08-20)
+            DecisionTimeLondon = "12:00",
         };
 
         [Fact]
@@ -90,6 +93,25 @@ namespace RateDesk.Tests
             var sched = Sched(
                 dates: new[] { AsOf.AddDays(30), AsOf.AddDays(70) },
                 decisions: new[] { boundary, AsOf.AddDays(29), AsOf.AddDays(69) });
+
+            var w = CalendarHealth.Check(new[] { sched }, new RatesSnapshot(), store, AsOf);
+
+            Assert.DoesNotContain(w, x => x.Contains("re-pointed"));
+        }
+
+        [Fact]
+        public void ARollObservedLate_IsExplainedByAnyBoundaryInTheObservationWindow()
+        {
+            // updates run WEEKLY: the RBA rolled at its 11-Aug decision but the store first saw
+            // the new maturity on the 20th. The re-point is only known to lie in (prev update,
+            // this update] — a boundary anywhere in that window explains it. Judging the
+            // observation date alone false-flagged this live on 2026-08-20.
+            using var store = Store();
+            store.SetMaturity(Tk(1), AsOf.AddDays(-10), AsOf.AddDays(30));
+            store.SetMaturity(Tk(1), AsOf.AddDays(-1), AsOf.AddDays(70));   // first sighting, 9d later
+            var sched = Sched(
+                dates: new[] { AsOf.AddDays(30), AsOf.AddDays(70) },
+                decisions: new[] { AsOf.AddDays(-8), AsOf.AddDays(29), AsOf.AddDays(69) });
 
             var w = CalendarHealth.Check(new[] { sched }, new RatesSnapshot(), store, AsOf);
 

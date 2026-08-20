@@ -41,6 +41,7 @@ namespace RateDesk.Core
         public double MidPct { get; init; }
         public double? PricedBp { get; init; }
         public double? StepBp { get; init; }
+        public double? D1Bp { get; set; }
         public double? W1Bp { get; set; }
         public double? M1Bp { get; set; }
     }
@@ -193,9 +194,13 @@ namespace RateDesk.Core
                         var wm = new WeeklyMeeting { Date = row.Date, MidPct = row.MidPct, PricedBp = row.PricedBp, StepBp = row.StepBp };
                         try
                         {
-                            // the stitched series is meeting-CONSTANT across ticker rolls, so a 1w
-                            // change straddling a decision compares the same meeting on both sides
+                            // the stitched series is meeting-CONSTANT across ticker rolls, so a
+                            // change straddling a decision compares the same meeting on both
+                            // sides — the 1d lookback (desk 2026-08-20) rides the same series,
+                            // which also gives it the boundary-day rules (decision-day closes
+                            // excluded, 16:30 snaps included) for free
                             var s = series(row.Date);
+                            wm.D1Bp = ChangeToBp(s, row.MidPct, 1);
                             wm.W1Bp = ChangeToBp(s, row.MidPct, 7);
                             wm.M1Bp = ChangeToBp(s, row.MidPct, 31);
                         }

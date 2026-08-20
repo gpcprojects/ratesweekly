@@ -67,13 +67,24 @@ namespace RateDesk.Weekly.Core
                                      "calendar (front table shows start* until then)");
                 }
 
-                // 3. observed rolls must be explained by the calendar
-                foreach (var change in store.MaturityChanges(pat.Replace("{N}", "1") + " Curncy", 120))
+                // 2b. the decision-day front roll and intraday priced re-base are gated on the
+                // announcement time — a run that keeps decisions but no time degrades to rolling
+                // the morning after (honest, but a decision day reads stale all afternoon)
+                if (decisions.Count > 0 && !TimeSpan.TryParse(sched.DecisionTimeLondon, out _))
+                    warnings.Add($"{sched.Name}: no decisionTimeLondon in config\\meetings.json — " +
+                                 "decision-day front roll degrades to the next morning");
+
+                // 3. observed rolls must be explained by the calendar. Updates are WEEKLY, so the
+                // re-point is only known to lie in the OBSERVATION WINDOW (prev update, this one]
+                // — a boundary anywhere in that window (±ε) explains it; judging the observation
+                // date alone false-flagged every roll seen late (live RBA/NORGES, 2026-08-20).
+                foreach (var (seen, prevSeen) in store.MaturityChanges(pat.Replace("{N}", "1") + " Curncy", 120))
                 {
-                    if (!bounds.Any(b => Math.Abs((b - change.Date).TotalDays) <= RollMatchDays))
-                        warnings.Add($"{sched.Name}: ticker re-pointed on {change:dd-MMM-yy} with no " +
-                                     "calendar boundary within 2 days — check the calendars against " +
-                                     "tools\\..\\dodgeball probe output");
+                    if (!bounds.Any(b => b > prevSeen.AddDays(-RollMatchDays)
+                                      && b <= seen.AddDays(RollMatchDays)))
+                        warnings.Add($"{sched.Name}: ticker re-pointed between {prevSeen:dd-MMM-yy} and " +
+                                     $"{seen:dd-MMM-yy} with no calendar boundary in that window — check " +
+                                     "the calendars against tools\\..\\dodgeball probe output");
                 }
             }
             return warnings;

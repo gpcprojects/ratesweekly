@@ -328,6 +328,26 @@ automatically, surprises included. What is wired:
   mismatches, 9 runs — and cross-checks FOMC magnitudes against Fed Funds FUTURES (non-rolling,
   shares nothing): reconciled. Re-run after calendar updates or roll-logic changes, always
   against a fresh render.
+- TIME-GATED FRONT ROLL (v0.5.0, desk 2026-08-20 — the live Riksbank case): the generics
+  re-point at the decision but NON-uniformly through the day, so a run minutes after the
+  statement can still be entirely old-numbered with the just-decided period on the front.
+  meetings.json's decisionTimeLondon (present for all 10 runs) now gates the roll: once the
+  announcement time passes on the London clock (Core\Dates\DecisionClock), the decided period
+  leaves the board/strip regardless of the feed. In MeetingRun the drop is a uniform SHIFT of
+  dates+quotes (old numbering keeps the pairing; quotes[0] becomes the decided period's own
+  OIS); when the feed HAS re-pointed the new front pairs only with the next unannounced
+  decision, so the gate self-disarms. Same rule on the dashboards (RollingStrip.ForMeetings,
+  with the mid rung derived from boundaries-crossed rather than list position). The
+  announced-but-not-yet-effective Priced re-base above is gated on the SAME clock (was:
+  next day) — decision day must never spend the afternoon measured against the stale fixing.
+  No decisionTimeLondon on file = honest degradation to the old next-morning roll
+  (CalendarHealth warns). CHERRY-PICK CANDIDATE for dodgeball, with the rest of §12.
+- 1d CHANGE COLUMN (v0.5.0, desk 2026-08-20): the meeting cards carry 1d alongside 1w/1m,
+  computed off the SAME stitched series (ChangeToBp at 1 day) so it inherits the roll shift,
+  decision-day-close exclusion, and 16:30-London snap rules. Cards are 7 columns
+  (StartDate/Mid/Priced/Step/1d/1w/1m, card width 372→428). Dashboards/forward grids still
+  show 1w/1m only — extending 1d there is a separate desk call (LadderPoint is the shared
+  render primitive for every panel).
 
 ## 11. Phasing
 

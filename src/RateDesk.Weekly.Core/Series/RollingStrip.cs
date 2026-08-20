@@ -57,14 +57,24 @@ namespace RateDesk.Weekly.Core.Series
             foreach (var d in boundaries.Select(b => b.Date).OrderBy(b => b))
                 if (bounds.Count == 0 || (d - bounds[^1]).TotalDays > ClusterDays) bounds.Add(d);
 
+            // The rung a contract lives under AT asOf is the number of boundaries between asOf and
+            // the contract — the same rule RolledValue applies to lookbacks. Positionally (i + 1)
+            // is only equivalent while the list starts at the very next contract; once an announced
+            // decision drops the front (ForMeetings), position and rung diverge by one.
+            int RungAt(DateTime contract)
+            {
+                int idx = bounds.Count(b => b > asOf.Date && b <= contract.Date);
+                return idx < 1 ? 1 : idx;
+            }
             var mids = new double?[contracts.Count];
-            for (int i = 0; i < contracts.Count; i++) mids[i] = store.ValueAsOf(ticker(i + 1), asOf);
+            for (int i = 0; i < contracts.Count; i++)
+                mids[i] = store.ValueAsOf(ticker(RungAt(contracts[i].Contract)), asOf);
 
             int guarded = 0;
             for (int i = 0; i < contracts.Count; i++)
             {
                 var (label, contract) = contracts[i];
-                string tkNow = ticker(i + 1);
+                string tkNow = ticker(RungAt(contract));
                 if (Guard(mids, i) is not { } mid) continue;
                 if (mids[i] is { } raw && Math.Abs(raw - mid) > 1e-9) { guarded++; label += "*"; }
 
@@ -151,9 +161,19 @@ namespace RateDesk.Weekly.Core.Series
         /// <summary>Central-bank runs from config: contracts are the future decision dates, roll
         /// boundaries are every decision date including the settled ones.</summary>
         public static StripTable ForMeetings(
-            MeetingScheduleDef sched, HistoryStore store, DateTime asOf, int maxRows = 8)
+            MeetingScheduleDef sched, HistoryStore store, DateTime asOf, int maxRows = 8,
+            DateTime? nowLondon = null)
         {
-            var future = sched.Dates.Where(d => d.Date > asOf.Date).OrderBy(d => d).Take(maxRows).ToList();
+            // TIME-GATED FRONT ROLL (desk 2026-08-20), the boards' own rule: once a period's
+            // decision is ANNOUNCED (decision date + decisionTimeLondon on the London clock) the
+            // period is decided, not priced, and leaves the strip — even before it starts, and
+            // even when the generics haven't re-pointed yet. Periods without a decision on the
+            // calendar keep the old behaviour (they leave when they start).
+            var nowLdn = nowLondon ?? RateDesk.Core.Dates.DecisionClock.LondonNow();
+            var future = sched.Dates.Where(d => d.Date > asOf.Date)
+                .Where(d => !(RateDesk.Core.Dates.DecisionClock.DecisionFor(sched.DecisionDates, d) is { } fd
+                              && RateDesk.Core.Dates.DecisionClock.Announced(fd, sched.DecisionTimeLondon, nowLdn)))
+                .OrderBy(d => d).Take(maxRows).ToList();
             var contracts = future.Select(d => (d.ToString("dd-MMM-yy"), d)).ToList();
             // Roll boundaries SNAP TO DECISION DATES where the calendar has them: the numbered
             // tickers re-point at the decision, not at the swap-period start — for the BOJ those

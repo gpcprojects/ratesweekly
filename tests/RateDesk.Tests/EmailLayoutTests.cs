@@ -106,6 +106,27 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void MeetingCards_CarryA1dChangeColumn_WithHeat()
+        {
+            var rep = new WeeklyReport();
+            var run = new WeeklyRun { Title = "TEST · USD", RefPct = 4.0 };
+            run.Rows.Add(new WeeklyMeeting
+            {
+                Date = new DateTime(2026, 9, 16), MidPct = 3.9,
+                D1Bp = 3.5, W1Bp = null, M1Bp = null,   // only 1d carries a value → any heat is 1d's
+            });
+            rep.Runs.Add(run);
+
+            var html = WeeklyEmail.Html(rep);
+            Assert.Contains("<b>1d Chg</b>", html);
+            Assert.Contains($"background:{WeeklyEmail.HeatHex(3.5)}", html);
+
+            var txt = WeeklyEmail.PlainText(rep);
+            Assert.Contains("1d Chg\t1w Chg\t1m Chg", txt);
+            Assert.Contains("+3.5", txt);
+        }
+
+        [Fact]
         public void MeetingCards_CarryTheSpacingUnitVertically()
         {
             var rep = new WeeklyReport();

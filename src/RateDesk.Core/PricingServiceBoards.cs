@@ -651,6 +651,37 @@ namespace RateDesk.Core
                     res.Warning = "no meeting tickers and schedule exhausted — update config\\meetings.json";
                     return res;
                 }
+
+                // TIME-GATED FRONT ROLL (desk 2026-08-20). The generics re-point at the decision,
+                // but non-uniformly through the day — a run minutes after the statement can still
+                // be entirely old-numbered, leaving the just-decided period on the front (live
+                // RIKSBANK, 20-Aug-26 08:30). Once the calendar says the front period's decision
+                // is ANNOUNCED (decision date + decisionTimeLondon), that period rolls off here
+                // regardless of the feed. The drop is a uniform SHIFT: under old numbering
+                // quotes[k] covers the period starting dates[k], so shifting both keeps every
+                // row's date↔quote pairing intact — and quotes[0] becomes the just-decided
+                // period's own OIS, exactly the rung the re-base below reads. When the feed HAS
+                // re-pointed, the new front pairs only with the NEXT (unannounced) decision, so
+                // the gate self-disarms and nothing double-rolls.
+                var nowLdn = Dates.DecisionClock.LondonNow();
+                {
+                    int roll = 0;
+                    while (meetDates.TryGetValue(roll + 1, out var f)
+                           && Dates.DecisionClock.DecisionFor(sched.DecisionDates, f) is { } fd
+                           && Dates.DecisionClock.Announced(fd, sched.DecisionTimeLondon, nowLdn))
+                        roll++;
+                    if (roll > 0)
+                    {
+                        quotes = quotes.Skip(roll).ToArray();
+                        meetDates = meetDates.Where(kv => kv.Key > roll)
+                            .ToDictionary(kv => kv.Key - roll, kv => kv.Value);
+                        if (meetDates.Count == 0)
+                        {
+                            res.Warning = "every resolved meeting is already decided — top up config\\meetings.json";
+                            return res;
+                        }
+                    }
+                }
                 if (meetDates.TryGetValue(1, out var next)) res.NextDecision = next;
 
                 // ANNOUNCED-BUT-NOT-YET-EFFECTIVE compensation (RATESWEEKLY DIVERGENCE, desk
@@ -663,21 +694,24 @@ namespace RateDesk.Core
                 // OIS: the live run-down mid when the family quotes one, else that contract's
                 // last close BEFORE the decision day (the pre-roll rung 1 — decision-day closes
                 // are unanchorable). No policy-rate ticker, no rate calendar: the market print
-                // carries the new rate, surprises included. Strictly-after-the-decision-day
-                // gating keeps the intraday announcement hours on the fixing, matching the
-                // board's existing next-day fixing-lag behaviour. A manual override still wins.
+                // carries the new rate, surprises included. Gated on the ANNOUNCEMENT (decision
+                // date + decisionTimeLondon), the same clock as the front roll above, so the
+                // re-base starts the moment the just-decided period leaves the front — priced-in
+                // must never spend the rest of decision day measured against the stale fixing
+                // (desk 2026-08-20; previously next-day). A manual override still wins.
                 if (!res.RefOverridden && sched.DecisionDates.Count > 0)
                 {
-                    var today = DateTime.Today;
+                    var today = nowLdn.Date;
                     DateTime? lastDec = null;
                     foreach (var d in sched.DecisionDates.OrderBy(d => d))
-                        if (d.Date <= today) lastDec = d.Date;
+                        if (Dates.DecisionClock.Announced(d.Date, sched.DecisionTimeLondon, nowLdn))
+                            lastDec = d.Date;
                     if (lastDec is { } dec)
                     {
                         DateTime? effStart = null;
                         foreach (var d in sched.Dates.OrderBy(d => d))
                             if (d.Date >= dec) { effStart = d.Date; break; }
-                        if (effStart is { } eff && today > dec && today < eff
+                        if (effStart is { } eff && today < eff
                             && (eff - dec).TotalDays <= 10)
                         {
                             double? pending = quotes[0]?.Effective is { } e0 && e0.Date >= dec
