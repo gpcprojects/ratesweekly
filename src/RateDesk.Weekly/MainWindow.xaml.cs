@@ -217,8 +217,8 @@ namespace RateDesk.Weekly
             {
                 var output = await Task.Run(() =>
                 {
-                    var rep = Core.Daily.DailyBuilder.Build(Log);
                     using var store = new HistoryStore(Path.Combine(AppDataDir, "history.db"));
+                    var rep = Core.Daily.DailyBuilder.Build(store, Log);
                     return Core.Daily.DailyBuilder.Render(rep, store, OutDir, AppDataDir, Log);
                 });
                 CopyBlastBtn.IsEnabled = true;
