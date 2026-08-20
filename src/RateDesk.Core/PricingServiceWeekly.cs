@@ -223,6 +223,13 @@ namespace RateDesk.Core
                             wm.M1Bp = ChangeToBp(s, row.MidPct, MonthAgo(DateTime.Today));
                         }
                         catch { /* changes are best-effort per meeting */ }
+                        // 1d fallback: a contract that only became quotable at the last roll has
+                        // no pre-roll history under any quoted rung (the snap-based lookback is
+                        // honestly null), but MeetingRun's own roll-aware change-on-day exists
+                        // for every row — quoted (vs the right prev close) and curve-implied
+                        // (vs the prev-close curve) alike. Close-based rather than snap-based,
+                        // which beats a hole in the sheet (desk 2026-08-20).
+                        wm.D1Bp ??= row.CoDBp;
                         wr.Rows.Add(wm);
                     }
                     rep.Runs.Add(wr);
