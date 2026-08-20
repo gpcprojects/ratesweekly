@@ -117,6 +117,14 @@
         "2027-12-16"
       ],
       "decisionTimeLondon": "13:15",
+      // ICE 3M ESTR futures (TKY root, desk-supplied 2026-08-20) — INDEX-MATCHED to the ESTR
+      // meetings, so no basis knob: TKYU6 implied 2.460 matched the meeting blend to 0.0bp live.
+      // The desk's Euribor hedge (ER{MY}) was considered but carries the Euribor/ESTR basis —
+      // quoted live as TKYER{MY} Comdty (+14.75bp on U6, 2026-08-20) if a basis-bearing guard is
+      // ever wanted (guardFuturesBasisBp supports it). ACT/360.
+      "guardFutures": "TKY{MY} Comdty",
+      "guardFuturesKind": "imm3m",
+      "guardFuturesDcc": 360,
       "pastDates": [
         "2025-07-24",
         "2025-09-11",

@@ -28,10 +28,15 @@ namespace RateDesk.Weekly.Core.Series
     /// screen-family rule — tenor rows read the tenor-rule (natural) band only.</summary>
     public static class WeeklyCurves
     {
-        /// <summary>Lookbacks are CALENDAR days, matching Dodgeball's weekly convention; the store
-        /// walks back to the last close at or before the target, so weekends resolve to Friday.</summary>
+        /// <summary>Lookback targets are CALENDAR anchors; the store walks back to the last close
+        /// at or before the target, so weekends resolve to Friday. 1m = SAME DAY LAST MONTH
+        /// (Excel EDATE-style, clamped at month ends) — the convention the desk's incumbent sheet
+        /// targets (desk 2026-08-20; dodgeball's fixed 31 days drifts a day or two against "a
+        /// month ago" as month lengths change). The sheet's own realized anchor can still sit up
+        /// to a week earlier because it only stores rows when updated — ours is calendar-true.
+        /// Core's PricingServiceWeekly.MonthAgo is the same rule for the email surfaces.</summary>
         public const int WeekDays = 7;
-        public const int MonthDays = 31;
+        public static DateTime MonthAgo(DateTime d) => d.AddMonths(-1);
 
         private readonly record struct Pillar(double Months, string Ticker, bool Natural, string? Band, string Label);
 
@@ -128,7 +133,7 @@ namespace RateDesk.Weekly.Core.Series
                 }
                 Add(res.Today, store, p.Ticker, asOf, years, label);
                 Add(res.Week, store, p.Ticker, asOf.AddDays(-WeekDays), years, label);
-                Add(res.Month, store, p.Ticker, asOf.AddDays(-MonthDays), years, label);
+                Add(res.Month, store, p.Ticker, MonthAgo(asOf), years, label);
             }
             if (renamed)
                 res.Notes.Add($"{cfg.Ccy} quotes in 28-day periods (13P = 1Y); rows are labelled by year equivalent");

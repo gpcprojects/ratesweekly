@@ -364,6 +364,19 @@ automatically, surprises included. What is wired:
   year (RBA 05:30, RBNZ 03:00, BOJ 04:00) — the gate can roll up to ~2h late in the opposite
   season, never early. BOJ has no fixed time (statement lands "around noon" JST); 04:00 is the
   usual landing zone, and the ticker re-point path still covers a late statement.
+- 1m LOOKBACK CONVENTION (v0.6.2, desk 2026-08-20): 1m = SAME DAY LAST MONTH (EDATE-style,
+  clamped at month ends), last close at-or-before — replacing dodgeball's fixed 31 days,
+  everywhere a 1m appears (meeting cards, forward grid, dashboards, movers, CPI/inflation).
+  Chosen to match the desk's incumbent sheet's INTENDED convention. Measured caveat: the sheet
+  only stores rows when updated, so its realized 1m anchor drifts up to a week earlier (back-
+  solved 2026-08-20: its FOMC anchor was 15-Jul on a 19-Aug sheet, 35 days) — residual 1m gaps
+  vs the sheet on stale weeks are its cadence, not our fault. 1w stays 7 calendar days (they
+  matched to ≤0.5bp). tools\verify_strip_changes.py restitches with the same anchor: 67/67.
+- ECB FUTURES GUARD → TKY (v0.6.2, desk-supplied root): ICE 3M ESTR futures are INDEX-MATCHED
+  to the ECB meetings (TKYU6 vs blend: 0.0bp live) — no basis knob. The desk's Euribor hedge
+  (ER{MY}) carries the Euribor/ESTR basis, quoted live as TKYER{MY} Comdty (+14.75bp U6,
+  2026-08-20); guardFuturesBasisBp + guardFuturesDcc were added and tested so a basis-bearing
+  family can be wired if ever wanted.
 - 1d CHANGE COLUMN (v0.5.0, desk 2026-08-20): the meeting cards carry 1d alongside 1w/1m,
   computed off the SAME stitched series (ChangeToBp at 1 day) so it inherits the roll shift,
   decision-day-close exclusion, and 16:30-London snap rules. Cards are 7 columns

@@ -96,7 +96,7 @@ namespace RateDesk.Weekly.Core.Series
                 {
                     Add(res.Today, store, tk, asOf, i);
                     Add(res.Week, store, tk, asOf.AddDays(-WeeklyCurves.WeekDays), i);
-                    Add(res.Month, store, tk, asOf.AddDays(-WeeklyCurves.MonthDays), i);
+                    Add(res.Month, store, tk, WeeklyCurves.MonthAgo(asOf), i);
                 }
                 else if (par.HasData)
                 {

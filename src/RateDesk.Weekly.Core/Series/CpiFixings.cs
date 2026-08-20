@@ -86,7 +86,7 @@ namespace RateDesk.Weekly.Core.Series
                 var refMonth = s.Mat.AddMonths(-lagMonths);
                 double? now = store.ValueAsOf(s.Ticker, asOf);
                 double? wk = LookBack(store, s, asOf.AddDays(-WeeklyCurves.WeekDays), ref rolled);
-                double? mo = LookBack(store, s, asOf.AddDays(-WeeklyCurves.MonthDays), ref rolled);
+                double? mo = LookBack(store, s, WeeklyCurves.MonthAgo(asOf), ref rolled);
                 if (now is null) continue;
 
                 double scale = f.Unit == FixUnit.YoYBp ? 0.01 : 1.0;   // bp → %

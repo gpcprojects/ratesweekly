@@ -10,12 +10,16 @@ namespace RateDesk.Core
     ///
     /// Wired via meetings.json per run: guardFutures (pattern), guardFuturesKind
     /// ("monthavg" = 30-day average-rate future like FF/IB; "imm3m" = 3M compounded-index future
-    /// over an IMM quarter like SFI/COR), guardFuturesTolBp. Families were PROBED by NAME on the
-    /// live terminal 2026-08-20: FF (avg EFFR) / IB (avg AUD cash rate) / SFI (compounded SONIA) /
-    /// COR (compounded CORRA). Considered and REJECTED: NZD ZB (settles on 3M bank bills — a real
-    /// BKBM-vs-OCR basis would false-flag), EUR (no ESTR future resolves; Euribor has basis),
-    /// JPY (no TONA future resolves). SNB's SARON strip is its own MID SOURCE — self-referential,
-    /// never a guard.
+    /// over an IMM quarter like SFI/COR/ER), guardFuturesTolBp, guardFuturesBasisBp (expected
+    /// futures-minus-OIS spread for basis-bearing families) and guardFuturesDcc (365 SONIA/CORRA,
+    /// 360 ESTR/Euribor). Families PROBED by NAME on the live terminal 2026-08-20: FF (avg
+    /// EFFR) / IB (avg AUD cash rate) / SFI (compounded SONIA) / COR (compounded CORRA) /
+    /// TKY (ICE 3M ESTR — desk-supplied root; index-matched, 0.0bp gap live). The desk's Euribor
+    /// hedge (ER) was considered for EUR but carries the Euribor/ESTR basis — quoted live as
+    /// TKYER{MY} Comdty; guardFuturesBasisBp supports wiring a basis-bearing family if ever
+    /// wanted. Considered and REJECTED: NZD ZB (settles on 3M bank bills — a wide, unstable
+    /// BKBM-vs-OCR basis), JPY (no TONA future resolves). SNB's SARON strip is its own MID
+    /// SOURCE — self-referential, never a guard.
     ///
     /// A breach line starts with "FUTURES GUARD TRIGGERED" — that prefix IS the flag: it lands in
     /// the run notes, the CLI output, and the app's status log, and means the meeting rows
@@ -63,15 +67,19 @@ namespace RateDesk.Core
                 if (svc.Snapshot.Get(tk)?.Mid is not { } px) continue;
 
                 double implied = 100.0 - px;
-                double blend = imm ? CompoundedBlend(rows, a, b) : AverageBlend(rows, a, b);
-                double gapBp = (implied - blend) * 100.0;
+                double blend = imm ? CompoundedBlend(rows, a, b, sched.GuardFuturesDcc) : AverageBlend(rows, a, b);
+                // basis-bearing guards (EUR: Euribor settles on a different index than the ESTR
+                // meetings) are judged against their EXPECTED spread, not zero
+                double gapBp = (implied - blend) * 100.0 - sched.GuardFuturesBasisBp;
+                string basis = sched.GuardFuturesBasisBp != 0
+                    ? $" (over a {sched.GuardFuturesBasisBp:+0.0;-0.0}bp expected basis)" : "";
                 string window = imm ? $"{a:dd-MMM-yy}→{b:dd-MMM-yy}" : probe.ToString("MMM-yy");
 
                 return Math.Abs(gapBp) <= sched.GuardFuturesTolBp
                     ? $"futures guard {sched.Name} ok: {tk} {window} implies {implied:0.000} vs " +
-                      $"meeting blend {blend:0.000} (Δ{gapBp:+0.0;-0.0}bp ≤ {sched.GuardFuturesTolBp:0.0})"
+                      $"meeting blend {blend:0.000}{basis} (Δ{gapBp:+0.0;-0.0}bp ≤ {sched.GuardFuturesTolBp:0.0})"
                     : $"{TriggerPrefix} — {sched.Name}: {tk} {window} implies {implied:0.000} but the " +
-                      $"meeting rows blend to {blend:0.000} (Δ{gapBp:+0.0;-0.0}bp > {sched.GuardFuturesTolBp:0.0}bp " +
+                      $"meeting rows blend to {blend:0.000}{basis} (Δ{gapBp:+0.0;-0.0}bp > {sched.GuardFuturesTolBp:0.0}bp " +
                       "tolerance). The futures share nothing with the OIS machinery — treat this as a " +
                       "roll/calendar/re-base fault until proven otherwise (run tools\\verify_strip_changes.py).";
             }
@@ -89,11 +97,11 @@ namespace RateDesk.Core
             return sum / n;
         }
 
-        /// <summary>Piecewise ACT/365 compounding of the period mids over [a, b), annualized the
-        /// way 3M SONIA/CORRA futures settle (both markets compound ACT/365). Simple growth within
-        /// a constant-rate segment, compounded across segments — sub-0.1bp of the exact daily
-        /// compounding at policy-rate levels, far inside the guard tolerance.</summary>
-        public static double CompoundedBlend(IReadOnlyList<MeetingRow> rows, DateTime a, DateTime b)
+        /// <summary>Piecewise compounding of the period mids over [a, b), annualized the way the
+        /// 3M futures settle — <paramref name="dcc"/> 365 for SONIA/CORRA, 360 for Euribor/ESTR.
+        /// Simple growth within a constant-rate segment, compounded across segments — sub-0.1bp of
+        /// the exact daily compounding at policy-rate levels, far inside the guard tolerance.</summary>
+        public static double CompoundedBlend(IReadOnlyList<MeetingRow> rows, DateTime a, DateTime b, int dcc = 365)
         {
             double growth = 1.0;
             var d = a;
@@ -102,10 +110,10 @@ namespace RateDesk.Core
                 double r = MidAt(rows, d);
                 var next = rows.FirstOrDefault(x => x.Date > d)?.Date ?? b;
                 if (next > b) next = b;
-                growth *= 1.0 + r / 100.0 * (next - d).TotalDays / 365.0;
+                growth *= 1.0 + r / 100.0 * (next - d).TotalDays / dcc;
                 d = next;
             }
-            return (growth - 1.0) * 365.0 / (b - a).TotalDays * 100.0;
+            return (growth - 1.0) * dcc / (b - a).TotalDays * 100.0;
         }
 
         /// <summary>The mid whose period contains <paramref name="d"/> — the last row at or before
