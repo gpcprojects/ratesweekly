@@ -65,6 +65,57 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void FallbackIngest_MapsManualRowsToRungs_InsertOnly_BbgWins()
+        {
+            Directory.CreateDirectory(_dir);
+            using var store = new HistoryStore(Path.Combine(_dir, "h.db"));
+
+            // build a fixture fallback workbook: Historical_AU with two manual days for the
+            // period starting 30-Sep-26 (rung 1 as of those dates: no boundary crossed between
+            // the row date and the start except the 30-Sep cluster itself)
+            var book = Path.Combine(_dir, "fallback.xlsm");
+            using (var wb = new XLWorkbook())
+            {
+                var ws = wb.Worksheets.Add("Historical_AU");
+                string[] hdr = { "CurrentDate", "Meeting", "StartDate", "EndDate", "Rate" };
+                for (int c = 0; c < hdr.Length; c++) ws.Cell(1, c + 1).Value = hdr[c];
+                ws.Cell(2, 1).Value = new DateTime(2026, 8, 17);
+                ws.Cell(2, 3).Value = new DateTime(2026, 9, 30);
+                ws.Cell(2, 5).Value = 4.391;
+                ws.Cell(3, 1).Value = new DateTime(2026, 8, 18);
+                ws.Cell(3, 3).Value = new DateTime(2026, 9, 30);
+                ws.Cell(3, 5).Value = 4.402;
+                wb.SaveAs(book);
+            }
+
+            // the engine already has 18-Aug for the mapped rung — that day must NOT be touched
+            var sched = MeetingsStore.Schedules.First(s => s.Name == "RBA");
+            var pat = sched.Tickers.First(t => t.Contains("{N}"));
+            var bounds = new List<DateTime>();
+            foreach (var d in sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates)
+                         .Select(x => x.Date).OrderBy(x => x))
+                if (bounds.Count == 0 || (d - bounds[^1]).TotalDays > 14) bounds.Add(d);
+            int rung = bounds.Count(b => b > new DateTime(2026, 8, 18) && b <= new DateTime(2026, 9, 30));
+            var tkr = pat.Replace("{N}", rung.ToString()) + " Curncy";
+            store.UpsertDaily(tkr, new[] { new HistPoint(new DateTime(2026, 8, 18), 4.999) }, excludeToday: false);
+
+            var res = FallbackIngest.Run(book, store);
+
+            Assert.Equal(1, res.RowsIngested);   // only 17-Aug; 18-Aug already engine-owned
+            var rows = store.GetDailyWithSource(tkr, 400).ToDictionary(x => x.Date.Date, x => x);
+            Assert.Equal(4.391, rows[new DateTime(2026, 8, 17)].Value, 6);
+            Assert.Equal("xls", rows[new DateTime(2026, 8, 17)].Source);
+            Assert.Equal(4.999, rows[new DateTime(2026, 8, 18)].Value, 6);   // untouched
+            Assert.Equal("bbg", rows[new DateTime(2026, 8, 18)].Source);
+
+            // and a subsequent REAL Bloomberg pull for 17-Aug supersedes the manual entry
+            store.UpsertDaily(tkr, new[] { new HistPoint(new DateTime(2026, 8, 17), 4.390) }, excludeToday: false);
+            var after = store.GetDailyWithSource(tkr, 400).First(x => x.Date.Date == new DateTime(2026, 8, 17));
+            Assert.Equal(4.390, after.Value, 6);
+            Assert.Equal("bbg", after.Source);
+        }
+
+        [Fact]
         public void Book_WritesRunsSheet_WithTurnLabel()
         {
             using var store = new HistoryStore(Path.Combine(_dir, "h.db"));

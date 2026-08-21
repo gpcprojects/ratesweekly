@@ -25,14 +25,35 @@ namespace RateDesk.Weekly.Core.Daily
 
         /// <summary>publish.json {"dailyDir": "Y:\\..."} — where the workbook is ALSO copied.
         /// Null (absent/blank) = no copy, honestly logged; never guessed.</summary>
-        public static string? LoadDailyDir(string appDataDir)
+        public static string? LoadDailyDir(string appDataDir) => LoadString(appDataDir, "dailyDir");
+
+        /// <summary>publish.json {"fallbackBook": "...xlsm"} — the manual-override workbook whose
+        /// Historical_* tabs are ingested for outage days (FallbackIngest). Null = no ingest.</summary>
+        public static string? LoadFallbackBook(string appDataDir) => LoadString(appDataDir, "fallbackBook");
+
+        /// <summary>publish.json {"historyDays": 250} — the workbook history sheets' window.</summary>
+        public static int LoadHistoryDays(string appDataDir)
+        {
+            var path = Path.Combine(appDataDir, "publish.json");
+            if (!File.Exists(path)) return DailyBook.HistoryDays;
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(path));
+                return doc.RootElement.TryGetProperty("historyDays", out var v)
+                       && v.ValueKind == JsonValueKind.Number && v.GetInt32() is > 0 and <= 2000
+                    ? v.GetInt32() : DailyBook.HistoryDays;
+            }
+            catch { return DailyBook.HistoryDays; }
+        }
+
+        private static string? LoadString(string appDataDir, string key)
         {
             var path = Path.Combine(appDataDir, "publish.json");
             if (!File.Exists(path)) return null;
             try
             {
                 using var doc = JsonDocument.Parse(File.ReadAllText(path));
-                return doc.RootElement.TryGetProperty("dailyDir", out var v)
+                return doc.RootElement.TryGetProperty(key, out var v)
                        && v.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(v.GetString())
                     ? v.GetString() : null;
             }
@@ -95,11 +116,19 @@ namespace RateDesk.Weekly.Core.Daily
         {
             Directory.CreateDirectory(outDir);
 
+            // FAILSAFE ROUND-TRIP (desk 2026-08-20): pull any outage days the desk stored
+            // manually in the fallback workbook into the store BEFORE the history sheets render,
+            // so history is continuous across an app/API outage and manual rows appear marked.
+            if (LoadFallbackBook(appDataDir) is { } fb)
+                FallbackIngest.Run(fb, store, log);
+            else
+                log?.Invoke("daily: no fallbackBook in publish.json — manual-override ingest off");
+
             var blastPath = Path.Combine(outDir, BlastFile);
             File.WriteAllText(blastPath, DailyBlast.Render(rep));
             log?.Invoke($"daily: wrote {BlastFile}");
 
-            var bookPath = DailyBook.Write(rep, store, outDir, log);
+            var bookPath = DailyBook.Write(rep, store, outDir, log, LoadHistoryDays(appDataDir));
             log?.Invoke($"daily: wrote {Path.GetFileName(bookPath)} " +
                         $"({new FileInfo(bookPath).Length / 1024.0:F0} KB)");
 
