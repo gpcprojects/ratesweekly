@@ -477,6 +477,22 @@ Central Bank OIS MAIN.xlsm is UNTOUCHED as the manual break-glass fallback; a NE
 fallback workbook (same mechanics, one update button, SKSF SEK) is the next piece — the app
 never writes into a live macro workbook.
 
+### INTEGRATED HISTORY + FAILSAFE (v0.8.0, desk 2026-08-20/21)
+One system, one truth, one failsafe. The STORE (history.db) is the single source of truth; the
+workbook is a REGENERATED ARTIFACT of it (never appended, never a second writer): every DAILY
+RUN rebuilds OIS_Runs_{date}.xlsx with full-depth per-bank history sheets (publish.json
+"historyDays", default 250; cached per-rung reads — full depth renders in seconds) carrying a
+SOURCE column ('bbg' = engine pull, 'xls' = manual). THE FAILSAFE: when the app or the BBG API
+is down, the desk opens the incumbent Central Bank OIS MAIN.xlsm and clicks UPDATE & STORE
+exactly as always (zero new muscle memory under pressure); the next DAILY RUN ingests any dates
+the store lacks from its Historical_* tabs (FallbackIngest: row (date, period start, rate) →
+rung via boundaries-crossed → composite ticker, source='xls', INSERT-ONLY — manual never
+overwrites engine data, and the next real BBG pull for that date supersedes it; ingest window
+370d; sheet-name map in FallbackIngest.SheetMap). publish.json: "fallbackBook" points at the
+xlsm. First live run ingested 14 genuinely missing rows across 4 days — the desk's manual
+stores already filled real engine gaps. The store's daily table carries the provenance column
+(tolerant ALTER migration).
+
 ### Build shape (original proposal, superseded by the STATUS above)
 A DAILY surface beside the WEEKLY one: one click → live snapshot → MeetingRun per bank →
 (a) chat-blast text in the sheet's exact block format (title flags, T/T−1/Δ on day/Step,
