@@ -169,7 +169,7 @@ namespace RateDesk.Core
                 // honours cell padding where it drops table margins
                 sb.Append("<td nowrap style=\"vertical-align:top;padding:0 0 26px 0;\">");
                 sb.Append($"<div style=\"{EmFont}font-weight:bold;font-size:12.5px;color:{EmTxt};margin:0 0 3px 1px;\">{run.Title}" +
-                          (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">ref {rp:0.000}</span>" : "")
+                          (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">fixing {rp:0.000}</span>" : "")
                           + "</div>");
                 sb.Append(TableOpen(new[] { 76, 56, 58, 52, 56, 60, 60 }, "0"));
                 string MH(string s, bool right = true) =>
@@ -308,7 +308,7 @@ namespace RateDesk.Core
         {
             sb.AppendLine();
             sb.AppendLine("CB Front Meeting Market Pricing");
-            sb.AppendLine("Central Bank\tDecision Date\tStart Date\tOIS Mid\tBase Rate\tPriced (bp)");
+            sb.AppendLine("Central Bank\tDecision Date\tStart Date\tOIS Mid\tFixing\tPriced (bp)");
             foreach (var f in rep.Fronts)
                 sb.AppendLine($"{f.Bank} {f.Ccy}\t{(f.Decision ?? f.StartDate).ToString("dd-MMM-yy", inv)}{(f.Decision == null ? " *" : "")}\t" +
                     $"{f.StartDate.ToString("dd-MMM-yy", inv)}\t" +
@@ -322,7 +322,7 @@ namespace RateDesk.Core
         foreach (var run in rep.Runs)
         {
             sb.AppendLine();
-            sb.AppendLine(run.Title + (run.RefPct is double rp ? $"  ref {rp:0.000}" : ""));
+            sb.AppendLine(run.Title + (run.RefPct is double rp ? $"  fixing {rp:0.000}" : ""));
             sb.AppendLine("StartDate\tMid\tPriced\tStep\t1d Chg\t1w Chg\t1m Chg");
             foreach (var m in run.Rows)
                 sb.AppendLine(m.TurnPeriod
