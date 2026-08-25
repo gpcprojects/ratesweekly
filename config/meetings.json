@@ -402,9 +402,9 @@
       "name": "BOJ",
       "ccy": "JPY",
       "header": "{JN} Indic BOJ Run",
-      // prices from the MTRT contributor — the desk sheet's own source (BDP "JYSOMPM1 MTRT");
-      // dates keep resolving from the plain spelling (merged Resolve, 2026-08-25)
-      "source": "MTRT",
+      // NO contributor source for BOJ (desk 2026-08-25): the Bloomberg composite feed is
+      // the most frequently updated — MTRT stops updating during London hours. (The desk
+      // sheet reads MTRT, but its composite anchors already reconcile to the reference.)
       "tickers": [
         "JYSOMPM{N}",
         "JYOMPM{N}"
