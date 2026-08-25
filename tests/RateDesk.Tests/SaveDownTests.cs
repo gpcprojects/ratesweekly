@@ -209,10 +209,15 @@ namespace RateDesk.Tests
                 Assert.Contains(zip.Entries, e => e.FullName.StartsWith("xl/ctrlProps/"));
             }
             using var wb = new XLWorkbook(path);
-            var cur = wb.Worksheet("Current").Table("current_ecb");
-            Assert.Equal(2, cur.DataRange.RowCount());
-            Assert.Equal(2.432, cur.DataRange.Cell(1, 5).GetDouble(), 6);      // Rate col
-            Assert.Equal("Sep", cur.DataRange.Cell(1, 2).GetString());          // Meeting label
+            // the INCUMBENT entry pages travel intact (desk 2026-08-25: replicate exactly) —
+            // the app never writes them, so their tables and formulas must simply exist
+            Assert.NotNull(wb.Worksheet("Current").Table("current_eu"));
+            Assert.NotNull(wb.Worksheet("Current").Table("current_sek"));
+            Assert.True(wb.TryGetWorksheet("Vandit", out _));   // the manual-generation page
+            // the app's history fill CLEARED the incumbent's own rows (empty store here)
+            var histEu = wb.Worksheet("Historical_EU").Table("history_eu");
+            Assert.Equal(1, histEu.DataRange.RowCount());
+            Assert.True(histEu.DataRange.Cell(1, 1).IsEmpty());
             var runsText = string.Join("\n", wb.Worksheet("Runs").CellsUsed().Select(c => c.GetString()));
             Assert.Contains("ECB closing run", runsText);
         }
@@ -237,13 +242,17 @@ namespace RateDesk.Tests
             using (var zip = ZipFile.OpenRead(path))
                 Assert.Contains(zip.Entries, e => e.FullName == "xl/vbaProject.bin");
             using var wb = new XLWorkbook(path);
-            var copy = wb.Worksheet("Copy");
-            Assert.Equal("Aug", copy.Cell(4, 3).GetString());                    // Month
-            Assert.Equal(323.976, copy.Cell(4, 4).GetDouble(), 6);               // Base = print
-            Assert.Equal(337.02, copy.Cell(4, 5).GetDouble(), 6);                // Mid = live mark
+            // the incumbent entry pages travel intact — the app never writes Copy or Table
+            Assert.True(wb.TryGetWorksheet("Copy", out _));
+            Assert.True(wb.TryGetWorksheet("Table", out _));
+            // the History page is REWRITTEN by the app: incumbent rows out, unified record in,
+            // every column populated (Date | Month | Base | Mid | %yoy | %mom)
             var hist = wb.Worksheet("CPI_History");
             Assert.Equal("Aug", hist.Cell(2, 2).GetString());
+            Assert.Equal(323.976, hist.Cell(2, 3).GetDouble(), 6);               // Base = print
             Assert.Equal(336.8, hist.Cell(2, 4).GetDouble(), 6);                 // stored close
+            Assert.Equal((336.8 / 323.976 - 1) * 100, hist.Cell(2, 5).GetDouble(), 6);   // %yoy
+            Assert.True(hist.Cell(3, 1).IsEmpty());          // exactly one unified row remains
         }
     }
 }

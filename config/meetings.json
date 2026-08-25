@@ -467,8 +467,8 @@
         "2026-11-11",
         "2026-12-23",
         "2027-02-10",
-        "2027-03-24",
-        "2027-05-05",
+        "2027-03-31",
+        "2027-05-12",
         "2027-06-30",
         "2027-08-25",
         "2027-09-29",
@@ -495,6 +495,11 @@
       // year-end averages the turn, not the policy path — live 2026-08-20 the Dec-26 rung
       // printed ~1.47 vs ~1.93 on Coremont. Renders as "Y/E Turn" (desk 2026-08-20).
       "markTurnPeriods": true,
+      // SKSF5A+ quote REAL prices but publish no SW_EFF_DT/MATURITY (probed 2026-08-25:
+      // 4A eff-only, 5A/6A price-only). The desk verified the period grid above against
+      // Bloomberg's own swap table (10-Feb→31-Mar→12-May→30-Jun-27), so config dates are
+      // desk-confirmed documentation and the run extends past the Y/E turn on them.
+      "trustConfigDates": true,
       "pastDates": [
         "2025-08-20",
         "2025-09-23",

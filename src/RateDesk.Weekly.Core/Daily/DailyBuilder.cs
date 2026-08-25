@@ -17,6 +17,7 @@ namespace RateDesk.Weekly.Core.Daily
     public static class DailyBuilder
     {
         public const string BlastFile = "daily_blast.txt";
+        public const string BlastHtmlFile = "daily_blast.html";
         public const string ReportFile = "daily_report.json";
         public const string FragmentFile = "daily_email.html";
         public const string PlainTextFile = "daily_email.txt";
@@ -61,7 +62,9 @@ namespace RateDesk.Weekly.Core.Daily
                 return false;
             }
             var local = Directory.Exists(outDir)
-                ? Directory.GetFiles(outDir, "OIS_Runs_*.xlsx") : Array.Empty<string>();
+                ? Directory.GetFiles(outDir, "DRAX OIS Runs *.xlsx")
+                    .Concat(Directory.GetFiles(outDir, "DRAX Fixing Runs *.xlsx")).ToArray()
+                : Array.Empty<string>();
             try
             {
                 Directory.CreateDirectory(dailyDir);
@@ -294,7 +297,8 @@ namespace RateDesk.Weekly.Core.Daily
 
             var blastPath = Path.Combine(outDir, BlastFile);
             File.WriteAllText(blastPath, DailyBlast.Render(rep));
-            log?.Invoke($"daily: wrote {BlastFile}");
+            File.WriteAllText(Path.Combine(outDir, BlastHtmlFile), DailyBlast.Html(rep));
+            log?.Invoke($"daily: wrote {BlastFile} (+ table flavour for the chat paste)");
 
             var bookPath = DailyBook.Write(rep, outDir, log);
             log?.Invoke($"daily: wrote {Path.GetFileName(bookPath)} (runs only, " +

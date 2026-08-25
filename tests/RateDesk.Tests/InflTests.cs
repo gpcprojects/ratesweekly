@@ -247,7 +247,7 @@ namespace RateDesk.Tests
             Assert.True(File.Exists(Path.Combine(_dir, InflEmail.DailyTextFile)));
 
             var path = InflRunsXlsx.Write(store, _dir, new DateTime(2026, 8, 20), marks, nextPrints);
-            Assert.Equal("Inflation_Runs_20August26.xlsx", Path.GetFileName(path));
+            Assert.Equal("DRAX Fixing Runs 20Aug26.xlsx", Path.GetFileName(path));
             using var wb = new ClosedXML.Excel.XLWorkbook(path);
             var text = string.Join("\n", wb.Worksheet("Runs").CellsUsed().Select(c => c.GetString()));
             Assert.Contains("US CPI Fixing Run", text);

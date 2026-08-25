@@ -20,10 +20,9 @@ namespace RateDesk.Weekly.Core.Daily
         /// days ingested from the incumbent sheet appear here automatically, marked by Source.</summary>
         public const int HistoryDays = 250;
 
+        /// <summary>Attachment name per desk 2026-08-25: "DRAX OIS Runs 25Aug26.xlsx".</summary>
         public static string FileName(DateTime asOf) =>
-            System.Globalization.CultureInfo.InvariantCulture is var inv
-                ? $"OIS_Runs_{asOf.Day}{asOf.ToString("MMMM", inv)}{asOf.ToString("yy", inv)}.xlsx"
-                : "";
+            $"DRAX OIS Runs {asOf.ToString("dMMMyy", System.Globalization.CultureInfo.InvariantCulture)}.xlsx";
 
         /// <summary>Build and save the workbook; returns the written path. LEAN since the desk's
         /// 2026-08-25 integration call: the email attachment and shared-drive copies carry the

@@ -19,12 +19,24 @@ namespace RateDesk.Weekly.Core.SaveDown
         private const string OisTemplate = "OIS_Store_Template.xlsm";
         private const string InflTemplate = "Inflation_Store_Template.xlsm";
 
+        // the HISTORY books keep the incumbent underscore pattern — IngestNewestSaved parses
+        // the date from the {d}{MMMM}{yy} tail, and these names never reach the email
         public static string OisFileName(DateTime asOf) =>
-            Daily.DailyBook.FileName(asOf).Replace(".xlsx", ".xlsm");
+            $"OIS_Runs_{asOf.ToString("dMMMMyy", System.Globalization.CultureInfo.InvariantCulture)}.xlsm";
         public static string InflFileName(DateTime asOf) =>
-            "Inflation_Runs_" + Daily.DailyBook.FileName(asOf)["OIS_Runs_".Length..].Replace(".xlsx", ".xlsm");
+            $"Inflation_Runs_{asOf.ToString("dMMMMyy", System.Globalization.CultureInfo.InvariantCulture)}.xlsm";
 
         // ------------------------------------------------------------------ OIS ----
+        /// <summary>App name → the incumbent workbook's table tag and Historical_ sheet.</summary>
+        private static readonly (string Run, string Tag, string Sheet)[] OisTags =
+        {
+            ("RBA", "au", "Historical_AU"), ("RBNZ", "nz", "Historical_NZ"),
+            ("ECB", "eu", "Historical_EU"), ("MPC", "uk", "Historical_UK"),
+            ("FOMC", "us", "Historical_US"), ("BOC", "cd", "Historical_CD"),
+            ("NORGES", "nok", "Historical_NOK"), ("BOJ", "jpy", "Historical_JPY"),
+            ("RIKSBANK", "sek", "Historical_SEK"),
+        };
+
         public static string WriteOis(WeeklyReport rep, HistoryStore store, string outDir,
             Action<string>? log = null, int historyDays = 61)
         {
@@ -32,46 +44,61 @@ namespace RateDesk.Weekly.Core.SaveDown
             ExtractTemplate(OisTemplate, path);
             using var wb = new XLWorkbook(path);
 
-            DailyBook.WriteRunsSheet(wb.Worksheet("Runs"), rep);
+            var runsWs = wb.Worksheet("Runs");
+            runsWs.Clear();
+            DailyBook.WriteRunsSheet(runsWs, rep);
 
-            var cur = wb.Worksheet("Current");
-            foreach (var sched in MeetingsStore.Schedules.Where(s => string.IsNullOrEmpty(s.Kind)))
+            // The Current entry pages are the INCUMBENT'S OWN, formulas and all (BDP/BDH
+            // auto-fill with a terminal, manually overridable without one) — the app never
+            // writes them. It fills the Historical_ tables, ALL eleven columns: StepDelta and
+            // Priced In(Total) against the day's own ref-rate fixing, Percent = priced/25.
+            var configs = RateDesk.Core.Config.ConfigStore.LoadDefault();
+            foreach (var (runName, tag, sheetName) in OisTags)
             {
-                if (!DailyBlast.Blocks.Any(b => b.Run.Equals(sched.Name, StringComparison.OrdinalIgnoreCase)))
-                    continue;
+                var sched = MeetingsStore.Schedules.FirstOrDefault(s =>
+                    string.IsNullOrEmpty(s.Kind) && s.Name.Equals(runName, StringComparison.OrdinalIgnoreCase));
                 var run = rep.Runs.FirstOrDefault(x =>
-                    x.Title.Split('·')[0].Trim().Equals(sched.Name, StringComparison.OrdinalIgnoreCase));
-                var pat = sched.Tickers.FirstOrDefault(t => t.Contains("{N}"));
-                if (run == null || pat == null || run.Rows.Count == 0) continue;
-                var tag = sched.Name.ToLowerInvariant();
+                    x.Title.Split('·')[0].Trim().Equals(runName, StringComparison.OrdinalIgnoreCase));
+                var pat = sched?.Tickers.FirstOrDefault(t => t.Contains("{N}"));
+                if (sched == null || run == null || pat == null || run.Rows.Count == 0) continue;
 
-                // today's rows into current_xx (cols: CurrentDate, Meeting, Start, End, Rate,
-                // StepDelta, Priced In(Total), Percent, 1d, 1w, 1m — the macro reads 1/3/4/5)
-                var curRows = new List<object?[]>();
-                for (int i = 0; i < run.Rows.Count; i++)
+                // same ref resolution as the boards: the schedule's own refTicker, else the
+                // currency's OIS overnight fixing (ECB→ESTR etc.)
+                var refTicker = sched.RefTicker
+                    ?? configs.Enabled.FirstOrDefault(c =>
+                        c.Ccy.Equals(sched.Ccy, StringComparison.OrdinalIgnoreCase))?.Ois?.OnFixingTicker;
+                var refHist = string.IsNullOrEmpty(refTicker)
+                    ? new List<RateDesk.Core.Market.HistPoint>()
+                    : store.GetDaily(refTicker!, historyDays + 40).ToList();
+                double? RefAt(DateTime day)
                 {
-                    var m = run.Rows[i];
-                    var end = m.EndDate ?? (i + 1 < run.Rows.Count ? run.Rows[i + 1].Date : (DateTime?)null);
-                    curRows.Add(new object?[]
-                    {
-                        rep.AsOf.Date, m.Date.ToString("MMM"), m.Date, end, m.MidPct,
-                        m.StepBp, m.PricedBp, m.PricedBp / 25.0 * 100.0, m.D1Bp, m.W1Bp, m.M1Bp,
-                    });
+                    for (int i = refHist.Count - 1; i >= 0; i--)
+                        if (refHist[i].Date.Date <= day.Date) return refHist[i].Value;
+                    return null;
                 }
-                FillTable(cur, "current_" + tag, curRows);
 
-                // trailing history into history_xx on Historical_XX — same walk as Hist_ sheets
-                var histRows = DailyBook.BankHistoryRows(store, sched, run, pat, rep.AsOf, historyDays)
-                    .Select(h => new object?[]
+                var histRows = new List<object?[]>();
+                DateTime? curDay = null;
+                double? prevRate = null, refVal = null;
+                foreach (var h in DailyBook.BankHistoryRows(store, sched, run, pat, rep.AsOf, historyDays))
+                {
+                    if (curDay != h.Day) { curDay = h.Day; prevRate = null; refVal = RefAt(h.Day); }
+                    double? step = prevRate is { } pr ? (h.Rate - pr) * 100.0
+                        : refVal is { } rv0 ? (h.Rate - rv0) * 100.0 : null;
+                    double? priced = refVal is { } rv ? (h.Rate - rv) * 100.0 : null;
+                    histRows.Add(new object?[]
                     {
                         h.Day, h.Start.ToString("MMM"), h.Start, h.End, h.Rate,
-                        null, null, null, h.D1, h.W1, h.M1,
-                    }).ToList();
-                FillTable(wb.Worksheet("Historical_" + sched.Name), "history_" + tag, histRows);
+                        step, priced, priced / 25.0, h.D1, h.W1, h.M1,
+                    });
+                    prevRate = h.Rate;
+                }
+                FillTable(wb.Worksheet(sheetName), "history_" + tag, histRows);
             }
 
             wb.Save();
-            log?.Invoke($"save-down: wrote {System.IO.Path.GetFileName(path)} (macro-enabled)");
+            log?.Invoke($"save-down: wrote {System.IO.Path.GetFileName(path)} " +
+                        "(incumbent entry pages + app history, macro-enabled)");
             return path;
         }
 
@@ -86,61 +113,68 @@ namespace RateDesk.Weekly.Core.SaveDown
             ExtractTemplate(InflTemplate, path);
             using var wb = new XLWorkbook(path);
             // the Runs display page — same writer as the lean email attachment
-            InflRunsXlsx.WriteRunsSheet(wb.Worksheet("Runs"), store, marks,
-                InflHistory.LastNextPrints, asOf);
-            var copy = wb.Worksheet("Copy");
+            var runsWs = wb.Worksheet("Runs");
+            runsWs.Clear();
+            InflRunsXlsx.WriteRunsSheet(runsWs, store, marks, InflHistory.LastNextPrints, asOf);
 
-            int copyBase = 1;   // block anchors at rows 1 / 18 / 35 (template layout)
+            // The Copy and Table entry pages are the INCUMBENT'S OWN — formula-fed from the
+            // USSWIF/BPSWIF/EUSWIF tickers, auto-filling with a terminal, manually overridable
+            // without one. The app only rewrites the History pages: the FULL unified record,
+            // newest observation first, every incumbent column populated including %mom.
             foreach (var fam in InflHistory.Families)
             {
-                var famMarks = marks.TryGetValue(fam.Key, out var mm)
-                    ? mm : new List<InflHistory.Mark>();
-                var prints = InflHistory.PrintsOf(store, fam);   // the History sheet below needs them too
-                // Month | Base | Mid | YoY% | MoM% | Daily | Weekly | Monthly — the one shared
-                // derivation (email section, lean xlsx and this book all publish the same rows)
-                var rows = InflHistory.BuildDisplayRows(store, fam, famMarks, asOf)
-                    .Select(r => new object?[] { r.RefMonth, r.BaseV, r.Mid, r.Yoy, r.Mom, r.D1, r.W1, r.M1 })
-                    .ToList();
-
-                // Copy sheet block (B..G from its anchor): Date | Month | Base | Mid | YoY | MoM
-                int cr = copyBase + 3;   // data starts 3 rows under the block title (row 4/21/38)
-                foreach (var row in rows)
-                {
-                    copy.Cell(cr, 2).Value = asOf.Date;
-                    copy.Cell(cr, 2).Style.DateFormat.Format = "dd-mmm-yy";
-                    copy.Cell(cr, 3).Value = ((DateTime)row[0]!).ToString("MMM");
-                    for (int c = 1; c < 5; c++)
-                        if (row[c] is double v) copy.Cell(cr, c + 3).Value = v;
-                    cr++;
-                }
-                copyBase += 17;
-
-                // History sheet: the full unified record, newest observation first
+                var prints = InflHistory.PrintsOf(store, fam);
                 var hsheet = wb.Worksheet(fam.Key + "_History");
-                var flat = store.GetFixingHistory(fam.Key)
-                    .OrderByDescending(x => x.Date).ThenBy(x => x.Fix).ToList();
+                var oldLast = hsheet.LastRowUsed()?.RowNumber() ?? 1;
+                if (oldLast > 1)
+                    hsheet.Range(2, 1, oldLast, 6).Clear(XLClearOptions.Contents);
+
+                // group by observation date so %mom chains mid-over-previous-mid within each
+                // day's block, the front row anchored on the last published print — exactly
+                // what the incumbent's Copy formulas compute
+                var byDay = store.GetFixingHistory(fam.Key)
+                    .GroupBy(x => x.Date)
+                    .OrderByDescending(g => g.Key);
                 int hr = 2;
-                foreach (var x in flat)
+                foreach (var day in byDay)
                 {
-                    var fixMonth = DateTime.ParseExact(x.Fix + "-01", "yyyy-MM-dd",
-                        System.Globalization.CultureInfo.InvariantCulture);
-                    double? baseV = prints.TryGetValue((fixMonth.Month, fixMonth.Year - 1), out var b) ? b : null;
-                    double? mid, yoy;
-                    if (fam.IsIndexUnit) { mid = x.Value; yoy = baseV is { } b2 ? (x.Value / b2 - 1) * 100.0 : null; }
-                    else { yoy = x.Value / 100.0; mid = baseV is { } b3 ? b3 * (1 + x.Value / 10000.0) : null; }
-                    hsheet.Cell(hr, 1).Value = x.Date; hsheet.Cell(hr, 1).Style.DateFormat.Format = "dd-mmm-yy";
-                    hsheet.Cell(hr, 2).Value = fixMonth.ToString("MMM");
-                    if (baseV is { } bb) hsheet.Cell(hr, 3).Value = bb;
-                    if (mid is { } mv) hsheet.Cell(hr, 4).Value = mv;
-                    if (yoy is { } yv) hsheet.Cell(hr, 5).Value = yv;
-                    hr++;
+                    double? prevMid = null;
+                    foreach (var x in day.OrderBy(v => v.Fix))
+                    {
+                        var fixMonth = DateTime.ParseExact(x.Fix + "-01", "yyyy-MM-dd",
+                            System.Globalization.CultureInfo.InvariantCulture);
+                        double? baseV = prints.TryGetValue((fixMonth.Month, fixMonth.Year - 1), out var b) ? b : null;
+                        double? mid, yoy;
+                        if (fam.IsIndexUnit) { mid = x.Value; yoy = baseV is { } b2 ? (x.Value / b2 - 1) * 100.0 : null; }
+                        else { yoy = x.Value / 100.0; mid = baseV is { } b3 ? b3 * (1 + x.Value / 10000.0) : null; }
+                        double? anchor = prevMid ?? (prints.TryGetValue(
+                            (fixMonth.AddMonths(-1).Month, fixMonth.AddMonths(-1).Year), out var pa) ? pa : null);
+                        double? mom = mid is { } m0 && anchor is { } a0 ? (m0 / a0 - 1) * 100.0 : null;
+                        hsheet.Cell(hr, 1).Value = x.Date;
+                        hsheet.Cell(hr, 1).Style.DateFormat.Format = "dd-mmm-yy";
+                        hsheet.Cell(hr, 2).Value = fixMonth.ToString("MMM");
+                        SetNum(hsheet.Cell(hr, 3), baseV, "0.000");
+                        SetNum(hsheet.Cell(hr, 4), mid, "0.000");
+                        SetNum(hsheet.Cell(hr, 5), yoy, "0.000");
+                        SetNum(hsheet.Cell(hr, 6), mom, "0.000");
+                        prevMid = mid;
+                        hr++;
+                    }
                 }
                 log?.Invoke($"save-down: {fam.Key} history {hr - 2} rows in workbook");
             }
 
             wb.Save();
-            log?.Invoke($"save-down: wrote {System.IO.Path.GetFileName(path)} (macro-enabled)");
+            log?.Invoke($"save-down: wrote {System.IO.Path.GetFileName(path)} " +
+                        "(incumbent entry pages + app history, macro-enabled)");
             return path;
+        }
+
+        private static void SetNum(IXLCell cell, double? v, string fmt)
+        {
+            if (v is not { } x) return;
+            cell.Value = x;
+            cell.Style.NumberFormat.Format = fmt;
         }
 
         // ------------------------------------------------------------------ shared ----
@@ -164,8 +198,11 @@ namespace RateDesk.Weekly.Core.SaveDown
             int hdrRow = tbl.RangeAddress.FirstAddress.RowNumber;
             int col0 = tbl.RangeAddress.FirstAddress.ColumnNumber;
             int cols = tbl.RangeAddress.LastAddress.ColumnNumber - col0 + 1;
-            // clear the template's single placeholder data row before writing
-            ws.Range(hdrRow + 1, col0, hdrRow + Math.Max(1, rows.Count), col0 + cols - 1).Clear(XLClearOptions.Contents);
+            // clear EVERYTHING the table previously held (the incumbent-derived templates ship
+            // with hundreds of rows of their own history) — the app's fill is the whole truth
+            int oldLast = tbl.RangeAddress.LastAddress.RowNumber;
+            ws.Range(hdrRow + 1, col0, Math.Max(oldLast, hdrRow + Math.Max(1, rows.Count)),
+                col0 + cols - 1).Clear(XLClearOptions.Contents);
             for (int r = 0; r < rows.Count; r++)
                 for (int c = 0; c < Math.Min(cols, rows[r].Length); c++)
                 {

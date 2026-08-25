@@ -67,6 +67,69 @@ namespace RateDesk.Weekly.Core.Daily
             return sb.ToString();
         }
 
+        /// <summary>The blast as an HTML TABLE (desk 2026-08-25): COPY BLAST puts this on the
+        /// clipboard as CF_HTML so a Bloomberg-chat paste renders as a grid. It replicates the
+        /// attached DRAX OIS Runs workbook's Runs sheet EXACTLY — same title, "closing run" and
+        /// fixing rows, same grey header band, same number formats, no borders — MINUS the
+        /// Maturity column (IB window widths, the desk's standing blast rule). Everything lives
+        /// in ONE table so no row is dropped by the paste. Plain text rides along as fallback.</summary>
+        public static string Html(WeeklyReport rep)
+        {
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            const int cols = 7;
+            static string Td(string s, string extra = "") =>
+                $"<td nowrap style=\"font-family:Calibri,'Segoe UI',Arial,sans-serif;font-size:11px;" +
+                $"padding:1px 8px;white-space:nowrap;{extra}\">{s}</td>";
+            static string Wide(string s, string extra = "") =>
+                $"<td nowrap colspan=\"{cols}\" style=\"font-family:Calibri,'Segoe UI',Arial,sans-serif;" +
+                $"font-size:11px;padding:1px 8px;white-space:nowrap;{extra}\">{s}</td>";
+            static string Blank() =>
+                $"<tr><td colspan=\"{cols}\" style=\"font-size:6px;line-height:6px;\">&nbsp;</td></tr>";
+            static string Num(double? v) =>
+                Td(v is { } x ? x.ToString("+0.0;-0.0;0.0",
+                    System.Globalization.CultureInfo.InvariantCulture) : "&nbsp;", "text-align:right;");
+
+            var sb = new StringBuilder();
+            sb.Append("<table cellspacing=\"0\" cellpadding=\"0\" style=\"border-collapse:collapse;\">");
+            // row 1 of the sheet: the bold title
+            sb.Append("<tr>" + Wide($"<b>DRAX OIS Runs {rep.AsOf.ToString("dMMMyy", inv)}</b>") + "</tr>");
+            sb.Append(Blank());
+            foreach (var (runName, _, fixing) in Blocks)
+            {
+                var run = rep.Runs.FirstOrDefault(r =>
+                    r.Title.StartsWith(runName + " ", StringComparison.OrdinalIgnoreCase)
+                    || r.Title.Split('·')[0].Trim().Equals(runName, StringComparison.OrdinalIgnoreCase));
+                if (run == null || run.Rows.Count == 0) continue;
+
+                sb.Append("<tr>" + Wide($"<b>{runName} closing run</b>") + "</tr>");
+                sb.Append("<tr>" + Td($"{fixing} fixing")
+                    + Td(run.RefPct is { } rp ? rp.ToString("0.000", inv) : "&nbsp;", "text-align:right;")
+                    + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + "</tr>");
+                sb.Append("<tr>");
+                foreach (var h in new[]
+                         { "StartDate", "Mid", "Step (bp)", "Priced (bp)", "Δ 1d (bp)", "Δ 1w (bp)", "Δ 1m (bp)" })
+                    sb.Append(Td($"<b>{h}</b>", "background:#d9d9d9;" + (h == "StartDate" ? "" : "text-align:right;")));
+                sb.Append("</tr>");
+                for (int i = 0; i < run.Rows.Count; i++)
+                {
+                    var m = run.Rows[i];
+                    string start = m.Date.ToString("dd-MMM-yy", inv);
+                    if (m.TurnPeriod)
+                    {
+                        sb.Append("<tr>" + Td(start) + Td("<i>Y/E Turn</i>", "text-align:right;")
+                                  + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + "</tr>");
+                        continue;
+                    }
+                    sb.Append("<tr>" + Td(start)
+                        + Td(m.MidPct.ToString("0.000", inv), "text-align:right;")
+                        + Num(m.StepBp) + Num(m.PricedBp) + Num(m.D1Bp) + Num(m.W1Bp) + Num(m.M1Bp) + "</tr>");
+                }
+                sb.Append(Blank());
+            }
+            sb.Append("</table>");
+            return sb.ToString();
+        }
+
         private static string Bp(double? v) =>
             v is { } x ? x.ToString("+0.0;-0.0;0.0", System.Globalization.CultureInfo.InvariantCulture) : "—";
     }

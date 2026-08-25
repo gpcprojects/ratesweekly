@@ -315,18 +315,24 @@ namespace RateDesk.Weekly.Core.Infl
                 double? d1 = null, w1 = null, m1 = null;
                 if (mid is { } midNow && hist.TryGetValue($"{mk.RefMonth:yyyy-MM}", out var series))
                 {
-                    double? MidAt(DateTime then)
+                    // THE INCUMBENT SHEET'S OWN ANCHORS (read from its Table helpers,
+                    // 2026-08-25 after the app's monthly diverged badly): previous business
+                    // day / −7 calendar days / −28 CALENDAR DAYS (not same-day-last-month —
+                    // that is the OIS sheet's convention, not this one), each matched to the
+                    // EXACT saved date and blank when that date has no save. 7 and 28
+                    // preserve the weekday, so exact matching is safe by construction.
+                    double? MidOn(DateTime day)
                     {
-                        for (int i = series.Count - 1; i >= 0; i--)
-                            if (series[i].Date <= then)
+                        foreach (var p in series)
+                            if (p.Date.Date == day.Date)
                                 return fam.IsIndexUnit
-                                    ? series[i].Value
-                                    : baseV is { } b4 ? b4 * (1 + series[i].Value / 10000.0) : null;
+                                    ? p.Value
+                                    : baseV is { } b4 ? b4 * (1 + p.Value / 10000.0) : null;
                         return null;
                     }
-                    d1 = midNow - MidAt(PrevBd(asOf.Date));
-                    w1 = midNow - MidAt(asOf.Date.AddDays(-7));
-                    m1 = midNow - MidAt(Series.WeeklyCurves.MonthAgo(asOf.Date));
+                    d1 = midNow - MidOn(PrevBd(asOf.Date));
+                    w1 = midNow - MidOn(asOf.Date.AddDays(-7));
+                    m1 = midNow - MidOn(asOf.Date.AddDays(-28));
                 }
                 rows.Add(new DisplayRow(mk.RefMonth, baseV, mid, yoy, mom, d1, w1, m1));
                 prevMid = mid;
