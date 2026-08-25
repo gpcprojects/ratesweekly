@@ -190,6 +190,58 @@ switch (cmd)
         }
     }
 
+    case "inflingest":
+    {
+        string? book = null, bbgcsv = null;
+        for (int i = 1; i < args.Length - 1; i++)
+        {
+            if (args[i].Equals("--book", StringComparison.OrdinalIgnoreCase)) book = args[i + 1];
+            if (args[i].Equals("--bbgcsv", StringComparison.OrdinalIgnoreCase)) bbgcsv = args[i + 1];
+        }
+        var appData = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly");
+        book ??= RateDesk.Weekly.Core.Daily.DailyBuilder.LoadPublishString(appData, "inflBook");
+        if (book == null || !File.Exists(book))
+        {
+            Console.Error.WriteLine("no inflation workbook — pass --book <xlsm> or set publish.json {\"inflBook\": ...}");
+            return 1;
+        }
+        using var store = new HistoryStore(dbPath);
+        // deep print history for the three fixing indices — the base-print validation gate
+        // needs prints back to the workbook's first save (tiny fetch: 3 monthly series)
+        try
+        {
+            using var refData = new RateDesk.Bloomberg.RefDataClient();
+            foreach (var fam in RateDesk.Weekly.Core.Infl.InflHistory.Families)
+            {
+                var h = refData.GetDaily(fam.IndexTicker, 2600);
+                if (h.Count > 0) store.UpsertDaily(fam.IndexTicker, h, excludeToday: true);
+                Console.WriteLine($"  {fam.IndexTicker}: {h.Count} monthly prints");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  ! no Bloomberg session ({ex.Message}) — validating against stored prints only");
+        }
+        var res = RateDesk.Weekly.Core.Infl.InflHistory.Ingest(book, store, Console.WriteLine);
+        if (bbgcsv != null && File.Exists(bbgcsv))
+            RateDesk.Weekly.Core.Infl.InflHistory.SeedBackfill(bbgcsv, store, Console.WriteLine);
+        Console.WriteLine($"fixings table now holds {store.FixingRowCount():N0} rows");
+        return res.Ingested >= 0 ? 0 : 1;
+    }
+
+    case "inflexport":
+    {
+        var outDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly", "out");
+        for (int i = 1; i < args.Length - 1; i++)
+            if (args[i].Equals("--out", StringComparison.OrdinalIgnoreCase)) outDir = args[i + 1];
+        using var store = new HistoryStore(dbPath);
+        var path = RateDesk.Weekly.Core.Infl.InflBook.Write(store, outDir, Console.WriteLine);
+        Console.WriteLine($"workbook: {path}");
+        return 0;
+    }
+
     case "export":
     {
         var outDir = Path.Combine(
@@ -213,6 +265,6 @@ switch (cmd)
     }
 
     default:
-        Console.WriteLine("RatesWeekly CLI — usage: update [--db <path>] | status [--db <path>] | render [ccy] [--out <dir>] | email [--out <dir>] | daily [--out <dir>] | export [--out <dir>]");
+        Console.WriteLine("RatesWeekly CLI — usage: update [--db <path>] | status [--db <path>] | render [ccy] [--out <dir>] | email [--out <dir>] | daily [--out <dir>] | export [--out <dir>] | inflingest [--book <xlsm>] [--bbgcsv <csv>] | inflexport [--out <dir>]");
         return cmd == "help" ? 0 : 1;
 }

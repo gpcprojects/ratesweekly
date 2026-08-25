@@ -156,6 +156,12 @@ namespace RateDesk.Weekly.Core
             if (deferred > 0)
                 warnings.Add($"{deferred} ticker(s) deferred by the per-run seed cap — run UPDATE again to continue");
 
+            // UNIFIED INFLATION HISTORY upkeep (desk 2026-08-25): fold this run's fixing-swap
+            // closes into the fixing-identity history via their freshly recorded maturities.
+            // 'bbg' rows never overwrite validated sheet rows (Infl.InflHistory merge rule).
+            try { Infl.InflHistory.Maintain(store, Log); }
+            catch (Exception ex) { Log("  ! infl maintain: " + ex.Message); }
+
             string state = warnings.Count == 0 ? "ok" : "partial";
             store.RecordRun("update",
                 $"state={state} tickers={universe.Count} seeded={seedRun.Count + seedDeepRun.Count} " +

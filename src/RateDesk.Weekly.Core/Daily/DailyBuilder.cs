@@ -109,6 +109,10 @@ namespace RateDesk.Weekly.Core.Daily
             return path;
         }
 
+        /// <summary>Public access to a publish.json string (e.g. "inflBook" — the external
+        /// inflation workbook the unified fixings history validates and ingests).</summary>
+        public static string? LoadPublishString(string appDataDir, string key) => LoadString(appDataDir, key);
+
         private static string? LoadString(string appDataDir, string key)
         {
             var path = Path.Combine(appDataDir, "publish.json");
@@ -137,6 +141,10 @@ namespace RateDesk.Weekly.Core.Daily
             using var refData = new RefDataClient();
             svc.History = refData;
             var all = EmailBuilder.AllTickers(configs, svc);
+            // inflation fixing swaps ride along (desk 2026-08-25): their maturities identify
+            // which reference month each ticker means today — the unified fixings history's key
+            foreach (var fam in Infl.InflHistory.Families)
+                for (int n = 1; n <= 12; n++) all.Add($"{fam.Root}{n} Curncy");
             log?.Invoke($"daily: snapshotting {all.Count} tickers...");
             refData.Snapshot(all, snap);
             try { refData.Prefetch(all, 220); } catch { /* singles fallback inside Core */ }
@@ -167,6 +175,29 @@ namespace RateDesk.Weekly.Core.Daily
                     }
                 }
                 log?.Invoke($"daily: upserted {wrote} meeting series into the store (history sheets self-sufficient)");
+
+                // unified inflation-fixings upkeep on daily cadence alone (same self-sufficiency
+                // rule as the meeting closes): record today's maturities, top up the raw closes,
+                // fold both into the fixing-identity history
+                int fx = 0;
+                foreach (var fam in Infl.InflHistory.Families)
+                    for (int n = 1; n <= 12; n++)
+                    {
+                        var tk = $"{fam.Root}{n} Curncy";
+                        try
+                        {
+                            if (snap.Get(tk)?.Maturity is { } mat)
+                                store.SetMaturity(tk, DateTime.Today, mat);
+                            var h = refData.GetDaily(tk, 45);
+                            if (h.Count == 0) continue;
+                            store.UpsertDaily(tk, h, excludeToday: true);
+                            fx++;
+                        }
+                        catch { /* an unquoted fixing month is not an error */ }
+                    }
+                log?.Invoke($"daily: topped up {fx} inflation fixing series");
+                try { Infl.InflHistory.Maintain(store, log); }
+                catch (Exception ex) { log?.Invoke("  ! infl maintain: " + ex.Message); }
             }
             return rep;
         }
