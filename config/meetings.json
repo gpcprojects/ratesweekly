@@ -523,8 +523,8 @@
       "ccy": "NOK",
       "header": "{NO} Indic Norges Run",
       "refTicker": "NOWA Index",
-      // prices from DNBP — the desk sheet's own source (BDP "NKSF1A DNBP")
-      "source": "DNBP",
+      // composite feed (desk 2026-08-25) — same reasoning as BOJ: the composite updates
+      // most frequently; the manual sheet's DNBP is a desk-sheet convention only
       "tickers": [
         "NKSF{N}A"
       ],
