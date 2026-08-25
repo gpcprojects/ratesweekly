@@ -62,6 +62,13 @@
             <Button x:Name="DailyEmailBtn" Content="DAILY EMAIL" Click="DailyEmail_Click"
                     Width="120" Height="34" Margin="8,0,0,0" IsEnabled="False"
                     Background="#2a3038" Foreground="#e8ecf2" BorderThickness="0"/>
+            <!-- EXPORT XLS is live from open BY DESIGN: it rebuilds the workbook from the
+                 app's own stored data (last run's report + history.db) with no Bloomberg and
+                 no shared drive — the offline failsafe. The workbook it writes carries its
+                 own as-of date, so staleness is visible, never hidden. -->
+            <Button x:Name="ExportXlsBtn" Content="EXPORT XLS" Click="ExportXls_Click"
+                    Width="120" Height="34" Margin="8,0,0,0"
+                    Background="#2a3038" Foreground="#e8ecf2" BorderThickness="0"/>
         </StackPanel>
 
         <!-- EMAIL SETTINGS (desk 2026-08-21): tickbox matrices gating what the OUTGOING emails
