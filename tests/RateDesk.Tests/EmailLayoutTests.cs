@@ -127,6 +127,90 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void EmailParts_GateSections_AndAllOffMeansEmpty()
+        {
+            // desk 2026-08-21: the settings tickboxes gate COMPOSITION at click time. Data is
+            // untouched; an unticked section simply doesn't render — and all-off is truly empty,
+            // not everything (the default(struct) trap).
+            var rep = Report(2);
+            var run = new WeeklyRun { Title = "TEST · USD", RefPct = 4.0 };
+            run.Rows.Add(new WeeklyMeeting { Date = new DateTime(2026, 9, 16), MidPct = 3.9 });
+            rep.Runs.Add(run);
+            rep.Fronts.Add(new WeeklyFront
+            {
+                Bank = "TEST", Ccy = "USD",
+                Decision = new DateTime(2026, 9, 16), StartDate = new DateTime(2026, 9, 16), MidPct = 3.9,
+            });
+
+            var all = WeeklyEmail.Html(rep);
+            Assert.Contains("CB Front Meeting Market Pricing", all);
+            Assert.Contains("Central Bank OIS Meetings", all);
+            Assert.Contains("Forward Rates Summary", all);
+
+            var noFront = WeeklyEmail.Html(rep, partsOpt: new WeeklyEmail.EmailParts(Front: false));
+            Assert.DoesNotContain("CB Front Meeting Market Pricing", noFront);
+            Assert.Contains("Central Bank OIS Meetings", noFront);
+
+            var noRuns = WeeklyEmail.Html(rep, partsOpt: new WeeklyEmail.EmailParts(Runs: false));
+            Assert.DoesNotContain("Central Bank OIS Meetings", noRuns);
+            Assert.Contains("Forward Rates Summary", noRuns);
+
+            var noGrid = WeeklyEmail.Html(rep, partsOpt: new WeeklyEmail.EmailParts(Grid: false));
+            Assert.DoesNotContain("Forward Rates Summary", noGrid);
+            Assert.Contains("CB Front Meeting Market Pricing", noGrid);
+
+            var none = WeeklyEmail.Html(rep, partsOpt: new WeeklyEmail.EmailParts(false, false, false));
+            Assert.DoesNotContain("CB Front Meeting Market Pricing", none);
+            Assert.DoesNotContain("Central Bank OIS Meetings", none);
+            Assert.DoesNotContain("Forward Rates Summary", none);
+
+            var txtNone = WeeklyEmail.PlainText(rep, partsOpt: new WeeklyEmail.EmailParts(false, false, false));
+            Assert.DoesNotContain("CB Front Meeting Market Pricing", txtNone);
+        }
+
+        [Fact]
+        public void ReportStore_RoundTripsAReport_AndSettingsPersist()
+        {
+            var dir = Path.Combine(Path.GetTempPath(), "rw-set-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                var rep = Report(2);
+                var run = new WeeklyRun { Title = "ECB · EUR", RefPct = 2.188 };
+                run.Rows.Add(new WeeklyMeeting
+                {
+                    Date = new DateTime(2026, 9, 16), EndDate = new DateTime(2026, 11, 4),
+                    MidPct = 2.432, PricedBp = 24.4, D1Bp = 0.3, W1Bp = 1.5, TurnPeriod = false,
+                });
+                rep.Runs.Add(run);
+                rep.Fronts.Add(new WeeklyFront
+                {
+                    Bank = "ECB", Ccy = "EUR", Decision = new DateTime(2026, 9, 10),
+                    StartDate = new DateTime(2026, 9, 16), MidPct = 2.432, RefPct = 2.188, PricedBp = 24.4,
+                });
+
+                var path = Path.Combine(dir, "rep.json");
+                RateDesk.Weekly.Core.ReportStore.Save(rep, path);
+                var back = RateDesk.Weekly.Core.ReportStore.Load(path);
+                Assert.NotNull(back);
+                Assert.Equal(rep.Fronts.Count, back!.Fronts.Count);
+                Assert.Equal(rep.Runs.Count, back.Runs.Count);
+                Assert.Equal(2.432, back.Runs[^1].Rows[0].MidPct, 6);
+                Assert.Equal(new DateTime(2026, 11, 4), back.Runs[^1].Rows[0].EndDate);
+                Assert.Equal(rep.Sections.Count, back.Sections.Count);
+                Assert.Equal(rep.Sections[0].Ccys[0].Cells[0].Mid, back.Sections[0].Ccys[0].Cells[0].Mid);
+
+                var set = new RateDesk.Weekly.Core.EmailSettings { WeeklyForwardGrid = false, DailyXlsAttachment = false };
+                set.Save(dir);
+                var loaded = RateDesk.Weekly.Core.EmailSettings.Load(dir);
+                Assert.False(loaded.WeeklyForwardGrid);
+                Assert.False(loaded.DailyXlsAttachment);
+                Assert.True(loaded.WeeklyFrontTable);   // untouched defaults stay on
+            }
+            finally { try { Directory.Delete(dir, true); } catch { } }
+        }
+
+        [Fact]
         public void TurnPeriodRows_RenderTheLabel_NeverTheNumbers()
         {
             var rep = new WeeklyReport();

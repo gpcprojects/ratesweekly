@@ -17,6 +17,44 @@ namespace RateDesk.Weekly
         public static readonly string OutDir = Path.Combine(AppDataDir, "out");
 
         private bool _updating;
+        private EmailSettings _emailSettings = new();
+        private bool _settingsLoading;
+
+        /// <summary>Load the tickbox matrices from disk into the UI without firing the save
+        /// handler. Called from the ctor; always clickable from the first frame — the settings
+        /// gate email COMPOSITION only, never what the runs pull or store.</summary>
+        private void LoadEmailSettings()
+        {
+            _settingsLoading = true;
+            _emailSettings = EmailSettings.Load(AppDataDir);
+            CbDailyFront.IsChecked = _emailSettings.DailyFrontTable;
+            CbDailyRuns.IsChecked = _emailSettings.DailyOisRuns;
+            CbDailyXls.IsChecked = _emailSettings.DailyXlsAttachment;
+            CbWeeklyFront.IsChecked = _emailSettings.WeeklyFrontTable;
+            CbWeeklyRuns.IsChecked = _emailSettings.WeeklyOisRuns;
+            CbWeeklyGrid.IsChecked = _emailSettings.WeeklyForwardGrid;
+            CbWeeklyDash.IsChecked = _emailSettings.WeeklyDashboardsAttachment;
+            _settingsLoading = false;
+        }
+
+        private void Settings_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_settingsLoading) return;
+            _emailSettings.DailyFrontTable = CbDailyFront.IsChecked == true;
+            _emailSettings.DailyOisRuns = CbDailyRuns.IsChecked == true;
+            _emailSettings.DailyXlsAttachment = CbDailyXls.IsChecked == true;
+            _emailSettings.WeeklyFrontTable = CbWeeklyFront.IsChecked == true;
+            _emailSettings.WeeklyOisRuns = CbWeeklyRuns.IsChecked == true;
+            _emailSettings.WeeklyForwardGrid = CbWeeklyGrid.IsChecked == true;
+            _emailSettings.WeeklyDashboardsAttachment = CbWeeklyDash.IsChecked == true;
+            try { _emailSettings.Save(AppDataDir); } catch { /* next change retries */ }
+        }
+
+        private WeeklyEmail.EmailParts WeeklyParts() => new(
+            _emailSettings.WeeklyFrontTable, _emailSettings.WeeklyOisRuns, _emailSettings.WeeklyForwardGrid);
+
+        private WeeklyEmail.EmailParts DailyParts() => new(
+            _emailSettings.DailyFrontTable, _emailSettings.DailyOisRuns, Grid: false);
 
         public MainWindow()
         {
@@ -37,6 +75,7 @@ namespace RateDesk.Weekly
                 "\r\n" +
                 "Only WEEKLY RUN and DAILY RUN are live until this session has built what the other\r\n" +
                 "buttons serve. They unlock on \"WEEKLY COMPLETE\" / \"DAILY COMPLETE\".\r\n";
+            LoadEmailSettings();
         }
 
         private void Log(string s) => Dispatcher.Invoke(() =>
@@ -157,10 +196,26 @@ namespace RateDesk.Weekly
         /// single-file dashboards pack attached. COM via late binding so the exe stays standalone
         /// and works with whatever Outlook the desk runs. COPY EMAIL remains the fallback — a
         /// clipboard paste physically cannot carry an attachment.</summary>
+        /// <summary>Compose the weekly email body from the FROZEN report under the CURRENT
+        /// tickboxes. Data is what WEEKLY RUN pulled; selection is what is ticked right now.
+        /// Falls back to the persisted fragment for runs made before report persistence.</summary>
+        private string? ComposeWeeklyBody()
+        {
+            if (ReportStore.Load(Path.Combine(OutDir, EmailBuilder.ReportFile)) is { } rep)
+            {
+                var siteBase = EmailBuilder.LoadSiteBase(AppDataDir);
+                Func<string, string?>? href = siteBase == null
+                    ? null : ccy => $"{siteBase}/{ccy.ToLowerInvariant()}.html";
+                return WeeklyEmail.Html(rep, href, partsOpt: WeeklyParts());
+            }
+            var frag = Path.Combine(OutDir, EmailBuilder.FragmentFile);
+            return File.Exists(frag) ? File.ReadAllText(frag) : null;
+        }
+
         private void CreateEmail_Click(object sender, RoutedEventArgs e)
         {
-            var frag = Path.Combine(OutDir, EmailBuilder.FragmentFile);
-            if (!File.Exists(frag))
+            var body = ComposeWeeklyBody();
+            if (body == null)
             {
                 StatusText.Text = "no email built yet — run WEEKLY RUN first.";
                 return;
@@ -171,34 +226,41 @@ namespace RateDesk.Weekly
                     ?? throw new InvalidOperationException("Outlook is not installed on this machine");
                 dynamic outlook = Activator.CreateInstance(t)!;
                 dynamic mail = outlook.CreateItem(0); // olMailItem
-                mail.Subject = $"DRAX Swaps — Rates Weekly — {File.GetLastWriteTime(frag):dd MMM yyyy}";
+                mail.Subject = $"DRAX Swaps — Rates Weekly — {DateTime.Today:dd MMM yyyy}";
                 mail.HTMLBody = "<html><body style=\"margin:14px;background:#ffffff;\">"
-                    + File.ReadAllText(frag) + "</body></html>";
+                    + body + "</body></html>";
                 var pack = Path.Combine(OutDir, SiteFile.FileName);
-                bool attached = File.Exists(pack);
+                bool attached = _emailSettings.WeeklyDashboardsAttachment && File.Exists(pack);
                 if (attached) mail.Attachments.Add(pack);
                 mail.Display();
                 StatusText.Text = "draft opened in Outlook — add recipients and send."
-                    + (attached ? " Dashboards pack attached." : " (no dashboards pack found — run WEEKLY RUN)");
+                    + (attached ? " Dashboards pack attached."
+                       : _emailSettings.WeeklyDashboardsAttachment
+                           ? " (no dashboards pack found — run WEEKLY RUN)"
+                           : " Dashboards attachment unticked.");
             }
             catch (Exception ex) { StatusText.Text = "create email failed: " + ex.Message; }
         }
 
         private void CopyEmail_Click(object sender, RoutedEventArgs e)
         {
-            // Copies the PERSISTED fragment — never rebuilds. What WEEKLY RUN wrote is what pastes,
-            // and it still pastes after an app restart.
-            var frag = Path.Combine(OutDir, EmailBuilder.FragmentFile);
-            var txt = Path.Combine(OutDir, EmailBuilder.PlainTextFile);
-            if (!File.Exists(frag))
+            // Composes from the PERSISTED report under the CURRENT tickboxes — the data never
+            // rebuilds (what WEEKLY RUN pulled is what pastes, restart-safe); only the section
+            // selection is applied at click time (desk 2026-08-21).
+            var body = ComposeWeeklyBody();
+            if (body == null)
             {
                 StatusText.Text = "no email built yet — run WEEKLY RUN first.";
                 return;
             }
             try
             {
-                ClipboardHtml.Set(File.ReadAllText(frag), File.Exists(txt) ? File.ReadAllText(txt) : "");
-                StatusText.Text = $"email copied (built {File.GetLastWriteTime(frag):ddd HH:mm}) — paste into the email body.";
+                string plain = ReportStore.Load(Path.Combine(OutDir, EmailBuilder.ReportFile)) is { } rep
+                    ? WeeklyEmail.PlainText(rep, partsOpt: WeeklyParts())
+                    : File.Exists(Path.Combine(OutDir, EmailBuilder.PlainTextFile))
+                        ? File.ReadAllText(Path.Combine(OutDir, EmailBuilder.PlainTextFile)) : "";
+                ClipboardHtml.Set(body, plain);
+                StatusText.Text = "email copied (current tickboxes applied) — paste into the email body.";
             }
             catch (Exception ex) { StatusText.Text = "copy failed: " + ex.Message; }
         }
@@ -258,8 +320,15 @@ namespace RateDesk.Weekly
 
         private void DailyEmail_Click(object sender, RoutedEventArgs e)
         {
-            var frag = Path.Combine(OutDir, Core.Daily.DailyBuilder.FragmentFile);
-            if (!File.Exists(frag))
+            string? body = null;
+            if (ReportStore.Load(Path.Combine(OutDir, Core.Daily.DailyBuilder.ReportFile)) is { } rep)
+                body = WeeklyEmail.Html(rep, partsOpt: DailyParts());
+            else
+            {
+                var frag0 = Path.Combine(OutDir, Core.Daily.DailyBuilder.FragmentFile);
+                if (File.Exists(frag0)) body = File.ReadAllText(frag0);
+            }
+            if (body == null)
             {
                 StatusText.Text = "no daily email built yet — run DAILY RUN first.";
                 return;
@@ -270,15 +339,19 @@ namespace RateDesk.Weekly
                     ?? throw new InvalidOperationException("Outlook is not installed on this machine");
                 dynamic outlook = Activator.CreateInstance(t)!;
                 dynamic mail = outlook.CreateItem(0); // olMailItem
-                mail.Subject = $"DRAX Swaps — Daily OIS Run — {File.GetLastWriteTime(frag):dd MMM yyyy}";
+                mail.Subject = $"DRAX Swaps — Daily OIS Run — {DateTime.Today:dd MMM yyyy}";
                 mail.HTMLBody = "<html><body style=\"margin:14px;background:#ffffff;\">"
-                    + File.ReadAllText(frag) + "</body></html>";
-                var book = Directory.EnumerateFiles(OutDir, "OIS_Runs_*.xlsx")
-                    .OrderByDescending(File.GetLastWriteTime).FirstOrDefault();
+                    + body + "</body></html>";
+                var book = _emailSettings.DailyXlsAttachment
+                    ? Directory.EnumerateFiles(OutDir, "OIS_Runs_*.xlsx")
+                        .OrderByDescending(File.GetLastWriteTime).FirstOrDefault()
+                    : null;
                 if (book != null) mail.Attachments.Add(book);
                 mail.Display();
                 StatusText.Text = "daily draft opened in Outlook — add recipients and send."
-                    + (book != null ? " Workbook attached." : " (no workbook found — run DAILY RUN)");
+                    + (book != null ? " Workbook attached."
+                       : _emailSettings.DailyXlsAttachment
+                           ? " (no workbook found — run DAILY RUN)" : " Workbook attachment unticked.");
             }
             catch (Exception ex) { StatusText.Text = "daily email failed: " + ex.Message; }
         }
