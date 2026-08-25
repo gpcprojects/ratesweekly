@@ -35,7 +35,7 @@ namespace RateDesk.Weekly.Core.Daily
             // ---- Runs sheet: today's blocks, improved format ----
             var ws = wb.Worksheets.Add("Runs");
             int r = 1;
-            ws.Cell(r, 1).Value = $"London EOD OIS Runs — {rep.AsOf.ToString("dd-MMM-yy", inv)}";
+            ws.Cell(r, 1).Value = $"DRAX OIS Runs {rep.AsOf.ToString("dMMMyy", inv)}";
             ws.Cell(r, 1).Style.Font.SetBold();
             r += 2;
 
@@ -52,7 +52,7 @@ namespace RateDesk.Weekly.Core.Daily
                 if (run.RefPct is { } rp) ws.Cell(r, 2).Value = rp;
                 ws.Cell(r, 2).Style.NumberFormat.Format = "0.000";
                 r++;
-                string[] hdr = { "Start_date", "Maturity", "T", "Δ 1d (bp)", "Δ 1w (bp)", "Δ 1m (bp)", "Step (bp)", "Priced (bp)" };
+                string[] hdr = { "StartDate", "Maturity", "Mid", "Step (bp)", "Priced (bp)", "Δ 1d (bp)", "Δ 1w (bp)", "Δ 1m (bp)" };
                 for (int c = 0; c < hdr.Length; c++)
                 {
                     ws.Cell(r, c + 1).Value = hdr[c];
@@ -78,11 +78,11 @@ namespace RateDesk.Weekly.Core.Daily
                     else
                     {
                         ws.Cell(r, 3).Value = m.MidPct; ws.Cell(r, 3).Style.NumberFormat.Format = "0.000";
-                        SetBp(ws.Cell(r, 4), m.D1Bp);
-                        SetBp(ws.Cell(r, 5), m.W1Bp);
-                        SetBp(ws.Cell(r, 6), m.M1Bp);
-                        SetBp(ws.Cell(r, 7), m.StepBp);
-                        SetBp(ws.Cell(r, 8), m.PricedBp);
+                        SetBp(ws.Cell(r, 4), m.StepBp);
+                        SetBp(ws.Cell(r, 5), m.PricedBp);
+                        SetBp(ws.Cell(r, 6), m.D1Bp);
+                        SetBp(ws.Cell(r, 7), m.W1Bp);
+                        SetBp(ws.Cell(r, 8), m.M1Bp);
                     }
                     r++;
                 }

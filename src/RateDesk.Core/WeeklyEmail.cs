@@ -127,7 +127,7 @@ namespace RateDesk.Core
                 Td($"<b>{s}</b>", $"background:{EmHead};{(right ? "text-align:right;" : "")}" +
                                   $"border-bottom:2px solid {EmAccent};padding:4px 8px;");
             sb.Append("<tr>" + FH("Central Bank") + FH("Decision Date") + FH("Start Date")
-                + FH("OIS Mid", true) + FH("Base Rate", true) + FH("Priced (bp)", true)
+                + FH("OIS Mid", true) + FH("Fixing", true) + FH("Priced (bp)", true)
                 + FH("% 25bp", true) + "</tr>");
             int fr = 0;
             foreach (var f in rep.Fronts)

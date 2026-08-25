@@ -52,6 +52,10 @@ namespace RateDesk.Tests
             Assert.Contains("+24.4", text);      // Priced in bp, not percent
             Assert.Contains("+0.3", text);       // Δ1d in bp
             Assert.Contains("{SW} RIKSBANK Run", text);
+            // desk 2026-08-25: workbook column order minus Maturity (IB window widths)
+            Assert.Contains("StartDate", text);
+            Assert.Contains("Δ1m", text);
+            Assert.DoesNotContain("End", text);
         }
 
         [Fact]
@@ -167,9 +171,13 @@ namespace RateDesk.Tests
             Assert.Contains("ECB closing run", text);
             Assert.Contains("€STR fixing", text);
             Assert.Contains("Y/E Turn", text);
-            // the ECB block's first data row carries T = 2.432
-            var t = ws.CellsUsed().FirstOrDefault(c => c.GetString() == "T");
-            Assert.NotNull(t);
+            // desk 2026-08-25: Mid (not T), and column order Start/Maturity/Mid/Step/Priced/Δ1d/Δ1w/Δ1m
+            var mid = ws.CellsUsed().FirstOrDefault(c => c.GetString() == "Mid");
+            Assert.NotNull(mid);
+            Assert.Equal("Step (bp)", ws.Cell(mid!.Address.RowNumber, 4).GetString());
+            Assert.Equal("Priced (bp)", ws.Cell(mid.Address.RowNumber, 5).GetString());
+            Assert.Equal("Δ 1m (bp)", ws.Cell(mid.Address.RowNumber, 8).GetString());
+            Assert.Contains("DRAX OIS Runs 20Aug26", text);
         }
     }
 }
