@@ -240,9 +240,11 @@ namespace RateDesk.Tests
             var html = InflEmail.WriteFragments(store, marks, nextPrints,
                 new DateTime(2026, 8, 20), _dir, daily: true);
             Assert.Contains("Inflation Fixing Runs", html);
-            Assert.Contains("Next Print: 11-Sep-26", html);
-            Assert.Contains("Aug 26", html);
-            Assert.DoesNotContain("Sep 26", html);          // furthest fixing dropped
+            // Word breaks at spaces even under nowrap, so all multi-word cell text is &nbsp;-joined
+            Assert.Contains("Next&nbsp;Print:&nbsp;11-Sep-26", html);
+            Assert.Contains("Aug&nbsp;26", html);
+            Assert.DoesNotContain("Sep&nbsp;26", html);     // furthest fixing dropped
+            Assert.Contains("<td nowrap width=", html);     // widths live ON the cells (Word rule)
             Assert.True(File.Exists(Path.Combine(_dir, InflEmail.DailyHtmlFile)));
             Assert.True(File.Exists(Path.Combine(_dir, InflEmail.DailyTextFile)));
 
