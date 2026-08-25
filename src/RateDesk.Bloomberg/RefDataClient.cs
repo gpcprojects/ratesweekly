@@ -50,6 +50,46 @@ namespace RateDesk.Bloomberg
             _service = _session.GetService("//blp/refdata");
         }
 
+        /// <summary>Next scheduled release date per economic index ticker (ECO_RELEASE_DT) —
+        /// the "Next Print:" line on the inflation fixing runs. Tickers without the field are
+        /// simply absent from the result: the line is OMITTED, never guessed.</summary>
+        public Dictionary<string, DateTime> GetNextReleaseDates(IEnumerable<string> tickers)
+        {
+            var res = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+            var list = tickers.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (list.Count == 0) return res;
+            lock (_lock)
+            {
+                var req = _service.CreateRequest("ReferenceDataRequest");
+                foreach (var t in list) req.GetElement("securities").AppendValue(t);
+                req.GetElement("fields").AppendValue("ECO_RELEASE_DT");
+                var corr = NextCorr();
+                _session.SendRequest(req, corr);
+                bool done = false;
+                while (!done)
+                {
+                    Event ev = _session.NextEvent(30000);
+                    foreach (Message msg in ev)
+                    {
+                        if (!Matches(msg, corr) || !msg.HasElement("securityData")) continue;
+                        var sd = msg.GetElement("securityData");
+                        for (int j = 0; j < sd.NumValues; j++)
+                        {
+                            var s = sd.GetValueAsElement(j);
+                            if (s.HasElement("securityError")) continue;
+                            var fd = s.GetElement("fieldData");
+                            if (fd.HasElement("ECO_RELEASE_DT")
+                                && DateTime.TryParse(fd.GetElementAsString("ECO_RELEASE_DT"), out var d))
+                                res[s.GetElementAsString("security")] = d.Date;
+                        }
+                    }
+                    if (ev.Type == Event.EventType.RESPONSE) done = true;
+                    if (ev.Type == Event.EventType.TIMEOUT) throw new TimeoutException("eco release dt timeout");
+                }
+            }
+            return res;
+        }
+
         public List<TickerStatus> Snapshot(IEnumerable<string> tickers, RatesSnapshot snap)
         {
                 var results = new List<TickerStatus>();
@@ -408,7 +448,9 @@ namespace RateDesk.Bloomberg
         {
             if (_snapCache.TryGetValue(ticker, out var c) && c.day == DateTime.Today && c.tod == londonTimeOfDay)
                 return c.data;
-            const int barMin = 30;
+            // the bar size must divide the snap time or the "snap" silently lands on the wrong
+            // bar: a 16:15 snap needs 15-min bars (ending 16:15); 16:30/17:00 ride 30-min bars
+            int barMin = londonTimeOfDay.Minutes % 30 == 0 ? 30 : 15;
             var byDay = new Dictionary<DateTime, (DateTime end, double close)>();
             try
             {

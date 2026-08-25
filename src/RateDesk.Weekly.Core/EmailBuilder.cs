@@ -74,30 +74,65 @@ namespace RateDesk.Weekly.Core
         }
 
         /// <summary>Snapshot live and build the report. Owns its Bloomberg session — the UPDATE
-        /// engine's is already disposed by the time this runs, and the CLI has none.</summary>
-        public static WeeklyReport Build(Action<string>? log = null)
+        /// engine's is already disposed by the time this runs, and the CLI has none. Pass the
+        /// store to serve lookbacks STORE-FIRST (desk 2026-08-25): Bloomberg is then touched
+        /// only for the live snapshot, the 16:30 intraday snaps, and per-ticker gap-fills —
+        /// same marks every run, minimal API load.</summary>
+        public static WeeklyReport Build(Action<string>? log = null, HistoryStore? store = null)
         {
             var configs = ConfigStore.LoadDefault();
             var snap = new RatesSnapshot();
             var svc = new PricingService(configs, snap);
             using var refData = new RefDataClient();
-            svc.History = refData;
+            var sbh = store != null ? new StoreBackedHistory(store, refData, log) : null;
+            svc.History = (RateDesk.Core.Market.IHistoryProvider?)sbh ?? refData;
             var all = AllTickers(configs, svc);
+            // inflation fixing swaps ride along (desk 2026-08-25): the weekly email carries the
+            // same Inflation Fixing Runs section as the daily
+            foreach (var fam in Infl.InflHistory.Families)
+                for (int n = 1; n <= 12; n++) all.Add($"{fam.Root}{n} Curncy");
             log?.Invoke($"email: snapshotting {all.Count} tickers...");
             refData.Snapshot(all, snap);
-            try { refData.Prefetch(all, 220); } catch { /* singles fallback inside Core */ }
+            if (store != null)
+            {
+                try { Infl.InflHistory.LastLiveMarks = Infl.InflHistory.CollectLiveMarks(snap, store); }
+                catch { /* absent quotes just mean fewer rows */ }
+                try
+                {
+                    var rel = refData.GetNextReleaseDates(
+                        Infl.InflHistory.Families.Select(f => f.IndexTicker));
+                    Infl.InflHistory.LastNextPrints = Infl.InflHistory.Families
+                        .Where(f => rel.ContainsKey(f.IndexTicker))
+                        .ToDictionary(f => f.Key, f => rel[f.IndexTicker]);
+                }
+                catch { /* omitted, never guessed */ }
+            }
+            // same close discipline as the daily (desk 2026-08-25): meeting-board marks pin to
+            // the 16:15 snap when pressed after it; pre-15:30 runs carry a PRE-CLOSE flag. The
+            // forward grid stays live-at-press — it is not a close product.
+            var (_, snapNote) = SnapDiscipline.Apply(refData, snap,
+                svc.MeetingTickers().Concat(PricingService.WeeklyExtraTickers), log);
+            if (sbh == null)
+                try { refData.Prefetch(all, 220); } catch { /* singles fallback inside Core */ }
             var rep = svc.BuildWeekly();
+            if (snapNote != null) rep.Notes.Add(snapNote);
+            if (sbh != null) log?.Invoke("email " + sbh.Stats);
             // exchange-settled futures cross-check (FuturesGuard) — a TRIGGERED line here is the
             // flag that the meeting rows disagree with instruments that share nothing with the
             // OIS machinery. Notes only: the investor-facing email body never carries diagnostics.
             rep.Notes.AddRange(FuturesGuard.Check(svc));
+            // cross-sectional outlier flag (desk 2026-08-25): a row far off its run's median
+            // gets a CHECK note for a manual look before distribution — flagged, never hidden
+            rep.Notes.AddRange(OutlierGuard.Check(rep));
             foreach (var n in rep.Notes) log?.Invoke("  email note: " + n);
             return rep;
         }
 
         /// <summary>Write the fragment/plaintext/preview trio. The fragment on disk IS what the
-        /// clipboard carries — COPY EMAIL must never rebuild or restyle.</summary>
-        public static Output Render(WeeklyReport rep, string outDir, string? siteBase, Action<string>? log = null)
+        /// clipboard carries — COPY EMAIL must never rebuild or restyle. Pass the store to also
+        /// render the Inflation Fixing Runs section below the forward grid (desk 2026-08-25).</summary>
+        public static Output Render(WeeklyReport rep, string outDir, string? siteBase,
+            Action<string>? log = null, HistoryStore? store = null)
         {
             Directory.CreateDirectory(outDir);
             Func<string, string?>? href = siteBase == null
@@ -109,11 +144,21 @@ namespace RateDesk.Weekly.Core
 
             ReportStore.Save(rep, Path.Combine(outDir, ReportFile));
 
+            string inflHtml = "", inflText = "";
+            if (store != null)
+                try
+                {
+                    inflHtml = Infl.InflEmail.WriteFragments(store, Infl.InflHistory.LastLiveMarks,
+                        Infl.InflHistory.LastNextPrints, rep.AsOf, outDir, daily: false);
+                    inflText = File.ReadAllText(Path.Combine(outDir, Infl.InflEmail.WeeklyTextFile));
+                }
+                catch (Exception ex) { log?.Invoke("! email: inflation section failed: " + ex.Message); }
+
             var frag = Path.Combine(outDir, FragmentFile);
             var txt = Path.Combine(outDir, PlainTextFile);
             var prev = Path.Combine(outDir, PreviewFile);
-            File.WriteAllText(frag, WeeklyEmail.Html(rep, href));
-            File.WriteAllText(txt, WeeklyEmail.PlainText(rep));
+            File.WriteAllText(frag, WeeklyEmail.Html(rep, href) + inflHtml);
+            File.WriteAllText(txt, WeeklyEmail.PlainText(rep) + inflText);
             // full-document wrapper only for the PREVIEW; the clipboard fragment stays bare
             File.WriteAllText(prev,
                 "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><title>RatesWeekly email preview</title></head>" +

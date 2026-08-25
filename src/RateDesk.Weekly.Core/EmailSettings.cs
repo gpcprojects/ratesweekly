@@ -13,12 +13,15 @@ namespace RateDesk.Weekly.Core
         public bool WeeklyFrontTable { get; set; } = true;
         public bool WeeklyOisRuns { get; set; } = true;
         public bool WeeklyForwardGrid { get; set; } = true;
+        public bool WeeklyInflRuns { get; set; } = true;
         public bool WeeklyDashboardsAttachment { get; set; } = true;
 
         // Daily Runs Email
         public bool DailyFrontTable { get; set; } = true;
         public bool DailyOisRuns { get; set; } = true;
+        public bool DailyInflRuns { get; set; } = true;
         public bool DailyXlsAttachment { get; set; } = true;
+        public bool DailyInflXlsAttachment { get; set; } = true;
 
         public const string FileName = "emailsettings.json";
 

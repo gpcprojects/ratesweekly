@@ -135,6 +135,127 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void Ingest_AdoptsSheetBase_ForBloombergPrintHoles_ButNeverForForecastBases()
+        {
+            using var store = new HistoryStore(Path.Combine(_dir, "gap.db"));
+            // Bloomberg's CPURNSA has Sep-25 and Nov-25 but NO Oct-25 (the shutdown skip)
+            store.UpsertDaily("CPURNSA Index", new[]
+            {
+                new HistPoint(new DateTime(2025, 9, 30), 324.8),
+                new HistPoint(new DateTime(2025, 11, 30), 324.122),
+            }, excludeToday: false);
+
+            var book = Path.Combine(_dir, "gap.xlsm");
+            using (var wb = new XLWorkbook())
+            {
+                var ws = wb.Worksheets.Add("CPI_History");
+                string[] hdr = { "Date", "Month", "Base", "Mid", "%yoy", "%mom" };
+                for (int c = 0; c < hdr.Length; c++) ws.Cell(1, c + 1).Value = hdr[c];
+                void Row(int r, string mon, double baseV, double mid)
+                {
+                    ws.Cell(r, 1).Value = new DateTime(2026, 8, 20);
+                    ws.Cell(r, 2).Value = mon;
+                    ws.Cell(r, 3).Value = baseV;
+                    ws.Cell(r, 4).Value = mid;
+                    ws.Cell(r, 5).Value = (mid / baseV - 1) * 100.0;
+                }
+                Row(2, "Sep", 324.8, 336.01);     // validates against the real Sep-25 print
+                Row(3, "Oct", 325.604, 335.81);   // base month PASSED, print missing -> ADOPT
+                Row(4, "Nov", 324.122, 335.29);   // validates against Nov-25
+                // a Jul-27 fixing whose base month (Jul-26) is still inside the publication
+                // lag at the 20-Aug-26 obs = a FORECAST base — must never be adopted
+                ws.Cell(5, 1).Value = new DateTime(2026, 8, 20);
+                ws.Cell(5, 2).Value = new DateTime(2027, 7, 1);
+                ws.Cell(5, 3).Value = 999.99;
+                ws.Cell(5, 4).Value = 1020.0;
+                ws.Cell(5, 5).Value = (1020.0 / 999.99 - 1) * 100.0;
+                wb.SaveAs(book);
+            }
+
+            InflHistory.Ingest(book, store);
+
+            var prints = store.GetDailyWithSource("CPURNSA Index", 4000)
+                .ToDictionary(x => (x.Date.Month, x.Date.Year));
+            Assert.Equal(325.604, prints[(10, 2025)].Value, 6);      // the hole, filled
+            Assert.Equal("xls", prints[(10, 2025)].Source);          // marked as the sheet's
+            Assert.Equal("bbg", prints[(9, 2025)].Source);           // real prints untouched
+            Assert.False(prints.ContainsKey((7, 2026)));             // forecast base NOT adopted
+            // and a later real Bloomberg print for Oct-25 supersedes the adopted value
+            store.UpsertDaily("CPURNSA Index",
+                new[] { new HistPoint(new DateTime(2025, 10, 31), 325.7) }, excludeToday: false);
+            Assert.Equal(325.7, store.GetDailyWithSource("CPURNSA Index", 4000)
+                .First(x => x.Date == new DateTime(2025, 10, 31)).Value, 6);
+        }
+
+        [Fact]
+        public void DisplayRows_DeriveBaseYoyMomAndIndexChanges_FromMarksPrintsAndHistory()
+        {
+            using var store = new HistoryStore(Path.Combine(_dir, "dr.db"));
+            // prints: Aug-25 (the YoY base) and Jul-26 (the last published index — the front
+            // row's MoM anchor, exactly the incumbent Table's convention)
+            store.UpsertDaily("CPURNSA Index", new[]
+            {
+                new HistPoint(new DateTime(2025, 8, 31), 323.976),
+                new HistPoint(new DateTime(2026, 7, 31), 323.048),
+            }, excludeToday: false);
+            // unified history: yesterday's close for the Aug-26 fixing
+            store.UpsertFixings("CPI", "2026-08",
+                new[] { new HistPoint(new DateTime(2026, 8, 19), 334.98) }, "bbg", excludeToday: false);
+            var fam = InflHistory.Families.First(f => f.Key == "CPI");
+            var marks = new[]
+            {
+                new InflHistory.Mark(new DateTime(2026, 8, 1), 335.02),
+                new InflHistory.Mark(new DateTime(2026, 9, 1), 336.13),
+            };
+
+            var rows = InflHistory.BuildDisplayRows(store, fam, marks, new DateTime(2026, 8, 20));
+
+            Assert.Equal(2, rows.Count);
+            var aug = rows[0];
+            Assert.Equal(323.976, aug.BaseV!.Value, 6);
+            Assert.Equal(335.02, aug.Mid!.Value, 6);
+            Assert.Equal((335.02 / 323.976 - 1) * 100, aug.Yoy!.Value, 6);
+            Assert.Equal((335.02 / 323.048 - 1) * 100, aug.Mom!.Value, 6);   // front row vs Jul print
+            Assert.Equal(335.02 - 334.98, aug.D1!.Value, 6);                 // vs yesterday's close
+            // second row's MoM chains off the FIRST row's mid, not a print
+            Assert.Equal((336.13 / 335.02 - 1) * 100, rows[1].Mom!.Value, 6);
+        }
+
+        [Fact]
+        public void InflEmailAndLeanXlsx_DropTheFurthestFixing_AndCarryNextPrint()
+        {
+            using var store = new HistoryStore(Path.Combine(_dir, "ie.db"));
+            store.UpsertDaily("CPURNSA Index",
+                new[] { new HistPoint(new DateTime(2025, 8, 31), 323.976) }, excludeToday: false);
+            var marks = new Dictionary<string, List<InflHistory.Mark>>
+            {
+                ["CPI"] = new()
+                {
+                    new InflHistory.Mark(new DateTime(2026, 8, 1), 335.02),
+                    new InflHistory.Mark(new DateTime(2026, 9, 1), 336.13),   // furthest — dropped
+                },
+            };
+            var nextPrints = new Dictionary<string, DateTime> { ["CPI"] = new(2026, 9, 11) };
+
+            var html = InflEmail.WriteFragments(store, marks, nextPrints,
+                new DateTime(2026, 8, 20), _dir, daily: true);
+            Assert.Contains("Inflation Fixing Runs", html);
+            Assert.Contains("Next Print: 11-Sep-26", html);
+            Assert.Contains("Aug 26", html);
+            Assert.DoesNotContain("Sep 26", html);          // furthest fixing dropped
+            Assert.True(File.Exists(Path.Combine(_dir, InflEmail.DailyHtmlFile)));
+            Assert.True(File.Exists(Path.Combine(_dir, InflEmail.DailyTextFile)));
+
+            var path = InflRunsXlsx.Write(store, _dir, new DateTime(2026, 8, 20), marks, nextPrints);
+            Assert.Equal("Inflation_Runs_20August26.xlsx", Path.GetFileName(path));
+            using var wb = new ClosedXML.Excel.XLWorkbook(path);
+            var text = string.Join("\n", wb.Worksheet("Runs").CellsUsed().Select(c => c.GetString()));
+            Assert.Contains("US CPI Fixing Run", text);
+            Assert.Contains("Next Print:", text);
+            Assert.Single(wb.Worksheets);                    // LEAN: no history sheets
+        }
+
+        [Fact]
         public void Book_WritesPerFamilySheets_WithSameFixingChangesAndSource()
         {
             using var store = new HistoryStore(Path.Combine(_dir, "x.db"));

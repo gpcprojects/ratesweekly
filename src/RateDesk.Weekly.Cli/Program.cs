@@ -144,8 +144,9 @@ switch (cmd)
         {
             var appData = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly");
-            var rep = EmailBuilder.Build(Console.WriteLine);
-            var o = EmailBuilder.Render(rep, outDir, EmailBuilder.LoadSiteBase(appData), Console.WriteLine);
+            using var store = new HistoryStore(dbPath);
+            var rep = EmailBuilder.Build(Console.WriteLine, store);
+            var o = EmailBuilder.Render(rep, outDir, EmailBuilder.LoadSiteBase(appData), Console.WriteLine, store);
             Console.WriteLine($"as of {rep.AsOf:yyyy-MM-dd HH:mm:ss} — " +
                               $"{rep.Sections.Sum(s => s.Ccys.Count)} currencies, " +
                               $"{rep.Runs.Count} CB runs, {rep.Fronts.Count} front rows");
@@ -188,6 +189,37 @@ switch (cmd)
             Console.Error.WriteLine("DAILY BUILD FAILED: " + ex.Message);
             return 1;
         }
+    }
+
+    case "savedown":
+    {
+        // regenerate both macro-enabled save-down books from stored data (no Bloomberg) and
+        // mirror them into the configured OIS Runs / Inflation Runs folders
+        var outDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly", "out");
+        for (int i = 1; i < args.Length - 1; i++)
+            if (args[i].Equals("--out", StringComparison.OrdinalIgnoreCase)) outDir = args[i + 1];
+        var appData = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly");
+        var rep = RateDesk.Weekly.Core.ReportStore.Load(
+                Path.Combine(outDir, RateDesk.Weekly.Core.Daily.DailyBuilder.ReportFile))
+            ?? throw new InvalidOperationException("no stored daily report — run DAILY RUN once first");
+        using var store = new HistoryStore(dbPath);
+        var p1 = RateDesk.Weekly.Core.SaveDown.StoreBooks.WriteOis(rep, store, outDir, Console.WriteLine);
+        var p2 = RateDesk.Weekly.Core.SaveDown.StoreBooks.WriteInfl(store, outDir, rep.AsOf, null, Console.WriteLine);
+        RateDesk.Weekly.Core.Infl.InflRunsXlsx.Write(store, outDir, rep.AsOf, null, null, Console.WriteLine);
+        RateDesk.Weekly.Core.Infl.InflEmail.WriteFragments(store, null, null, rep.AsOf, outDir, daily: true);
+        Console.WriteLine("daily inflation fragment + lean workbook regenerated (last documented closes)");
+        if (RateDesk.Weekly.Core.SaveDown.SaveDownConfig.Load(appData) is { } sd)
+        {
+            RateDesk.Weekly.Core.SaveDown.SaveDownConfig.Sync(outDir, "OIS_Runs_*.xlsm",
+                Path.Combine(sd.Root, RateDesk.Weekly.Core.SaveDown.SaveDownConfig.OisFolder), Console.WriteLine);
+            RateDesk.Weekly.Core.SaveDown.SaveDownConfig.Sync(outDir, "Inflation_Runs_*.xlsm",
+                Path.Combine(sd.Root, RateDesk.Weekly.Core.SaveDown.SaveDownConfig.InflFolder), Console.WriteLine);
+        }
+        Console.WriteLine($"ois:  {p1}");
+        Console.WriteLine($"infl: {p2}");
+        return 0;
     }
 
     case "inflingest":

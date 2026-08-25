@@ -29,10 +29,13 @@ namespace RateDesk.Weekly
             _emailSettings = EmailSettings.Load(AppDataDir);
             CbDailyFront.IsChecked = _emailSettings.DailyFrontTable;
             CbDailyRuns.IsChecked = _emailSettings.DailyOisRuns;
+            CbDailyInfl.IsChecked = _emailSettings.DailyInflRuns;
             CbDailyXls.IsChecked = _emailSettings.DailyXlsAttachment;
+            CbDailyInflXls.IsChecked = _emailSettings.DailyInflXlsAttachment;
             CbWeeklyFront.IsChecked = _emailSettings.WeeklyFrontTable;
             CbWeeklyRuns.IsChecked = _emailSettings.WeeklyOisRuns;
             CbWeeklyGrid.IsChecked = _emailSettings.WeeklyForwardGrid;
+            CbWeeklyInfl.IsChecked = _emailSettings.WeeklyInflRuns;
             CbWeeklyDash.IsChecked = _emailSettings.WeeklyDashboardsAttachment;
             _settingsLoading = false;
         }
@@ -42,10 +45,13 @@ namespace RateDesk.Weekly
             if (_settingsLoading) return;
             _emailSettings.DailyFrontTable = CbDailyFront.IsChecked == true;
             _emailSettings.DailyOisRuns = CbDailyRuns.IsChecked == true;
+            _emailSettings.DailyInflRuns = CbDailyInfl.IsChecked == true;
             _emailSettings.DailyXlsAttachment = CbDailyXls.IsChecked == true;
+            _emailSettings.DailyInflXlsAttachment = CbDailyInflXls.IsChecked == true;
             _emailSettings.WeeklyFrontTable = CbWeeklyFront.IsChecked == true;
             _emailSettings.WeeklyOisRuns = CbWeeklyRuns.IsChecked == true;
             _emailSettings.WeeklyForwardGrid = CbWeeklyGrid.IsChecked == true;
+            _emailSettings.WeeklyInflRuns = CbWeeklyInfl.IsChecked == true;
             _emailSettings.WeeklyDashboardsAttachment = CbWeeklyDash.IsChecked == true;
             try { _emailSettings.Save(AppDataDir); } catch { /* next change retries */ }
         }
@@ -62,6 +68,7 @@ namespace RateDesk.Weekly
             VersionText.Text = "v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?");
             Directory.CreateDirectory(AppDataDir);
             Directory.CreateDirectory(OutDir);
+            Loaded += async (_, _) => await SetupSaveDown();
             // one line per button; the first WEEKLY RUN clears these and takes the box over
             LogBox.Text =
                 "WEEKLY RUN — pulls Bloomberg, brings the history current, redraws every dashboard and builds the desk email.\r\n" +
@@ -84,6 +91,164 @@ namespace RateDesk.Weekly
             LogBox.ScrollToEnd();
         });
 
+        /// <summary>SAVE-DOWN DESTINATION (desk 2026-08-25). On open the system searches the
+        /// network drives for one called "salix" and locates Coverage &amp; Counterparties on it;
+        /// found → "C+C folder located successfully" on the status line, nothing to click. Not
+        /// found → a dialog offers "Locate C+C" (folder picker) or "Save Locally" (Documents,
+        /// confirmed with an OK box). Either way the app creates — and afterwards checks for —
+        /// the "OIS Runs" and "Inflation Runs" folders that each day's run files land in.</summary>
+        private async Task SetupSaveDown()
+        {
+            try
+            {
+                // the salix search runs on EVERY open — a desk that chose Save Locally during an
+                // outage upgrades back to C+C automatically the day the drive returns
+                var detected = await Task.Run(() => RateDesk.Weekly.Core.SaveDown.SaveDownConfig.DetectSalix(Log));
+                if (detected != null)
+                {
+                    RateDesk.Weekly.Core.SaveDown.SaveDownConfig.Save(AppDataDir, new("cc", detected));
+                    await Task.Run(() => RateDesk.Weekly.Core.SaveDown.SaveDownConfig.EnsureFolders(detected));
+                    StatusText.Text = "C+C folder located successfully.";
+                    Log($"save-down: OIS Runs / Inflation Runs ready under {detected}");
+                    return;
+                }
+                var cfg = RateDesk.Weekly.Core.SaveDown.SaveDownConfig.Load(AppDataDir);
+                if (cfg != null && await Task.Run(() => Directory.Exists(cfg.Root)))
+                {
+                    await Task.Run(() => RateDesk.Weekly.Core.SaveDown.SaveDownConfig.EnsureFolders(cfg.Root));
+                    StatusText.Text = cfg.Mode == "cc"
+                        ? "C+C folder located successfully."
+                        : "History saves to your Documents folder (OIS Runs / Inflation Runs).";
+                    return;
+                }
+                AskSaveDownChoice();
+            }
+            catch (Exception ex) { Log("! save-down setup: " + ex.Message); }
+        }
+
+        private void AskSaveDownChoice()
+        {
+            var dlg = new Window
+            {
+                Title = "RatesWeekly",
+                Width = 420, Height = 150, ResizeMode = ResizeMode.NoResize,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner, Owner = this,
+                Background = System.Windows.Media.Brushes.White,
+            };
+            string? choice = null;
+            var locate = new System.Windows.Controls.Button { Content = "Locate C+C", Width = 130, Height = 30, Margin = new Thickness(8) };
+            var local = new System.Windows.Controls.Button { Content = "Save Locally", Width = 130, Height = 30, Margin = new Thickness(8) };
+            locate.Click += (_, _) => { choice = "locate"; dlg.Close(); };
+            local.Click += (_, _) => { choice = "local"; dlg.Close(); };
+            var panel = new System.Windows.Controls.StackPanel { Margin = new Thickness(12) };
+            panel.Children.Add(new System.Windows.Controls.TextBlock
+            {
+                Text = "Coverage and Counterparties not detected",
+                FontWeight = FontWeights.Bold, Margin = new Thickness(0, 0, 0, 10),
+                HorizontalAlignment = HorizontalAlignment.Center,
+            });
+            var buttons = new System.Windows.Controls.StackPanel
+                { Orientation = System.Windows.Controls.Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+            buttons.Children.Add(locate);
+            buttons.Children.Add(local);
+            panel.Children.Add(buttons);
+            dlg.Content = panel;
+            dlg.ShowDialog();
+
+            if (choice == "locate")
+            {
+                var picker = new Microsoft.Win32.OpenFolderDialog { Title = "Locate Coverage and Counterparties" };
+                if (picker.ShowDialog(this) == true)
+                {
+                    RateDesk.Weekly.Core.SaveDown.SaveDownConfig.Save(AppDataDir, new("cc", picker.FolderName));
+                    try
+                    {
+                        RateDesk.Weekly.Core.SaveDown.SaveDownConfig.EnsureFolders(picker.FolderName);
+                        StatusText.Text = "C+C folder located successfully.";
+                        Log($"save-down: OIS Runs / Inflation Runs ready under {picker.FolderName}");
+                        return;
+                    }
+                    catch (Exception ex) { Log("! save-down: " + ex.Message); }
+                }
+            }
+            // Save Locally — chosen, or the fallback when the picker was cancelled
+            var docs = RateDesk.Weekly.Core.SaveDown.SaveDownConfig.LocalRoot();
+            RateDesk.Weekly.Core.SaveDown.SaveDownConfig.Save(AppDataDir, new("local", docs));
+            RateDesk.Weekly.Core.SaveDown.SaveDownConfig.EnsureFolders(docs);
+            MessageBox.Show(this, "History will be saved to your documents folder",
+                "RatesWeekly", MessageBoxButton.OK, MessageBoxImage.Information);
+            StatusText.Text = "History saves to your Documents folder (OIS Runs / Inflation Runs).";
+        }
+
+        /// <summary>The daily email's recipient list — paste addresses (semicolon or line
+        /// separated), saved app-side, PRELOADED from the incumbent workbook's VBA list.
+        /// They are applied as BCC, always BCC (desk 2026-08-25).</summary>
+        private void Recipients_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new Window
+            {
+                Title = "Daily email recipients — always sent as BCC",
+                Width = 560, Height = 460, ResizeMode = ResizeMode.CanResize,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner, Owner = this,
+                Background = System.Windows.Media.Brushes.White,
+            };
+            var box = new System.Windows.Controls.TextBox
+            {
+                AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap,
+                VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
+                FontFamily = new System.Windows.Media.FontFamily("Consolas"), FontSize = 12,
+                Text = string.Join(Environment.NewLine, Recipients.Load(AppDataDir)),
+            };
+            var save = new System.Windows.Controls.Button
+                { Content = "Save", Width = 110, Height = 28, Margin = new Thickness(0, 8, 8, 0) };
+            var cancel = new System.Windows.Controls.Button
+                { Content = "Cancel", Width = 110, Height = 28, Margin = new Thickness(0, 8, 0, 0) };
+            save.Click += (_, _) =>
+            {
+                var list = Recipients.Parse(box.Text);
+                Recipients.Save(AppDataDir, list);
+                StatusText.Text = $"recipients saved — {list.Count} address(es), applied as BCC on DAILY EMAIL.";
+                dlg.Close();
+            };
+            cancel.Click += (_, _) => dlg.Close();
+            var grid = new System.Windows.Controls.Grid { Margin = new Thickness(10) };
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var hint = new System.Windows.Controls.TextBlock
+            {
+                Text = "One address per line (or semicolon-separated). These go into the daily "
+                       + "draft as BCC — never To/Cc.",
+                TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8),
+            };
+            var buttons = new System.Windows.Controls.StackPanel
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+            };
+            buttons.Children.Add(save);
+            buttons.Children.Add(cancel);
+            System.Windows.Controls.Grid.SetRow(hint, 0);
+            System.Windows.Controls.Grid.SetRow(box, 1);
+            System.Windows.Controls.Grid.SetRow(buttons, 2);
+            grid.Children.Add(hint);
+            grid.Children.Add(box);
+            grid.Children.Add(buttons);
+            dlg.Content = grid;
+            dlg.ShowDialog();
+        }
+
+        /// <summary>Outlier CHECK notes demand eyes before distribution (desk 2026-08-25, the
+        /// BOJ Δ1m question) — surfaced as a blocking message box on top of the log lines.</summary>
+        private void ShowCheckNotes(IEnumerable<string> notes)
+        {
+            var checks = notes.Where(n => n.StartsWith(OutlierGuard.Prefix + ":")).ToList();
+            if (checks.Count == 0) return;
+            MessageBox.Show(this,
+                "Outlier check — verify these before distributing:\n\n" + string.Join("\n", checks),
+                "RatesWeekly — manual check required", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
         /// <summary>The output buttons unlock only when what they SERVE was rebuilt by this
         /// session (desk 2026-08-20): the email buttons need a built email, OPEN OUTPUT needs
         /// rendered pages. A failed leg keeps its buttons dark rather than serving stale files.</summary>
@@ -104,7 +269,7 @@ namespace RateDesk.Weekly
             StatusText.Text = "running weekly...";
             try
             {
-                var (result, pages, emailErr) = await Task.Run(() =>
+                var (result, pages, emailErr, emailNotes) = await Task.Run(() =>
                 {
                     using var store = new HistoryStore(Path.Combine(AppDataDir, "history.db"));
                     var r = UpdateEngine.Run(store, new RatesSnapshot(), Log);
@@ -115,13 +280,15 @@ namespace RateDesk.Weekly
                     // is instant and restart-safe. It builds AFTER the engine has released its
                     // session, on its own — a failure leaves the dashboards standing.
                     string? eErr = null;
+                    var eNotes = new List<string>();
                     try
                     {
-                        var rep = EmailBuilder.Build(Log);
-                        EmailBuilder.Render(rep, OutDir, EmailBuilder.LoadSiteBase(AppDataDir), Log);
+                        var rep = EmailBuilder.Build(Log, store);
+                        eNotes = rep.Notes.ToList();
+                        EmailBuilder.Render(rep, OutDir, EmailBuilder.LoadSiteBase(AppDataDir), Log, store);
                     }
                     catch (Exception ex) { eErr = ex.Message; Log("! email build failed: " + ex.Message); }
-                    return (r, n, eErr);
+                    return (r, n, eErr, eNotes);
                 });
                 StatusText.Text = $"updated {DateTime.Now:HH:mm:ss} — {result.Tickers} tickers, " +
                                   $"{result.RowsWritten} rows written, {pages} pages rendered, " +
@@ -136,6 +303,7 @@ namespace RateDesk.Weekly
                         ? "WEEKLY PARTIAL — dashboards rebuilt (OPEN OUTPUT unlocked) but the email " +
                           "FAILED, so the email buttons stay locked. Fix and run WEEKLY again."
                         : "WEEKLY PARTIAL — nothing rendered; buttons stay locked. See the log.");
+                ShowCheckNotes(emailNotes);
             }
             catch (Exception ex)
             {
@@ -206,10 +374,20 @@ namespace RateDesk.Weekly
                 var siteBase = EmailBuilder.LoadSiteBase(AppDataDir);
                 Func<string, string?>? href = siteBase == null
                     ? null : ccy => $"{siteBase}/{ccy.ToLowerInvariant()}.html";
-                return WeeklyEmail.Html(rep, href, partsOpt: WeeklyParts());
+                return WeeklyEmail.Html(rep, href, partsOpt: WeeklyParts())
+                       + InflFragment(RateDesk.Weekly.Core.Infl.InflEmail.WeeklyHtmlFile,
+                           _emailSettings.WeeklyInflRuns);
             }
             var frag = Path.Combine(OutDir, EmailBuilder.FragmentFile);
             return File.Exists(frag) ? File.ReadAllText(frag) : null;
+        }
+
+        /// <summary>The frozen inflation section from the last run, when its tickbox is on and
+        /// the run actually produced one — never rebuilt at click time.</summary>
+        private static string InflFragment(string file, bool ticked)
+        {
+            var p = Path.Combine(OutDir, file);
+            return ticked && File.Exists(p) ? File.ReadAllText(p) : "";
         }
 
         private void CreateEmail_Click(object sender, RoutedEventArgs e)
@@ -257,6 +435,8 @@ namespace RateDesk.Weekly
             {
                 string plain = ReportStore.Load(Path.Combine(OutDir, EmailBuilder.ReportFile)) is { } rep
                     ? WeeklyEmail.PlainText(rep, partsOpt: WeeklyParts())
+                      + InflFragment(RateDesk.Weekly.Core.Infl.InflEmail.WeeklyTextFile,
+                          _emailSettings.WeeklyInflRuns)
                     : File.Exists(Path.Combine(OutDir, EmailBuilder.PlainTextFile))
                         ? File.ReadAllText(Path.Combine(OutDir, EmailBuilder.PlainTextFile)) : "";
                 ClipboardHtml.Set(body, plain);
@@ -277,17 +457,19 @@ namespace RateDesk.Weekly
             StatusText.Text = "building daily OIS run...";
             try
             {
-                var output = await Task.Run(() =>
+                var (output, notes) = await Task.Run(() =>
                 {
                     using var store = new HistoryStore(Path.Combine(AppDataDir, "history.db"));
                     var rep = Core.Daily.DailyBuilder.Build(store, Log);
-                    return Core.Daily.DailyBuilder.Render(rep, store, OutDir, AppDataDir, Log);
+                    var o = Core.Daily.DailyBuilder.Render(rep, store, OutDir, AppDataDir, Log);
+                    return (o, rep.Notes.ToList());
                 });
                 CopyBlastBtn.IsEnabled = true;
                 DailyEmailBtn.IsEnabled = true;
                 StatusText.Text = $"daily built {DateTime.Now:HH:mm:ss} — blast + workbook" +
                                   (output.DailyDirCopy != null ? " (+ shared drive)" : "") + " + email ready";
                 Log("DAILY COMPLETE — blast, workbook and email rebuilt; COPY BLAST / DAILY EMAIL unlocked.");
+                ShowCheckNotes(notes);
             }
             catch (Exception ex)
             {
@@ -322,7 +504,9 @@ namespace RateDesk.Weekly
         {
             string? body = null;
             if (ReportStore.Load(Path.Combine(OutDir, Core.Daily.DailyBuilder.ReportFile)) is { } rep)
-                body = WeeklyEmail.Html(rep, partsOpt: DailyParts());
+                body = WeeklyEmail.Html(rep, partsOpt: DailyParts())
+                       + InflFragment(RateDesk.Weekly.Core.Infl.InflEmail.DailyHtmlFile,
+                           _emailSettings.DailyInflRuns);
             else
             {
                 var frag0 = Path.Combine(OutDir, Core.Daily.DailyBuilder.FragmentFile);
@@ -342,16 +526,21 @@ namespace RateDesk.Weekly
                 mail.Subject = $"DRAX Swaps Closing OIS Runs - {DateTime.Today:dd MMM yyyy}";
                 mail.HTMLBody = "<html><body style=\"margin:14px;background:#ffffff;\">"
                     + body + "</body></html>";
-                var book = _emailSettings.DailyXlsAttachment
-                    ? Directory.EnumerateFiles(OutDir, "OIS_Runs_*.xlsx")
-                        .OrderByDescending(File.GetLastWriteTime).FirstOrDefault()
-                    : null;
+                // recipients: ALWAYS BCC, never To/Cc — a client list must not leak to clients
+                var bcc = Recipients.Bcc(AppDataDir);
+                if (bcc.Length > 0) mail.BCC = bcc;
+                string? Newest(string pattern) => Directory.EnumerateFiles(OutDir, pattern)
+                    .OrderByDescending(File.GetLastWriteTime).FirstOrDefault();
+                var book = _emailSettings.DailyXlsAttachment ? Newest("OIS_Runs_*.xlsx") : null;
+                var infl = _emailSettings.DailyInflXlsAttachment ? Newest("Inflation_Runs_*.xlsx") : null;
                 if (book != null) mail.Attachments.Add(book);
+                if (infl != null) mail.Attachments.Add(infl);
                 mail.Display();
-                StatusText.Text = "daily draft opened in Outlook — add recipients and send."
-                    + (book != null ? " Workbook attached."
-                       : _emailSettings.DailyXlsAttachment
-                           ? " (no workbook found — run DAILY RUN)" : " Workbook attachment unticked.");
+                int attached = (book != null ? 1 : 0) + (infl != null ? 1 : 0);
+                StatusText.Text = $"daily draft opened — {Recipients.Load(AppDataDir).Count} recipient(s) in BCC. " +
+                    $"{attached} workbook(s) attached" +
+                    (_emailSettings.DailyXlsAttachment && book == null ? " (no OIS workbook found)" : "") +
+                    (_emailSettings.DailyInflXlsAttachment && infl == null ? " (no inflation workbook found)" : "") + ".";
             }
             catch (Exception ex) { StatusText.Text = "daily email failed: " + ex.Message; }
         }
