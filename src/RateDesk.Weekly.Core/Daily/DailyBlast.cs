@@ -46,22 +46,22 @@ namespace RateDesk.Weekly.Core.Daily
                 sb.Append($"{flag} {runName} Run");
                 if (run.RefPct is { } rp) sb.Append($"   ({fixing} {rp.ToString("0.000", inv)})");
                 sb.AppendLine();
-                sb.AppendLine($"{"Start",-10} {"End",-10} {"Mid",7} {"Δ1d",6} {"Δ1w",6} {"Step",6} {"Priced",7}");
+                // same table as the workbook's Runs sheet, minus Maturity (IB window widths —
+                // desk 2026-08-25); fixed-width columns so a chat paste reads as a table
+                sb.AppendLine($"{"StartDate",-10} {"Mid",7} {"Step",6} {"Priced",7} {"Δ1d",6} {"Δ1w",6} {"Δ1m",6}");
 
                 for (int i = 0; i < run.Rows.Count; i++)
                 {
                     var m = run.Rows[i];
                     string start = m.Date.ToString("dd-MMM-yy", inv);
-                    string end = (m.EndDate ?? (i + 1 < run.Rows.Count ? run.Rows[i + 1].Date : null))
-                        ?.ToString("dd-MMM-yy", inv) ?? "—";
                     if (m.TurnPeriod)
                     {
-                        sb.AppendLine($"{start,-10} {end,-10} {"Y/E Turn",7}");
+                        sb.AppendLine($"{start,-10} {"Y/E Turn",7}");
                         continue;
                     }
                     sb.AppendLine(
-                        $"{start,-10} {end,-10} {m.MidPct.ToString("0.000", inv),7} " +
-                        $"{Bp(m.D1Bp),6} {Bp(m.W1Bp),6} {Bp(m.StepBp),6} {Bp(m.PricedBp),7}");
+                        $"{start,-10} {m.MidPct.ToString("0.000", inv),7} " +
+                        $"{Bp(m.StepBp),6} {Bp(m.PricedBp),7} {Bp(m.D1Bp),6} {Bp(m.W1Bp),6} {Bp(m.M1Bp),6}");
                 }
             }
             return sb.ToString();

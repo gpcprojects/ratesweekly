@@ -339,7 +339,7 @@ namespace RateDesk.Weekly
                     ?? throw new InvalidOperationException("Outlook is not installed on this machine");
                 dynamic outlook = Activator.CreateInstance(t)!;
                 dynamic mail = outlook.CreateItem(0); // olMailItem
-                mail.Subject = $"DRAX Swaps — Daily OIS Run — {DateTime.Today:dd MMM yyyy}";
+                mail.Subject = $"DRAX Swaps Closing OIS Runs - {DateTime.Today:dd MMM yyyy}";
                 mail.HTMLBody = "<html><body style=\"margin:14px;background:#ffffff;\">"
                     + body + "</body></html>";
                 var book = _emailSettings.DailyXlsAttachment
