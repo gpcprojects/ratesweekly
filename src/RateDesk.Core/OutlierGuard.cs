@@ -17,25 +17,36 @@ namespace RateDesk.Core
         public const double FloorBp = 4.0;
         public const double MadMult = 4.0;
 
+        /// <summary>Absolute-size flags (desk 2026-08-25, after the +65.7bp SEK phantom): a
+        /// meeting-OIS change this large is rare enough that it ALWAYS deserves eyes, even when
+        /// a whole strip moved together and the cross-sectional test can't see it.</summary>
+        public const double AbsD1Bp = 12.0, AbsW1Bp = 30.0, AbsM1Bp = 50.0;
+
         public static List<string> Check(WeeklyReport rep)
         {
             var notes = new List<string>();
             foreach (var run in rep.Runs)
             {
                 var name = run.Title.Split('·')[0].Trim();
-                foreach (var (label, sel) in new (string, Func<WeeklyMeeting, double?>)[]
-                         { ("Δ1d", m => m.D1Bp), ("Δ1w", m => m.W1Bp), ("Δ1m", m => m.M1Bp) })
+                foreach (var (label, sel, abs) in new (string, Func<WeeklyMeeting, double?>, double)[]
+                         { ("Δ1d", m => m.D1Bp, AbsD1Bp), ("Δ1w", m => m.W1Bp, AbsW1Bp), ("Δ1m", m => m.M1Bp, AbsM1Bp) })
                 {
                     var vals = run.Rows.Where(m => !m.TurnPeriod)
                         .Select(m => (m, v: sel(m)))
                         .Where(x => x.v.HasValue)
                         .Select(x => (x.m, v: x.v!.Value)).ToList();
+                    // absolute-size flag first — fires even on a single row or a uniform strip
+                    foreach (var (m, v) in vals)
+                        if (Math.Abs(v) > abs)
+                            notes.Add($"{Prefix}: {name} {m.Date:dd-MMM-yy} {label} " +
+                                      $"{v:+0.0;-0.0}bp exceeds the {abs:0}bp sanity bar — " +
+                                      "verify before distribution");
                     if (vals.Count < 4) continue;
                     double med = Median(vals.Select(x => x.v));
                     double mad = Median(vals.Select(x => Math.Abs(x.v - med)));
                     double thresh = Math.Max(FloorBp, MadMult * mad);
                     foreach (var (m, v) in vals)
-                        if (Math.Abs(v - med) > thresh)
+                        if (Math.Abs(v - med) > thresh && Math.Abs(v) <= abs)
                             notes.Add($"{Prefix}: {name} {m.Date:dd-MMM-yy} {label} " +
                                       $"{v:+0.0;-0.0}bp vs run median {med:+0.0;-0.0}bp — " +
                                       "verify before distribution");

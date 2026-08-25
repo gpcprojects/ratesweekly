@@ -185,11 +185,30 @@ namespace RateDesk.Core
                           (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">fixing {rp:0.000}</span>" : "")
                           + "</div>");
                 sb.Append(TableOpen(new[] { 76, 56, 58, 52, 56, 60, 60 }, "0"));
-                string MH(string s, bool right = true) =>
-                    Td($"<b>{s}</b>", $"background:{EmHead};{(right ? "text-align:right;" : "")}" +
-                                      $"border-bottom:2px solid {EmAccent};padding:4px 8px;");
-                sb.Append("<tr>" + MH("StartDate", false) + MH("Mid") + MH("Priced") + MH("Step")
-                    + MH("1d Chg") + MH("1w Chg") + MH("1m Chg") + "</tr>");
+                // RATESWEEKLY DIVERGENCE (desk 2026-08-25): widths live ON every card cell —
+                // Outlook renders through Word, which ignores colgroup widths and autosized the
+                // cards narrower than their 428px slots, leaving visible horizontal gaps between
+                // the three cards on other desks. Multi-word cell text is &nbsp;-joined (Word
+                // breaks at spaces even under nowrap).
+                var cw = new[] { 76, 56, 58, 52, 56, 60, 60 };
+                string CTd(string inner, int c, string extra = "") =>
+                    $"<td nowrap width=\"{cw[c]}\" style=\"{EmFont}padding:3px 8px;font-size:11.5px;" +
+                    $"width:{cw[c]}px;white-space:nowrap;mso-line-height-rule:exactly;line-height:15px;{extra}\">{inner}</td>";
+                string MH(string s, int c, bool right = true) =>
+                    CTd($"<b>{s.Replace(" ", "&nbsp;")}</b>", c,
+                        $"background:{EmHead};{(right ? "text-align:right;" : "")}" +
+                        $"border-bottom:2px solid {EmAccent};padding:4px 8px;");
+                // Word breaks lines AFTER a hyphen-minus even under nowrap — U+2011 (non-breaking
+                // hyphen) renders identically and cannot break
+                static string NoBrk(string s) => s.Replace("-", "‑");
+                string CChg(double? v, int c, int rI)
+                {
+                    if (v is not double d) return CTd("&nbsp;", c, RowBg(rI));
+                    string bg = HeatHex(d) is string h ? $"background:{h};" : RowBg(rI) + $"color:{EmMut};";
+                    return CTd(NoBrk(d.ToString("+0.0;-0.0")), c, $"text-align:right;{bg}");
+                }
+                sb.Append("<tr>" + MH("StartDate", 0, false) + MH("Mid", 1) + MH("Priced", 2) + MH("Step", 3)
+                    + MH("1d Chg", 4) + MH("1w Chg", 5) + MH("1m Chg", 6) + "</tr>");
                 int mr = 0;
                 foreach (var m in run.Rows)
                 {
@@ -199,21 +218,22 @@ namespace RateDesk.Core
                         // year-end-spanning period: the average carries the SWESTR-style turn
                         // dislocation — label it, never publish it as a policy expectation
                         sb.Append("<tr>" +
-                            Td(Inv(m.Date), rb) +
-                            Td($"<i>Y/E Turn</i>", $"text-align:right;color:{EmMut};{rb}") +
-                            Td("&nbsp;", rb) + Td("&nbsp;", rb) + Td("&nbsp;", rb) + Td("&nbsp;", rb) + Td("&nbsp;", rb) +
+                            CTd(Inv(m.Date), 0, rb) +
+                            CTd($"<i>Y/E&nbsp;Turn</i>", 1, $"text-align:right;color:{EmMut};{rb}") +
+                            CTd("&nbsp;", 2, rb) + CTd("&nbsp;", 3, rb) + CTd("&nbsp;", 4, rb) +
+                            CTd("&nbsp;", 5, rb) + CTd("&nbsp;", 6, rb) +
                             "</tr>");
                         continue;
                     }
                     // Priced stays plain muted text — the heat experiment was reverted on the
                     // desk's read (2026-08-11); heat belongs to the CHANGE columns only
                     sb.Append("<tr>" +
-                        Td(Inv(m.Date), rb) +
-                        Td($"<b>{m.MidPct:0.000}</b>", $"text-align:right;{rb}") +
-                        Td(m.PricedBp is double p ? p.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
-                        Td(m.StepBp is double st ? st.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
-                        ChgTd(m.D1Bp, false, false, mr - 1) +
-                        ChgTd(m.W1Bp, false, false, mr - 1) + ChgTd(m.M1Bp, false, false, mr - 1) + "</tr>");
+                        CTd(Inv(m.Date), 0, rb) +
+                        CTd($"<b>{m.MidPct:0.000}</b>", 1, $"text-align:right;{rb}") +
+                        CTd(m.PricedBp is double p ? NoBrk(p.ToString("+0.0;-0.0")) : "&nbsp;", 2, $"text-align:right;color:{EmMut};{rb}") +
+                        CTd(m.StepBp is double st ? NoBrk(st.ToString("+0.0;-0.0")) : "&nbsp;", 3, $"text-align:right;color:{EmMut};{rb}") +
+                        CChg(m.D1Bp, 4, mr - 1) +
+                        CChg(m.W1Bp, 5, mr - 1) + CChg(m.M1Bp, 6, mr - 1) + "</tr>");
                 }
                 sb.Append("</table></td>");
             }

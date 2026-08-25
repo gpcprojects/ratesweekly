@@ -82,6 +82,36 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void RiksbankHistory_MapsRungsOnPeriodStarts_InsideTheDecisionToStartWindow()
+        {
+            // the +65.7bp phantom CoD (desk 2026-08-25): SKSF renumbers at the period START,
+            // so on 24-Aug (decision 20-Aug announced, period starts 26-Aug) the 30-Sep-26
+            // meeting was STILL rung 2. Boundaries snapped to the decision mapped it to rung 1
+            // and every SEK change read one rung low. This locks the start-based mapping.
+            var dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "rw-tcd3-" + Guid.NewGuid().ToString("N"));
+            System.IO.Directory.CreateDirectory(dir);
+            try
+            {
+                using var store = new RateDesk.Weekly.Core.HistoryStore(System.IO.Path.Combine(dir, "s.db"));
+                var day = new DateTime(2026, 8, 24);   // inside the 20→26-Aug window
+                store.UpsertDaily("SKSF1A Curncy", new[] { new HistPoint(day, 1.650) }, excludeToday: false);
+                store.UpsertDaily("SKSF2A Curncy", new[] { new HistPoint(day, 1.725) }, excludeToday: false);
+                var sched = MeetingsStore.Schedules.First(s => s.Name == "RIKSBANK");
+                Assert.True(sched.RollsAtPeriodStart);
+                var run = new WeeklyRun { Title = "RIKSBANK · SEK" };
+                run.Rows.Add(new WeeklyMeeting
+                    { Date = new DateTime(2026, 9, 30), MidPct = 1.715, EndDate = new DateTime(2026, 11, 11) });
+
+                var rows = RateDesk.Weekly.Core.Daily.DailyBook.BankHistoryRows(
+                    store, sched, run, "SKSF{N}A", new DateTime(2026, 8, 25), 5);
+
+                var r = rows.First(x => x.Day == day && x.Start == new DateTime(2026, 9, 30));
+                Assert.Equal(1.725, r.Rate, 6);   // SKSF2A — start-based; 1.650 = the old fault
+            }
+            finally { try { System.IO.Directory.Delete(dir, true); } catch { } }
+        }
+
+        [Fact]
         public void RealRiksbankSchedule_WithTheProbedSksfState_ExtendsPastTheTurn()
         {
             // the EXACT live field state probed 2026-08-25 against the REAL embedded schedule —
