@@ -61,8 +61,12 @@ namespace RateDesk.Weekly.Core.Infl
                    $"background:{WeeklyEmail.EmHead};{(right ? "text-align:right;" : "")}" +
                    $"border-bottom:2px solid {WeeklyEmail.EmAccent};padding:4px 8px;");
             string RowBg(int i) => i % 2 == 1 ? "background:#f5f7fa;" : "";
+            // Word line-breaks AFTER a hyphen-minus even under nowrap ("-0.46" split across two
+            // lines on the desk's RPI card, 2026-08-25) — negative values use U+2011, the
+            // non-breaking hyphen, which renders identically and cannot break
+            static string NoBreak(string s) => s.Replace("-", "‑");
             string Num(double? v, string fmt, int col, int rI) => v is { } x
-                ? Td(x.ToString(fmt), col, $"text-align:right;color:{WeeklyEmail.EmMut};{RowBg(rI)}")
+                ? Td(NoBreak(x.ToString(fmt)), col, $"text-align:right;color:{WeeklyEmail.EmMut};{RowBg(rI)}")
                 : Td("&nbsp;", col, RowBg(rI));
             // Δ columns carry the OIS cards' heat (desk 2026-08-25): the index-point change is
             // scaled to implied YoY bp through the row's own base so the monitor ramp applies
@@ -71,7 +75,7 @@ namespace RateDesk.Weekly.Core.Infl
                 if (v is not { } x) return Td("&nbsp;", col, RowBg(rI));
                 string bg = scaleBase is { } b && b > 0 && WeeklyEmail.HeatHex(x / b * 10000.0) is { } h
                     ? $"background:{h};" : RowBg(rI) + $"color:{WeeklyEmail.EmMut};";
-                return Td(x.ToString("+0.00;-0.00;0.00"), col, $"text-align:right;{bg}");
+                return Td(NoBreak(x.ToString("+0.00;-0.00;0.00")), col, $"text-align:right;{bg}");
             }
 
             var sb = new StringBuilder();

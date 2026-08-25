@@ -118,7 +118,7 @@ namespace RateDesk.Tests
             rep.Runs.Add(run);
 
             var html = WeeklyEmail.Html(rep);
-            Assert.Contains("<b>1d Chg</b>", html);
+            Assert.Contains("<b>1d&nbsp;Chg</b>",html);
             Assert.Contains($"background:{WeeklyEmail.HeatHex(3.5)}", html);
 
             var txt = WeeklyEmail.PlainText(rep);
