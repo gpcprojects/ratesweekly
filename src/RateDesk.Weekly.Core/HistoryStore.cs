@@ -65,7 +65,81 @@ namespace RateDesk.Weekly.Core
                     PRIMARY KEY(ticker, date)
                 ) WITHOUT ROWID;
                 """);
+            // UNIFIED INFLATION FIXINGS HISTORY (2026-08-25): daily marks keyed by FIXING
+            // IDENTITY (family + reference month), not by rolling ticker — the ticker re-points
+            // a year forward when its month prints, so ticker-keyed history would splice two
+            // different fixings. value is the market's native quote: CPI = forecast index level,
+            // RPI/HICP = YoY in bp. source: 'xls' (validated external-pricer history) or 'bbg'.
+            Exec("""
+                CREATE TABLE IF NOT EXISTS fixings(
+                    family TEXT NOT NULL,        -- CPI | RPI | HICP
+                    fix    TEXT NOT NULL,        -- reference month, yyyy-MM
+                    date   TEXT NOT NULL,        -- observation day, yyyy-MM-dd
+                    value  REAL NOT NULL,
+                    source TEXT NOT NULL,
+                    PRIMARY KEY(family, fix, date)
+                ) WITHOUT ROWID;
+                """);
         }
+
+        /// <summary>Upsert unified inflation-fixing marks. Merge rule (desk 2026-08-25): a
+        /// VALIDATED external-sheet row always wins ('xls' overwrites anything — where the
+        /// existing data is good, keep it); a Bloomberg row fills gaps and refreshes only rows
+        /// that are already Bloomberg's ('bbg' never overwrites 'xls'). Rows that fail the
+        /// ingest validation never reach this method, which is how "existing data is bad →
+        /// replace with Bloomberg" happens: the bad row is absent and bbg fills it.</summary>
+        public int UpsertFixings(string family, string fix, IEnumerable<HistPoint> points,
+            string source, bool excludeToday = true)
+        {
+            lock (_gate)
+            {
+                using var tx = _db.BeginTransaction();
+                using var cmd = _db.CreateCommand();
+                cmd.Transaction = tx;
+                cmd.CommandText = source == "xls"
+                    ? "INSERT INTO fixings(family,fix,date,value,source) VALUES(@f,@x,@d,@v,'xls') " +
+                      "ON CONFLICT(family,fix,date) DO UPDATE SET value=excluded.value, source='xls';"
+                    : "INSERT INTO fixings(family,fix,date,value,source) VALUES(@f,@x,@d,@v,'bbg') " +
+                      "ON CONFLICT(family,fix,date) DO UPDATE SET value=excluded.value " +
+                      "WHERE fixings.source='bbg';";
+                cmd.Parameters.AddWithValue("@f", family);
+                cmd.Parameters.AddWithValue("@x", fix);
+                var pD = cmd.Parameters.Add("@d", SqliteType.Text);
+                var pV = cmd.Parameters.Add("@v", SqliteType.Real);
+                int n = 0;
+                var today = DateTime.Today;
+                foreach (var p in points)
+                {
+                    if (excludeToday && p.Date.Date >= today) continue;
+                    pD.Value = p.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                    pV.Value = p.Value;
+                    n += cmd.ExecuteNonQuery();
+                }
+                tx.Commit();
+                return n;
+            }
+        }
+
+        /// <summary>Every unified fixing mark for a family, ascending by (fix, date).</summary>
+        public List<(string Fix, DateTime Date, double Value, string Source)> GetFixingHistory(string family)
+        {
+            lock (_gate)
+            {
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "SELECT fix, date, value, source FROM fixings " +
+                                  "WHERE family=@f ORDER BY fix, date;";
+                cmd.Parameters.AddWithValue("@f", family);
+                var res = new List<(string, DateTime, double, string)>();
+                using var r = cmd.ExecuteReader();
+                while (r.Read())
+                    res.Add((r.GetString(0),
+                        DateTime.ParseExact(r.GetString(1), "yyyy-MM-dd", CultureInfo.InvariantCulture),
+                        r.GetDouble(2), r.GetString(3)));
+                return res;
+            }
+        }
+
+        public long FixingRowCount() { lock (_gate) return Scalar("SELECT COUNT(*) FROM fixings;"); }
 
         /// <summary>Daily closes WITH provenance, ascending — for surfaces that must show where a
         /// number came from ('bbg' engine pull vs 'xls' manual fallback entry).</summary>
