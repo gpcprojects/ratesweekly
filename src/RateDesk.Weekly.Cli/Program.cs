@@ -209,7 +209,11 @@ switch (cmd)
         var p2 = RateDesk.Weekly.Core.SaveDown.StoreBooks.WriteInfl(store, outDir, rep.AsOf, null, Console.WriteLine);
         RateDesk.Weekly.Core.Infl.InflRunsXlsx.Write(store, outDir, rep.AsOf, null, null, Console.WriteLine);
         RateDesk.Weekly.Core.Infl.InflEmail.WriteFragments(store, null, null, rep.AsOf, outDir, daily: true);
-        Console.WriteLine("daily inflation fragment + lean workbook regenerated (last documented closes)");
+        File.WriteAllText(Path.Combine(outDir, RateDesk.Weekly.Core.Daily.DailyBuilder.BlastFile),
+            RateDesk.Weekly.Core.Daily.DailyBlast.Render(rep));
+        File.WriteAllText(Path.Combine(outDir, RateDesk.Weekly.Core.Daily.DailyBuilder.BlastHtmlFile),
+            RateDesk.Weekly.Core.Daily.DailyBlast.Html(rep));
+        Console.WriteLine("daily inflation fragment, blast (text + table) and lean workbook regenerated");
         if (RateDesk.Weekly.Core.SaveDown.SaveDownConfig.Load(appData) is { } sd)
         {
             RateDesk.Weekly.Core.SaveDown.SaveDownConfig.Sync(outDir, "OIS_Runs_*.xlsm",

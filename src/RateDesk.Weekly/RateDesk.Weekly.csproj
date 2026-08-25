@@ -13,8 +13,8 @@
     <Company>Gabriel Pycroft</Company>
     <Copyright>© 2026 Gabriel Pycroft</Copyright>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>0.10.0</Version>
-    <FileVersion>0.10.0.0</FileVersion>
+    <Version>0.10.3</Version>
+    <FileVersion>0.10.3.0</FileVersion>
     <NoWarn>$(NoWarn);NU1701</NoWarn>
     <!-- truly standalone single file, same rationale as Dodgeball: WPF + sqlite natives must bundle -->
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
@@ -24,6 +24,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RateDesk.Weekly.Core\RateDesk.Weekly.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- the JBDH banner for the daily email header — embedded so the exe stays standalone -->
+    <EmbeddedResource Include="..\..\assets\jbdh_banner.jpg" />
   </ItemGroup>
 
   <!-- configs are embedded in RateDesk.Core; user/market state lives in %APPDATA%\RatesWeekly only -->

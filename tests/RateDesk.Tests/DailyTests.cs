@@ -75,13 +75,13 @@ namespace RateDesk.Tests
             var drive = Path.Combine(_dir, "drive");
             Directory.CreateDirectory(outDir);
             // three local workbooks from days the "drive" was down
-            foreach (var n in new[] { "OIS_Runs_18August26.xlsx", "OIS_Runs_19August26.xlsx", "OIS_Runs_20August26.xlsx" })
+            foreach (var n in new[] { "DRAX OIS Runs 18Aug26.xlsx", "DRAX OIS Runs 19Aug26.xlsx", "DRAX OIS Runs 20Aug26.xlsx" })
                 File.WriteAllText(Path.Combine(outDir, n), "x");
             File.WriteAllText(Path.Combine(_dir, "publish.json"),
                 "{\"dailyDir\": " + System.Text.Json.JsonSerializer.Serialize(drive) + "}");
 
             Assert.True(DailyBuilder.SyncDailyDir(outDir, _dir));
-            Assert.Equal(3, Directory.GetFiles(drive, "OIS_Runs_*.xlsx").Length);
+            Assert.Equal(3, Directory.GetFiles(drive, "DRAX OIS Runs *.xlsx").Length);
 
             // idempotent: nothing recopied when up to date; and an unreachable drive is a soft false
             Assert.True(DailyBuilder.SyncDailyDir(outDir, _dir));
@@ -101,7 +101,7 @@ namespace RateDesk.Tests
             var path = DailyBuilder.ExportBook(store, outDir, _dir);
 
             Assert.True(File.Exists(path));
-            Assert.Equal("OIS_Runs_20August26.xlsx", Path.GetFileName(path));   // the report's own as-of
+            Assert.Equal("DRAX OIS Runs 20Aug26.xlsx", Path.GetFileName(path));   // the report's own as-of
             using var wb = new XLWorkbook(path);
             Assert.Contains("ECB closing run",
                 string.Join("\n", wb.Worksheet("Runs").CellsUsed().Select(c => c.GetString())));
@@ -163,7 +163,7 @@ namespace RateDesk.Tests
         {
             var path = DailyBook.Write(Report(), _dir);
 
-            Assert.Equal("OIS_Runs_20August26.xlsx", Path.GetFileName(path));
+            Assert.Equal("DRAX OIS Runs 20Aug26.xlsx", Path.GetFileName(path));
             using var wb = new XLWorkbook(path);
             var ws = wb.Worksheet("Runs");
             var text = string.Join("\n", ws.CellsUsed().Select(c => c.GetString()));

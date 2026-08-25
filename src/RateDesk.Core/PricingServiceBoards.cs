@@ -92,7 +92,9 @@ namespace RateDesk.Core
         /// blend (after subtracting GuardFuturesBasisBp). The index-matched families' honest gap
         /// is ~1-3bp; 8bp default keeps quiet weeks quiet while a mis-rolled front (a full step,
         /// 25bp+) always trips.</summary>
-        public double GuardFuturesTolBp { get; set; } = 8.0;
+        // 2.5bp (desk 2026-08-25, was 8: "8bp tells us nothing") — a triggered guard should
+        // mean the boards genuinely disagree with the exchange, not that vol was high
+        public double GuardFuturesTolBp { get; set; } = 2.5;
         /// <summary>Expected futures-minus-OIS spread in bp, for guard futures that settle on a
         /// DIFFERENT index than the meeting OIS (EUR: Euribor futures vs ESTR meetings — the desk
         /// hedges with them, so they guard here too, ~+14bp measured 2026-08-20). The guard tests
@@ -110,6 +112,13 @@ namespace RateDesk.Core
         /// boards (the decision is real); the level/priced/changes are suppressed in every
         /// rendering and the row is excluded from movers ranking and chart scaling.</summary>
         public bool MarkTurnPeriods { get; set; }
+
+        /// <summary>DESK-CONFIRMED config dates count as documented (hard-data rule carve-out,
+        /// desk 2026-08-25): set only where the desk has verified the period grid against
+        /// Bloomberg's own swap table but the far rungs quote prices WITHOUT eff/maturity
+        /// fields (SKSF5A+). Rows still need a real price to publish — this never invents
+        /// a quote, only lets a verified date carry one.</summary>
+        public bool TrustConfigDates { get; set; }
         public string? RefTicker { get; set; }
         /// <summary>Ladder name whose strip is the POLICY curve for this central bank, when that is a
         /// different index from the currency's default OIS curve. USD is the case: tenor swaps and forwards
@@ -644,6 +653,9 @@ namespace RateDesk.Core
                 var fill = schedDates.FirstOrDefault(d => havePrev ? d > prevDate.AddDays(7) : d > DateTime.Today);
                 if (fill == default) break;
                 meetDates[n] = fill;
+                // desk-confirmed grids (TrustConfigDates) publish on config dates — the
+                // Riksbank carve-out where SKSF5A+ quote real prices with no date fields
+                if (sched.TrustConfigDates) tickerDated.Add(n);
                 prevDate = fill;
                 havePrev = true;
             }

@@ -10,8 +10,9 @@ namespace RateDesk.Weekly.Core.Infl
     /// fills the save-down book's Runs page — one rendering, two containers.</summary>
     public static class InflRunsXlsx
     {
+        /// <summary>Attachment name per desk 2026-08-25: "DRAX Fixing Runs 25Aug26.xlsx".</summary>
         public static string FileName(DateTime asOf) =>
-            "Inflation_Runs_" + Daily.DailyBook.FileName(asOf)["OIS_Runs_".Length..];
+            $"DRAX Fixing Runs {asOf.ToString("dMMMyy", System.Globalization.CultureInfo.InvariantCulture)}.xlsx";
 
         public static string Write(HistoryStore store, string outDir, DateTime asOf,
             Dictionary<string, List<InflHistory.Mark>>? marks,
@@ -33,7 +34,7 @@ namespace RateDesk.Weekly.Core.Infl
             Dictionary<string, DateTime>? nextPrints, DateTime asOf)
         {
             int r = 1;
-            ws.Cell(r, 1).Value = $"DRAX Inflation Fixing Runs {asOf.ToString("dMMMyy",
+            ws.Cell(r, 1).Value = $"DRAX Fixing Runs {asOf.ToString("dMMMyy",
                 System.Globalization.CultureInfo.InvariantCulture)}";
             ws.Cell(r, 1).Style.Font.SetBold();
             r += 2;

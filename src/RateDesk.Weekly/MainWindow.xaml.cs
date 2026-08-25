@@ -494,8 +494,14 @@ namespace RateDesk.Weekly
             }
             try
             {
-                Clipboard.SetText(File.ReadAllText(blast));
-                StatusText.Text = $"blast copied (built {File.GetLastWriteTime(blast):HH:mm}) — paste into the Bloomberg chat.";
+                // CF_HTML so an IB paste renders as a TABLE (desk 2026-08-25), replicating the
+                // attached workbook's formatting; the plain text rides along for text targets
+                var html = Path.Combine(OutDir, Core.Daily.DailyBuilder.BlastHtmlFile);
+                if (File.Exists(html))
+                    ClipboardHtml.Set(File.ReadAllText(html), File.ReadAllText(blast));
+                else
+                    Clipboard.SetText(File.ReadAllText(blast));
+                StatusText.Text = $"blast copied as a table (built {File.GetLastWriteTime(blast):HH:mm}) — paste into the Bloomberg chat.";
             }
             catch (Exception ex) { StatusText.Text = "copy failed: " + ex.Message; }
         }
@@ -523,16 +529,29 @@ namespace RateDesk.Weekly
                     ?? throw new InvalidOperationException("Outlook is not installed on this machine");
                 dynamic outlook = Activator.CreateInstance(t)!;
                 dynamic mail = outlook.CreateItem(0); // olMailItem
-                mail.Subject = $"DRAX Swaps Closing OIS Runs - {DateTime.Today:dd MMM yyyy}";
+                mail.Subject = $"DRAX Swaps Closing Runs - {DateTime.Today:dd MMM yyyy}";
+                // JBDH banner at the top — small and unintrusive (desk 2026-08-25). Embedded
+                // as a hidden CID attachment: base64 images don't render in Outlook desktop.
+                string bannerImg = "";
+                try
+                {
+                    var bannerPath = ExtractBanner();
+                    dynamic att = mail.Attachments.Add(bannerPath, 1 /*olByValue*/, 0, "jbdh");
+                    att.PropertyAccessor.SetProperty(
+                        "http://schemas.microsoft.com/mapi/proptag/0x3712001F", "jbdhbanner");
+                    bannerImg = "<img src=\"cid:jbdhbanner\" width=\"146\" height=\"30\" " +
+                                "style=\"display:block;margin:0 0 10px 0;\" alt=\"JB Drax Honoré\"/>";
+                }
+                catch { /* no banner beats no email */ }
                 mail.HTMLBody = "<html><body style=\"margin:14px;background:#ffffff;\">"
-                    + body + "</body></html>";
+                    + bannerImg + body + "</body></html>";
                 // recipients: ALWAYS BCC, never To/Cc — a client list must not leak to clients
                 var bcc = Recipients.Bcc(AppDataDir);
                 if (bcc.Length > 0) mail.BCC = bcc;
                 string? Newest(string pattern) => Directory.EnumerateFiles(OutDir, pattern)
                     .OrderByDescending(File.GetLastWriteTime).FirstOrDefault();
-                var book = _emailSettings.DailyXlsAttachment ? Newest("OIS_Runs_*.xlsx") : null;
-                var infl = _emailSettings.DailyInflXlsAttachment ? Newest("Inflation_Runs_*.xlsx") : null;
+                var book = _emailSettings.DailyXlsAttachment ? Newest("DRAX OIS Runs *.xlsx") : null;
+                var infl = _emailSettings.DailyInflXlsAttachment ? Newest("DRAX Fixing Runs *.xlsx") : null;
                 if (book != null) mail.Attachments.Add(book);
                 if (infl != null) mail.Attachments.Add(infl);
                 mail.Display();
@@ -543,6 +562,23 @@ namespace RateDesk.Weekly
                     (_emailSettings.DailyInflXlsAttachment && infl == null ? " (no inflation workbook found)" : "") + ".";
             }
             catch (Exception ex) { StatusText.Text = "daily email failed: " + ex.Message; }
+        }
+
+        /// <summary>Write the embedded JBDH banner to out\ for the email's CID attachment —
+        /// resource-embedded so the exe stays standalone.</summary>
+        private static string ExtractBanner()
+        {
+            var path = Path.Combine(OutDir, "jbdh_banner.jpg");
+            if (!File.Exists(path))
+            {
+                var asm = Assembly.GetExecutingAssembly();
+                var res = asm.GetManifestResourceNames()
+                    .First(n => n.EndsWith("jbdh_banner.jpg", StringComparison.OrdinalIgnoreCase));
+                using var s = asm.GetManifestResourceStream(res)!;
+                using var f = File.Create(path);
+                s.CopyTo(f);
+            }
+            return path;
         }
 
         private bool _exporting;

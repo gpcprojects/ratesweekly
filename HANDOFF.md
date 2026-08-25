@@ -5,6 +5,27 @@ Chat transcripts do NOT travel between machines — what matters is written down
 
 ## Where things stand
 
+- **v0.10.3 (2026-08-25 evening polish, one PR on top of v0.10.0)**: (1) save-down templates
+  now DERIVED FROM THE INCUMBENT WORKBOOKS — entry pages exact (BDP/BDH array formulas,
+  Vandit/Table/Copy/US-CPI pages, formatting, their own store macros & buttons all travel
+  verbatim; regenerate via the v3 builder script if the incumbents change); ModApp module adds
+  a Runs display page + StoreAllRefresh; inflation's client-BCC email module stripped; app fill
+  = history only, ALL columns (OIS Step/PricedIn/Percent vs each day's ref fixing — schedule
+  refTicker else the ccy's OIS OnFixingTicker; inflation +%mom) — the Current/Copy pages stay
+  formula-live and manually overridable. (2) INFLATION CHANGE CONVENTION: the inflation sheet
+  anchors at EXACT dates −1bd/−7d/−28d (its own Table helpers; NOT same-day-last-month — that
+  is the OIS convention) — replicated 1:1 after the app's monthly diverged badly; front row
+  then matched the pricer to the tick. (3) RIKSBANK extended past the Y/E turn: period starts
+  corrected to Bloomberg's swap table (10-Feb / 31-MAR / 12-MAY / 30-Jun-27 — config had used
+  decision dates 24-Mar/05-May as starts); SKSF5A/6A probed = price-only, so a narrowly-scoped
+  `trustConfigDates` flag (RIKSBANK only) lets desk-confirmed config dates publish rows that
+  carry REAL prices; turn logic untouched. (4) Email subject "DRAX Swaps Closing Runs"; lean
+  attachments renamed "DRAX OIS Runs 25Aug26.xlsx" / "DRAX Fixing Runs 25Aug26.xlsx" (xlsm
+  history books keep the underscore names — date parsing + never emailed); JBDH banner
+  (assets\jbdh_banner.jpg, embedded, hidden CID attachment) tops the daily email; COPY BLAST
+  is CF_HTML — a single-table replica of the attachment xls MINUS Maturity; futures guard
+  tightened to 2.5bp; RECIPIENTS dialog persists to recipients.json. 256/256.
+  PARKED FOR NEXT SESSION: compounded-rate feature (compound the fixing) across the suite.
 - **v0.10.0 (SHIPPED 2026-08-25 — the whole day's batch in one release)**: everything below
   (inflation integration, snap discipline, save-down system, outlier guard, store-first
   history, unified fixings history) PLUS: (a) BBG PRINT-HOLE ADOPTION — a validated sheet
