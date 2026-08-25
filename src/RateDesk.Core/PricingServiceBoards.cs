@@ -562,15 +562,44 @@ namespace RateDesk.Core
         /// shouldn't either. Also makes the date logic unit-testable on its own.</para></summary>
         public MeetingDatesResult ResolveMeetingDates(MeetingScheduleDef sched, int maxRows = 10)
         {
-            // meeting-dated OIS ticker per N (first pattern that has data in the snapshot)
+            // Meeting-dated OIS quote per N. PRICES come from the run's contributor source and
+            // DATES from whichever spelling carries the fields — the desk's own sheet splits
+            // exactly this way (BDH "ADSF2A NABZ" for the rate, BDP "ADSF2A" for eff/maturity),
+            // because contributor pages quote live prices but often publish no date fields.
+            // Merging keeps tickerDated intact when a source is added (BOJ MTRT, NORGES DNBP).
             Market.QuoteData? Resolve(int n)
             {
+                Market.QuoteData? priced = null, dated = null;
                 foreach (var pat in sched.Tickers)
                 {
-                    var q = Snapshot.Get(MeetingTick(sched, pat, n));
-                    if (q != null && (q.Mid.HasValue || q.Maturity.HasValue)) return q;
+                    var q = Snapshot.Get(MeetingTick(sched, pat, n));          // source-qualified
+                    if (q != null)
+                    {
+                        priced ??= q.Mid.HasValue ? q : null;
+                        dated ??= q.Maturity.HasValue ? q : null;
+                    }
+                    if (MeetingSrc(sched).Length > 0)
+                    {
+                        var plain = Snapshot.Get(pat.Replace("{N}", n.ToString()) + " Curncy");
+                        if (plain != null)
+                        {
+                            priced ??= plain.Mid.HasValue ? plain : null;
+                            dated ??= plain.Maturity.HasValue ? plain : null;
+                        }
+                    }
+                    if (priced != null && dated != null) break;
                 }
-                return null;
+                if (priced == null && dated == null) return null;
+                if (ReferenceEquals(priced, dated) || dated == null) return priced;
+                if (priced == null) return dated;
+                var merged = new Market.QuoteData
+                {
+                    Bid = priced.Bid, Ask = priced.Ask, Last = priced.Last,
+                    PrevClose = priced.PrevClose, AgeMinutes = priced.AgeMinutes,
+                    UpdatedUtc = priced.UpdatedUtc,
+                    Maturity = dated.Maturity, Effective = dated.Effective,
+                };
+                return merged;
             }
 
             // Meeting date N (1-based) = maturity of ticker N-1; the run-down (0) matures at meeting 1.
@@ -1317,8 +1346,17 @@ namespace RateDesk.Core
                 foreach (var pat in sched.Tickers)
                 {
                     if (!pat.Contains("{N}")) continue; // explicit FRA-strip securities don't renumber this way
-                    var tkr = pat.Replace("{N}", idx.ToString()) + " Curncy";
+                    // the CHANGE ANCHORS must ride the same contributor the mids do (desk
+                    // 2026-08-25: the composite prints off NABZ episodically — 1.7bp on ADSF2A
+                    // 24-Jul — and anchoring composite closes under contributor mids poisoned
+                    // Δ1w/Δ1m). Source series first, composite closes as the fallback.
+                    var tkr = MeetingTick(sched, pat, idx);
                     var cand = Hist(tkr, full: true);
+                    if (cand.Count == 0 && MeetingSrc(sched).Length > 0)
+                    {
+                        tkr = pat.Replace("{N}", idx.ToString()) + " Curncy";
+                        cand = Hist(tkr, full: true);
+                    }
                     if (cand.Count == 0) continue;
                     var snaps = new List<HistPoint>();
                     if (DateTime.Today.AddDays(-snapDays) <= snapCutover)

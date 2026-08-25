@@ -152,10 +152,13 @@ namespace RateDesk.Weekly.Core.Daily
 
         /// <summary>The roll-corrected per-meeting daily history for one bank — the machinery
         /// behind the Hist_ sheets, exposed so the macro-enabled save-down workbook fills its
-        /// history_ tables from the SAME walk (one source of truth for what a rate meant when).</summary>
+        /// history_ tables from the SAME walk (one source of truth for what a rate meant when).
+        /// Reads the run's CONTRIBUTOR series first (sched.Source — the desk sheet's own
+        /// prices), composite closes as the fallback per rung.</summary>
         public static List<HistRow> BankHistoryRows(HistoryStore store, MeetingScheduleDef sched,
             WeeklyRun run, string pat, DateTime asOf, int historyDays)
         {
+            string srcSuffix = string.IsNullOrEmpty(sched.Source) ? "" : " " + sched.Source;
             var bounds = sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates)
                 .Select(d => d.Date).OrderBy(d => d).Distinct().ToList();
             var clustered = new List<DateTime>();
@@ -168,8 +171,14 @@ namespace RateDesk.Weekly.Core.Daily
             List<(DateTime Date, double Value, string Source)> RungHist(int n)
             {
                 if (!rungData.TryGetValue(n, out var l))
-                    rungData[n] = l = store.GetDailyWithSource(
-                        pat.Replace("{N}", n.ToString()) + " Curncy", historyDays + 60);
+                {
+                    l = store.GetDailyWithSource(
+                        pat.Replace("{N}", n.ToString()) + srcSuffix + " Curncy", historyDays + 60);
+                    if (l.Count == 0 && srcSuffix.Length > 0)
+                        l = store.GetDailyWithSource(
+                            pat.Replace("{N}", n.ToString()) + " Curncy", historyDays + 60);
+                    rungData[n] = l;
+                }
                 return l;
             }
             var boundSet = clustered.ToHashSet();

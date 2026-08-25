@@ -57,6 +57,15 @@ namespace RateDesk.Weekly.Core.Infl
             string Num(double? v, string fmt, int rI) => v is { } x
                 ? Td(x.ToString(fmt), $"text-align:right;color:{WeeklyEmail.EmMut};{RowBg(rI)}")
                 : Td("&nbsp;", RowBg(rI));
+            // Δ columns carry the OIS cards' heat (desk 2026-08-25): the index-point change is
+            // scaled to implied YoY bp through the row's own base so the monitor ramp applies
+            string ChgTd(double? v, double? scaleBase, int rI)
+            {
+                if (v is not { } x) return Td("&nbsp;", RowBg(rI));
+                string bg = scaleBase is { } b && b > 0 && WeeklyEmail.HeatHex(x / b * 10000.0) is { } h
+                    ? $"background:{h};" : RowBg(rI) + $"color:{WeeklyEmail.EmMut};";
+                return Td(x.ToString("+0.00;-0.00;0.00"), $"text-align:right;{bg}");
+            }
 
             var sb = new StringBuilder();
             // section header, same 1168px rule the other sections use
@@ -104,9 +113,9 @@ namespace RateDesk.Weekly.Core.Infl
                             : Td("&nbsp;", bg)) +
                         Num(row.Yoy, "0.00", rI) +
                         Num(row.Mom, "0.00", rI) +
-                        Num(row.D1, "+0.00;-0.00;0.00", rI) +
-                        Num(row.W1, "+0.00;-0.00;0.00", rI) +
-                        Num(row.M1, "+0.00;-0.00;0.00", rI) +
+                        ChgTd(row.D1, row.BaseV ?? row.Mid, rI) +
+                        ChgTd(row.W1, row.BaseV ?? row.Mid, rI) +
+                        ChgTd(row.M1, row.BaseV ?? row.Mid, rI) +
                         "</tr>");
                     rI++;
                 }

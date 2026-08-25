@@ -402,6 +402,9 @@
       "name": "BOJ",
       "ccy": "JPY",
       "header": "{JN} Indic BOJ Run",
+      // prices from the MTRT contributor — the desk sheet's own source (BDP "JYSOMPM1 MTRT");
+      // dates keep resolving from the plain spelling (merged Resolve, 2026-08-25)
+      "source": "MTRT",
       "tickers": [
         "JYSOMPM{N}",
         "JYOMPM{N}"
@@ -516,6 +519,8 @@
       "ccy": "NOK",
       "header": "{NO} Indic Norges Run",
       "refTicker": "NOWA Index",
+      // prices from DNBP — the desk sheet's own source (BDP "NKSF1A DNBP")
+      "source": "DNBP",
       "tickers": [
         "NKSF{N}A"
       ],

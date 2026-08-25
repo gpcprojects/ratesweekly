@@ -139,7 +139,9 @@ namespace RateDesk.Tests
                          .Select(x => x.Date).OrderBy(x => x))
                 if (bounds.Count == 0 || (d - bounds[^1]).TotalDays > 14) bounds.Add(d);
             int rung = bounds.Count(b => b > new DateTime(2026, 8, 18) && b <= new DateTime(2026, 9, 30));
-            var tkr = pat.Replace("{N}", rung.ToString()) + " Curncy";
+            // manual rows land under the run's contributor spelling (RBA = NABZ, 2026-08-25)
+            var srcSfx = string.IsNullOrEmpty(sched.Source) ? "" : " " + sched.Source;
+            var tkr = pat.Replace("{N}", rung.ToString()) + srcSfx + " Curncy";
             store.UpsertDaily(tkr, new[] { new HistPoint(new DateTime(2026, 8, 18), 4.999) }, excludeToday: false);
 
             var res = FallbackIngest.Run(book, store);
