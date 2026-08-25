@@ -25,15 +25,25 @@ namespace RateDesk.Weekly.Core.Daily
                 ? $"OIS_Runs_{asOf.Day}{asOf.ToString("MMMM", inv)}{asOf.ToString("yy", inv)}.xlsx"
                 : "";
 
-        /// <summary>Build and save the workbook; returns the written path.</summary>
-        public static string Write(WeeklyReport rep, HistoryStore store, string outDir, Action<string>? log = null,
-            int historyDays = HistoryDays)
+        /// <summary>Build and save the workbook; returns the written path. LEAN since the desk's
+        /// 2026-08-25 integration call: the email attachment and shared-drive copies carry the
+        /// Runs sheet only — history lives in the macro-enabled C+C save-down books (and the
+        /// full-depth Inflation_Fixings_History export).</summary>
+        public static string Write(WeeklyReport rep, string outDir, Action<string>? log = null)
+        {
+            using var wb = new XLWorkbook();
+            WriteRunsSheet(wb.Worksheets.Add("Runs"), rep);
+            Directory.CreateDirectory(outDir);
+            var path = Path.Combine(outDir, FileName(rep.AsOf));
+            wb.SaveAs(path);
+            return path;
+        }
+
+        /// <summary>Today's per-bank run blocks — shared by the plain workbook and the
+        /// macro-enabled save-down workbook (one rendering, two containers).</summary>
+        public static void WriteRunsSheet(IXLWorksheet ws, WeeklyReport rep)
         {
             var inv = System.Globalization.CultureInfo.InvariantCulture;
-            using var wb = new XLWorkbook();
-
-            // ---- Runs sheet: today's blocks, improved format ----
-            var ws = wb.Worksheets.Add("Runs");
             int r = 1;
             ws.Cell(r, 1).Value = $"DRAX OIS Runs {rep.AsOf.ToString("dMMMyy", inv)}";
             ws.Cell(r, 1).Style.Font.SetBold();
@@ -90,8 +100,12 @@ namespace RateDesk.Weekly.Core.Daily
             }
             ws.Columns(1, 2).Width = 12;
             ws.Columns(3, 8).Width = 10;
+        }
 
-            // ---- per-bank history sheets: roll-corrected daily rate per current meeting ----
+        /// <summary>The per-bank Hist_ sheets (roll-corrected daily rate per current meeting).</summary>
+        public static void WriteHistorySheets(XLWorkbook wb, WeeklyReport rep, HistoryStore store,
+            int historyDays, Action<string>? log)
+        {
             foreach (var sched in MeetingsStore.Schedules.Where(s => string.IsNullOrEmpty(s.Kind)))
             {
                 if (!DailyBlast.Blocks.Any(b => b.Run.Equals(sched.Name, StringComparison.OrdinalIgnoreCase)))
@@ -109,82 +123,95 @@ namespace RateDesk.Weekly.Core.Daily
                     hs.Cell(1, c + 1).Value = hh[c];
                     hs.Cell(1, c + 1).Style.Font.SetBold();
                 }
-                var bounds = sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates)
-                    .Select(d => d.Date).OrderBy(d => d).Distinct().ToList();
-                var clustered = new List<DateTime>();
-                foreach (var d in bounds)
-                    if (clustered.Count == 0 || (d - clustered[^1]).TotalDays > 14) clustered.Add(d);
-
-                // one store read per rung, then everything from memory — full-depth sheets
-                // would take minutes with a store round-trip per (day x meeting x horizon)
-                var rungData = new Dictionary<int, List<(DateTime Date, double Value, string Source)>>();
-                List<(DateTime Date, double Value, string Source)> RungHist(int n)
-                {
-                    if (!rungData.TryGetValue(n, out var l))
-                        rungData[n] = l = store.GetDailyWithSource(
-                            pat.Replace("{N}", n.ToString()) + " Curncy", historyDays + 60);
-                    return l;
-                }
-                var boundSet = clustered.ToHashSet();
-                (double Value, string Source)? ValueAt(DateTime contract, DateTime then, int depth = 0)
-                {
-                    if (depth > 6) return null;
-                    if (boundSet.Contains(then.Date)) then = then.Date.AddDays(-1);
-                    int idx = Math.Max(1, clustered.Count(x => x > then.Date && x <= contract.Date));
-                    if (idx > 13) return null;
-                    var l = RungHist(idx);
-                    for (int i = l.Count - 1; i >= 0; i--)
-                        if (l[i].Date.Date <= then.Date)
-                        {
-                            // a walk-back RESOLVING to a boundary close recomputes from the day
-                            // before it (mixed-state decision-day closes — the stitcher's rule)
-                            if (boundSet.Contains(l[i].Date.Date))
-                                return ValueAt(contract, l[i].Date.Date.AddDays(-1), depth + 1);
-                            return (l[i].Value, l[i].Source);
-                        }
-                    return null;
-                }
-
                 int hr = 2;
-                var days = Enumerable.Range(0, historyDays)
-                    .Select(i => rep.AsOf.Date.AddDays(-historyDays + i))
-                    .Where(d => d.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday));
-                foreach (var day in days)
+                foreach (var row in BankHistoryRows(store, sched, run, pat, rep.AsOf, historyDays))
                 {
-                    for (int ri = 0; ri < run.Rows.Count; ri++)
+                    hs.Cell(hr, 1).Value = row.Day; hs.Cell(hr, 1).Style.DateFormat.Format = "dd-mmm-yy";
+                    hs.Cell(hr, 2).Value = row.Start; hs.Cell(hr, 2).Style.DateFormat.Format = "dd-mmm-yy";
+                    if (row.End is { } he)
                     {
-                        var m = run.Rows[ri];
-                        if (ValueAt(m.Date, day) is not { } cur) continue;
-                        var prev = ValueAt(m.Date, PrevBd(day));
-                        var week = ValueAt(m.Date, day.AddDays(-7));
-                        var month = ValueAt(m.Date, WeeklyCurves.MonthAgo(day));
-                        hs.Cell(hr, 1).Value = day; hs.Cell(hr, 1).Style.DateFormat.Format = "dd-mmm-yy";
-                        hs.Cell(hr, 2).Value = m.Date; hs.Cell(hr, 2).Style.DateFormat.Format = "dd-mmm-yy";
-                        var hEnd = m.EndDate ?? (ri + 1 < run.Rows.Count ? run.Rows[ri + 1].Date : (DateTime?)null);
-                        if (hEnd is { } he)
-                        {
-                            hs.Cell(hr, 3).Value = he;
-                            hs.Cell(hr, 3).Style.DateFormat.Format = "dd-mmm-yy";
-                        }
-                        hs.Cell(hr, 4).Value = cur.Value; hs.Cell(hr, 4).Style.NumberFormat.Format = "0.000";
-                        if (prev is { } pv) SetBp(hs.Cell(hr, 5), (cur.Value - pv.Value) * 100.0);
-                        if (week is { } wv) SetBp(hs.Cell(hr, 6), (cur.Value - wv.Value) * 100.0);
-                        if (month is { } mv) SetBp(hs.Cell(hr, 7), (cur.Value - mv.Value) * 100.0);
-                        hs.Cell(hr, 8).Value = cur.Source;
-                        if (cur.Source != "bbg") hs.Cell(hr, 8).Style.Font.SetBold();
-                        hr++;
+                        hs.Cell(hr, 3).Value = he;
+                        hs.Cell(hr, 3).Style.DateFormat.Format = "dd-mmm-yy";
                     }
+                    hs.Cell(hr, 4).Value = row.Rate; hs.Cell(hr, 4).Style.NumberFormat.Format = "0.000";
+                    if (row.D1 is { } d1) SetBp(hs.Cell(hr, 5), d1);
+                    if (row.W1 is { } w1) SetBp(hs.Cell(hr, 6), w1);
+                    if (row.M1 is { } m1) SetBp(hs.Cell(hr, 7), m1);
+                    hs.Cell(hr, 8).Value = row.Source;
+                    if (row.Source != "bbg") hs.Cell(hr, 8).Style.Font.SetBold();
+                    hr++;
                 }
                 hs.Columns(1, 3).Width = 12;
                 hs.Columns(4, 7).Width = 10;
                 hs.Column(8).Width = 8;
                 log?.Invoke($"daily book: {sched.Name} history {hr - 2} rows ({historyDays}d window)");
             }
+        }
 
-            Directory.CreateDirectory(outDir);
-            var path = Path.Combine(outDir, FileName(rep.AsOf));
-            wb.SaveAs(path);
-            return path;
+        public sealed record HistRow(DateTime Day, DateTime Start, DateTime? End, double Rate,
+            string Source, double? D1, double? W1, double? M1);
+
+        /// <summary>The roll-corrected per-meeting daily history for one bank — the machinery
+        /// behind the Hist_ sheets, exposed so the macro-enabled save-down workbook fills its
+        /// history_ tables from the SAME walk (one source of truth for what a rate meant when).</summary>
+        public static List<HistRow> BankHistoryRows(HistoryStore store, MeetingScheduleDef sched,
+            WeeklyRun run, string pat, DateTime asOf, int historyDays)
+        {
+            var bounds = sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates)
+                .Select(d => d.Date).OrderBy(d => d).Distinct().ToList();
+            var clustered = new List<DateTime>();
+            foreach (var d in bounds)
+                if (clustered.Count == 0 || (d - clustered[^1]).TotalDays > 14) clustered.Add(d);
+
+            // one store read per rung, then everything from memory — full-depth sheets
+            // would take minutes with a store round-trip per (day x meeting x horizon)
+            var rungData = new Dictionary<int, List<(DateTime Date, double Value, string Source)>>();
+            List<(DateTime Date, double Value, string Source)> RungHist(int n)
+            {
+                if (!rungData.TryGetValue(n, out var l))
+                    rungData[n] = l = store.GetDailyWithSource(
+                        pat.Replace("{N}", n.ToString()) + " Curncy", historyDays + 60);
+                return l;
+            }
+            var boundSet = clustered.ToHashSet();
+            (double Value, string Source)? ValueAt(DateTime contract, DateTime then, int depth = 0)
+            {
+                if (depth > 6) return null;
+                if (boundSet.Contains(then.Date)) then = then.Date.AddDays(-1);
+                int idx = Math.Max(1, clustered.Count(x => x > then.Date && x <= contract.Date));
+                if (idx > 13) return null;
+                var l = RungHist(idx);
+                for (int i = l.Count - 1; i >= 0; i--)
+                    if (l[i].Date.Date <= then.Date)
+                    {
+                        // a walk-back RESOLVING to a boundary close recomputes from the day
+                        // before it (mixed-state decision-day closes — the stitcher's rule)
+                        if (boundSet.Contains(l[i].Date.Date))
+                            return ValueAt(contract, l[i].Date.Date.AddDays(-1), depth + 1);
+                        return (l[i].Value, l[i].Source);
+                    }
+                return null;
+            }
+
+            var outRows = new List<HistRow>();
+            var days = Enumerable.Range(0, historyDays)
+                .Select(i => asOf.Date.AddDays(-historyDays + i))
+                .Where(d => d.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday));
+            foreach (var day in days)
+                for (int ri = 0; ri < run.Rows.Count; ri++)
+                {
+                    var m = run.Rows[ri];
+                    if (ValueAt(m.Date, day) is not { } cur) continue;
+                    var prev = ValueAt(m.Date, PrevBd(day));
+                    var week = ValueAt(m.Date, day.AddDays(-7));
+                    var month = ValueAt(m.Date, WeeklyCurves.MonthAgo(day));
+                    var hEnd = m.EndDate ?? (ri + 1 < run.Rows.Count ? run.Rows[ri + 1].Date : (DateTime?)null);
+                    outRows.Add(new HistRow(day, m.Date, hEnd, cur.Value, cur.Source,
+                        prev is { } pv ? (cur.Value - pv.Value) * 100.0 : null,
+                        week is { } wv ? (cur.Value - wv.Value) * 100.0 : null,
+                        month is { } mv ? (cur.Value - mv.Value) * 100.0 : null));
+                }
+            return outRows;
         }
 
         private static void SetBp(IXLCell cell, double? v)

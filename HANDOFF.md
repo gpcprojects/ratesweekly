@@ -5,6 +5,82 @@ Chat transcripts do NOT travel between machines — what matters is written down
 
 ## Where things stand
 
+- **v0.10.0 (SHIPPED 2026-08-25 — the whole day's batch in one release)**: everything below
+  (inflation integration, snap discipline, save-down system, outlier guard, store-first
+  history, unified fixings history) PLUS: (a) BBG PRINT-HOLE ADOPTION — a validated sheet
+  row whose base month is old enough that its print must exist but Bloomberg has none gets its
+  base adopted as an 'xls' print (insert-only, a real print supersedes); live: exactly 1 hole,
+  the shutdown-skipped Oct-25 CPURNSA (Oct-26 fixing now shows Base 325.60/YoY as the incumbent
+  did); forecast bases (inside the ~45d publication lag) are never adopted. (b) RECIPIENTS
+  button (daily row) — paste-editable list, %APPDATA%\recipients.json, PRELOADED with the
+  incumbent VBA's client list, applied to the daily draft as BCC, ALWAYS BCC, never To/Cc.
+  256/256 tests.
+- **INFLATION RUNS INTEGRATED (desk 2026-08-25 dictation, same batch)**: the
+  "Inflation Fixing Runs" section (three cards CPI·CPURNSA / RPI·UKRPI / HICP·CPTFEMU, columns
+  Month|Base|Mid|YoY%|MoM%|Δ1d/Δ1w/Δ1m index changes, furthest fixing dropped, "Next Print:"
+  from ECO_RELEASE_DT — omitted when absent, never guessed) appended to BOTH emails: below the
+  meeting tables on the daily, below the fwd grid on the weekly (section order Front→Runs→Grid
+  makes plain append correct). One derivation for every surface: InflHistory.BuildDisplayRows
+  (marks + prints + unified history; MoM chains mid-over-prev-mid, front row anchors the last
+  published print). Fragments frozen at run time (out\daily_infl.html/.txt, weekly_infl.*),
+  appended at click time under NEW tickboxes: Daily "Inflation Fixing Runs (in email)" +
+  "Inflation Sheet (XLS attachment)", Weekly "Inflation Fixing Runs (in email)" — all default
+  ON. ATTACHMENTS ARE LEAN (desk: "no history"): OIS_Runs_*.xlsx is Runs-sheet-only again (the
+  incumbent's own shape — the in-xlsx history sheets eran a v0.7 addition, now retired) plus
+  NEW Inflation_Runs_*.xlsx (InflRunsXlsx, same writer fills the save-down book's Runs page).
+  Save-down folders RENAMED to "OIS Run History" / "Inflation Fixing Run History" (desk names).
+  Save-down VBA gained RebuildRunsPage: any manual Store also regenerates the Runs display page
+  from the Current/Copy tables so it stays copy-able into a separate xls (COM-tested: manual
+  9.999 override → history append + Δ recompute + Runs page carries it). CLI savedown also
+  regenerates the lean infl xlsx + daily fragment offline. NOTE the Oct-25 CPURNSA HOLE: BLS
+  never published Oct-2025 CPI (shutdown) — Bloomberg has no print, so the Oct-26 fixing shows
+  Mid only, Base/YoY honestly blank (the incumbent sheet's 325.60 there is the pricer's own
+  estimate — it matched no print in validation). EmailBuilder.Build/Render take the store;
+  weekly snapshots now include the 36 SWIF tickers. 255/255 tests.
+- **SNAP DISCIPLINE (desk 2026-08-25, in the same uncommitted batch)**: the official snap moved
+  16:30 → 16:15 LONDON with a press-time tolerance band. Before 15:30 = PRE-CLOSE (run works,
+  live mids, CHECK note + popup); 15:30–16:14:59 = live mid saves AS the close; from 16:15 the
+  published marks are PINNED to the 16:15 snap (SnapDiscipline.Apply overwrites the snapshot
+  mids for meeting tickers + WeeklyExtraTickers + SWIF fixings from intraday bars; barless
+  tickers stay live, counted). EXISTING HISTORY KEPT: PricingService.SnapTimeCutover
+  (2026-08-25) — snap days ≤ cutover still read 16:30 bars, days after read 16:15; the old-time
+  pull self-retires once the 50d window passes the cutover. GOTCHA: GetLondonSnaps bar size now
+  follows the snap time (a :15 snap needs 15-MIN bars — with the old hardcoded 30-min bars a
+  16:15 request silently returned the 16:00 bar). The weekly forward grid deliberately stays
+  live-at-press (not a close product). 253/253 tests.
+- **UNCOMMITTED BATCH (2026-08-25, deliberately held locally — desk asked to stop per-iteration
+  uploads; commit+push as ONE final version when the inflation email integration is dictated)**:
+  (1) OUTLIER GUARD — cross-sectional CHECK flags on every run's Δ1d/1w/1m (|x−median| >
+  max(4bp, 4×MAD), ≥4 rows; OutlierGuard.cs in Core), wired into daily+weekly builds, popup in
+  the app after runs; notes never reach the email body. Born from the live BOJ case (Δ1m +4.9
+  in a strip of +11 — traced to a REAL Oct→Dec hike-odds migration, steps mirror-imaged; the
+  guard exists because nobody can tell real-vs-bad-print from the email). (2) MACRO-ENABLED
+  SAVE-DOWN: templates\*.xlsm (clean-room VBA replicating the incumbent workbooks' store
+  machinery — learned from olevba dumps of Central Bank OIS MAIN + MOST RECENT Inflation Fixing
+  Runs; regenerate via the template builder script if store semantics change; AccessVBOM needed
+  temporarily) embedded in Weekly.Core; SaveDown\StoreBooks fills them (ClosedXML PRESERVES
+  vbaProject + buttons — tested); daily Render writes OIS_Runs_*.xlsm + Inflation_Runs_*.xlsm
+  locally and mirrors (catch-up) into "OIS Runs"/"Inflation Runs" folders. Macros LIVE-TESTED
+  via Excel COM: StoreBank appends today with recomputed Δ vs identical (Start,End) at
+  yesterday/−7d/same-day-last-month; manual overrides honoured; Copy_CPI inserts at top.
+  (3) STARTUP FLOW: every open searches network drives named "salix" for Coverage &
+  Counterparties (both spellings, prefers its "OIS and Inflation Runs" subfolder) → "C+C folder
+  located successfully" status; else dialog Locate C+C (folder picker) / Save Locally
+  (Documents + OK box); savedown.json; detection re-runs every open so a local fallback
+  upgrades back to C+C automatically. (4) INGEST-BACK: next daily run re-ingests the NEWEST
+  saved book per folder, RESTRICTED to rows dated on/after the file's own date (desk-stored
+  macro rows only — app-written roll-corrected history rows must never re-enter raw ticker
+  history) + onlyMissingOrChanged for inflation (unchanged rows keep bbg provenance).
+  (5) STORE-FIRST HISTORY (API-load, desk ask): StoreBackedHistory serves all lookbacks from
+  the store; Bloomberg touched only for live snapshot, 16:30 intraday snaps, and per-ticker
+  gap-fills (gap+5d overlap, upserted, one attempt/ticker/run). The old path re-pulled ~220d ×
+  whole universe per email build (Prefetch) — now a no-op; EmailBuilder.Build takes the store.
+  (6) CLI savedown verb. FallbackIngest maps Historical_<BANK> names too. 251/251 tests.
+  DISCOVERED IN THE INCUMBENT VBA (for the email-integration decision): CreateClosingRunsEmail
+  builds the daily CLIENT email — BCC lists (~19 external addresses) hardcoded in the xlsm VBA,
+  attaching OIS_Runs + Inflation_Runs xlsx; plus a second product USCPI_Lookback_<date>.xlsx
+  ("US - CPI Vitor Request" tab: YoY/MoM lookbacks Daily/Weekly/Monthly/Quarterly/Semi) with
+  its own client BCC list. Templates dir MUST be committed (csproj embeds from it).
 - **master past v0.9.2** (unreleased): UNIFIED INFLATION-FIXINGS HISTORY (desk 2026-08-25) — store `fixings` table keyed by fixing identity (family + reference month yyyy-MM; value = native quote: CPI index level, RPI/HICP yoy bp). Merge rule: VALIDATED sheet rows ('xls') always win; 'bbg' fills gaps and never overwrites xls. Ingest (`Infl\InflHistory.Ingest`, CLI `inflingest`, publish.json "inflBook") gates every sheet row through BASE-PRINT VALIDATION (Base must equal the fixing month's year-ago published print; label-shifted rows re-keyed by what their Base proves — the pricer's export bug; placeholders/dupes/inconsistent/unresolvable dropped; HICP old/new basis both accepted, rebase 1.281085). Bloomberg closes map to identity via each ticker's RECORDED MATURITY minus derived lag (ticker's own field; undocumented days skipped, never guessed) — `Maintain` runs at the end of every weekly UPDATE and daily run (daily also snapshots+tops up the 36 SWIF series, meeting-closes-style). One-off validated bbg backfill CSV seeded (%APPDATA%\RatesWeekly\infl_bbg_backfill.csv, from the Aug-25 comparison analysis). Export: `Infl\InflBook` → out\Inflation_Fixings_History.xlsx (Hist_CPI/RPI/HICP, Date|Fixing|Value|Δ1d|Δ1w|Δ1m|Source, full depth), CLI `inflexport`. Live store: 40,384 rows, 2021-11..2026-08. EMAIL + OIS-workbook integration deliberately NOT built — the desk dictates that next. 243/243 tests. v0.9.2: v0.9.2 (desk 2026-08-25): daily format polish — Runs sheet column order StartDate/Maturity/Mid/Step/Priced/Δ1d/Δ1w/Δ1m ("T"→"Mid" everywhere), sheet title "DRAX OIS Runs 25Aug26" (filename stays the incumbent OIS_Runs_25August26.xlsx pattern — Y: consumers + SyncDailyDir glob depend on it), blast = the same table minus Maturity (IB window widths; gains Δ1m, drops End; fixed-width so a chat paste reads as a table), daily email subject "DRAX Swaps Closing OIS Runs - 25 Aug 2026", and fixed a v0.8.1 miss: the HTML front table still said "Base Rate" (plaintext had been renamed) — now "Fixing". v0.9.1: OFFLINE EXPORT + DRIVE CATCH-UP (desk 2026-08-25, the unreachable-Y: question) — the app itself is the unified information store: `DailyBuilder.SyncDailyDir` mirrors EVERY local OIS_Runs_*.xlsx that is missing/older on the shared drive (a week-long outage catches up in one pass; unreachable = honest soft-fail, nothing lost), and `DailyBuilder.ExportBook` (EXPORT XLS button — live from open by design — + CLI `export`) rebuilds the workbook from the stored daily_report.json + history.db with NO Bloomberg and NO drive; the workbook carries its own as-of so staleness is visible. v0.9.0: EMAIL SETTINGS PANE — tickbox matrices (daily: front/runs/xls-attach; weekly: front/runs/grid/dashboards-attach) on the front page, always clickable, persisted to %APPDATA%emailsettings.json; applied at CREATE/COPY/DAILY EMAIL click time by re-composing from the persisted report JSON (runs pull+store everything regardless). v0.8.1: Base Rate→Fixing, ref→fixing. v0.8.0: INTEGRATED HISTORY + FAILSAFE — store = single truth with provenance; workbook regenerated full-depth (historyDays) with Source col; outage days manually stored in the incumbent xlsm are ingested back (FallbackIngest, insert-only, bbg wins). publish.json: dailyDir, fallbackBook, historyDays. Earlier: v0.7.6 hard-data rule. v0.7.6: HARD-DATA RULE (pricing AND dates — see CLAUDE.md/DESIGN §12): runs end where Bloomberg documentation ends; v0.7.5 curve anchors SCRAPPED same day, its release deleted. v0.7.0-0.7.4: the DAILY OIS RUN (see DESIGN §13). v0.7.0 (2026-08-20): THE DAILY OIS RUN — DAILY RUN/COPY BLAST/DAILY EMAIL in the app + CLI `daily`: chat blast (improved, bp, auto Y/E Turn), OIS_Runs xlsx (runs + 60d roll-corrected history per bank, incumbent name pattern, optional dailyDir copy), daily email with workbook attached. DESIGN §13. Earlier: v0.6.4 step-skip; v0.6.3 Y/E Turn. v0.6.3 (2026-08-20): Y/E TURN labelling — year-end-spanning meeting periods on marked runs (SEK/SWESTR) render "Y/E Turn" instead of numbers everywhere, guard stands down, movers/charts skip; v0.6.4: the step chain SKIPS turn rows — the next row shows the cumulative move across the masked meeting + its own (DESIGN has the mechanics). v0.6.2 (2026-08-20): 1m = same-day-last-month everywhere (was fixed 31d; matches the sheet's intended convention), ECB futures guard on ICE 3M ESTR (TKY, index-matched, 0.0bp live; basis knob available for ER/TKYER if wanted). v0.6.1 (2026-08-20): STALE-OUTPUT GATE in the app — on open
   only UPDATE is clickable; CREATE/COPY EMAIL and OPEN OUTPUT unlock when THIS session's update
   rebuilt what they serve ("UPDATE COMPLETE" in the log; a failed email leg keeps the email

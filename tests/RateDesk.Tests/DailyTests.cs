@@ -161,8 +161,7 @@ namespace RateDesk.Tests
         [Fact]
         public void Book_WritesRunsSheet_WithTurnLabel()
         {
-            using var store = new HistoryStore(Path.Combine(_dir, "h.db"));
-            var path = DailyBook.Write(Report(), store, _dir);
+            var path = DailyBook.Write(Report(), _dir);
 
             Assert.Equal("OIS_Runs_20August26.xlsx", Path.GetFileName(path));
             using var wb = new XLWorkbook(path);

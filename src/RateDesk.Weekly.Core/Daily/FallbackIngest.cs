@@ -17,17 +17,28 @@ namespace RateDesk.Weekly.Core.Daily
     /// from a temp copy (the desk may have it open in Excel).</summary>
     public static class FallbackIngest
     {
-        /// <summary>Incumbent sheet name → meetings.json run name.</summary>
+        /// <summary>Sheet name → meetings.json run name: the incumbent's country codes AND the
+        /// app save-down workbooks' direct bank names (desk 2026-08-25) — one reader, both
+        /// fallback sources.</summary>
         public static readonly (string Sheet, string Run)[] SheetMap =
         {
             ("Historical_AU", "RBA"), ("Historical_NZ", "RBNZ"), ("Historical_EU", "ECB"),
             ("Historical_UK", "MPC"), ("Historical_US", "FOMC"), ("Historical_CD", "BOC"),
             ("Historical_NOK", "NORGES"), ("Historical_JPY", "BOJ"), ("Historical_SEK", "RIKSBANK"),
+            ("Historical_RBA", "RBA"), ("Historical_RBNZ", "RBNZ"), ("Historical_ECB", "ECB"),
+            ("Historical_MPC", "MPC"), ("Historical_FOMC", "FOMC"), ("Historical_BOC", "BOC"),
+            ("Historical_NORGES", "NORGES"), ("Historical_BOJ", "BOJ"), ("Historical_RIKSBANK", "RIKSBANK"),
         };
 
         public sealed record Result(int RowsIngested, List<DateTime> Dates, List<string> Notes);
 
-        public static Result Run(string workbookPath, HistoryStore store, Action<string>? log = null)
+        /// <summary><paramref name="minDate"/>: ingest only rows dated ON/AFTER it. Used when
+        /// re-reading the app's OWN save-down workbooks: their app-written history rows are
+        /// roll-corrected walk-back values (older than the file), while rows the DESK stored
+        /// via the macro are stamped the day they pressed Store (the file date or later) —
+        /// only those are genuine manual marks that belong in raw ticker history.</summary>
+        public static Result Run(string workbookPath, HistoryStore store, Action<string>? log = null,
+            DateTime? minDate = null)
         {
             var notes = new List<string>();
             var dates = new SortedSet<DateTime>();
@@ -76,6 +87,7 @@ namespace RateDesk.Weekly.Core.Daily
                         if (d is null || start is null || rate is null) continue;
                         if (rate is <= 0 or > 25) continue;    // sanity — a percent-scale policy rate
                         if (d.Value >= DateTime.Today) continue;
+                        if (minDate is { } md && d.Value < md.Date) continue;
                         // ingest window: outage gaps are recent by nature, and the engine-coverage
                         // check below only looks 400 days back — a legacy row older than that
                         // would ingest unchecked (and its rung mapping is unreliable that far out)

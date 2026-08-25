@@ -180,6 +180,10 @@ namespace RateDesk.Core
 
     public sealed partial class PricingService
     {
+        /// <summary>The day the official snap moved 16:30 → 16:15 London (desk 2026-08-25).
+        /// Snap history up to and including this date is NEVER re-read at the new time.</summary>
+        public static readonly DateTime SnapTimeCutover = new(2026, 8, 25);
+
         /// <summary>Manual ref-rate overrides per run name (post-decision, before the fixing prints).
         /// Concurrent: written from the UI thread, read from the meetings worker.</summary>
         public System.Collections.Concurrent.ConcurrentDictionary<string, double> MeetingRefOverrides { get; }
@@ -1284,7 +1288,13 @@ namespace RateDesk.Core
             // carrying the post-decision prices) and the decision-day mapping reads tickers 2+, so
             // a snapped boundary day stitches EXACTLY under old numbering. Closes stay as fallback
             // for days without bars — those keep the exclusive-boundary rule (mixed-state closes).
-            var snapAt = new TimeSpan(16, 30, 0);
+            // SNAP-TIME CUTOVER (desk 2026-08-25): the official snap moved 16:30 → 16:15
+            // London. Existing history is NOT rewritten — days up to the cutover keep their
+            // 16:30 snaps, days after ride 16:15. The old-time pull dies naturally once the
+            // whole snap window post-dates the cutover.
+            var snapAtOld = new TimeSpan(16, 30, 0);
+            var snapAtNew = new TimeSpan(16, 15, 0);
+            var snapCutover = SnapTimeCutover;
             const int snapDays = 50; // covers the 1m lookback; charts keep closes further back
             var famCache = new Dictionary<int, (IReadOnlyList<HistPoint> pts, HashSet<DateTime> snapped)?>();
             (IReadOnlyList<HistPoint> pts, HashSet<DateTime> snapped)? FamilyHist(int idx)
@@ -1298,7 +1308,12 @@ namespace RateDesk.Core
                     var tkr = pat.Replace("{N}", idx.ToString()) + " Curncy";
                     var cand = Hist(tkr, full: true);
                     if (cand.Count == 0) continue;
-                    var snaps = History?.GetLondonSnaps(tkr, snapDays, snapAt) ?? Array.Empty<HistPoint>();
+                    var snaps = new List<HistPoint>();
+                    if (DateTime.Today.AddDays(-snapDays) <= snapCutover)
+                        snaps.AddRange((History?.GetLondonSnaps(tkr, snapDays, snapAtOld)
+                            ?? Array.Empty<HistPoint>()).Where(sp => sp.Date.Date <= snapCutover));
+                    snaps.AddRange((History?.GetLondonSnaps(tkr, snapDays, snapAtNew)
+                        ?? Array.Empty<HistPoint>()).Where(sp => sp.Date.Date > snapCutover));
                     if (snaps.Count == 0) { result = (cand, new HashSet<DateTime>()); break; }
                     var merged = cand.ToDictionary(p => p.Date, p => p.Value);
                     var snapped = new HashSet<DateTime>();
