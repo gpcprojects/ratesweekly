@@ -356,6 +356,36 @@ namespace RateDesk.Weekly
             catch (Exception ex) { StatusText.Text = "daily email failed: " + ex.Message; }
         }
 
+        private bool _exporting;
+
+        private async void ExportXls_Click(object sender, RoutedEventArgs e)
+        {
+            if (_exporting) return;
+            _exporting = true;
+            ExportXlsBtn.IsEnabled = false;
+            StatusText.Text = "exporting workbook from stored data...";
+            try
+            {
+                var path = await Task.Run(() =>
+                {
+                    using var store = new HistoryStore(Path.Combine(AppDataDir, "history.db"));
+                    return Core.Daily.DailyBuilder.ExportBook(store, OutDir, AppDataDir, Log);
+                });
+                StatusText.Text = $"workbook exported: {Path.GetFileName(path)} — opening.";
+                Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = "export failed: " + ex.Message;
+                Log("! export failed: " + ex.Message);
+            }
+            finally
+            {
+                _exporting = false;
+                ExportXlsBtn.IsEnabled = true;
+            }
+        }
+
         private void OpenOutput_Click(object sender, RoutedEventArgs e)
         {
             Directory.CreateDirectory(OutDir);

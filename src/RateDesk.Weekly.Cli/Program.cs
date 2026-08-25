@@ -190,7 +190,29 @@ switch (cmd)
         }
     }
 
+    case "export":
+    {
+        var outDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly", "out");
+        for (int i = 1; i < args.Length - 1; i++)
+            if (args[i].Equals("--out", StringComparison.OrdinalIgnoreCase)) outDir = args[i + 1];
+        try
+        {
+            var appData = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly");
+            using var store = new HistoryStore(dbPath);
+            var path = RateDesk.Weekly.Core.Daily.DailyBuilder.ExportBook(store, outDir, appData, Console.WriteLine);
+            Console.WriteLine($"workbook: {path}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("EXPORT FAILED: " + ex.Message);
+            return 1;
+        }
+    }
+
     default:
-        Console.WriteLine("RatesWeekly CLI — usage: update [--db <path>] | status [--db <path>] | render [ccy] [--out <dir>] | email [--out <dir>] | daily [--out <dir>]");
+        Console.WriteLine("RatesWeekly CLI — usage: update [--db <path>] | status [--db <path>] | render [ccy] [--out <dir>] | email [--out <dir>] | daily [--out <dir>] | export [--out <dir>]");
         return cmd == "help" ? 0 : 1;
 }

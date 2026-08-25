@@ -65,6 +65,45 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void SyncDailyDir_CatchesUpEveryPendingWorkbook_WhenTheDriveReturns()
+        {
+            var outDir = Path.Combine(_dir, "out");
+            var drive = Path.Combine(_dir, "drive");
+            Directory.CreateDirectory(outDir);
+            // three local workbooks from days the "drive" was down
+            foreach (var n in new[] { "OIS_Runs_18August26.xlsx", "OIS_Runs_19August26.xlsx", "OIS_Runs_20August26.xlsx" })
+                File.WriteAllText(Path.Combine(outDir, n), "x");
+            File.WriteAllText(Path.Combine(_dir, "publish.json"),
+                "{\"dailyDir\": " + System.Text.Json.JsonSerializer.Serialize(drive) + "}");
+
+            Assert.True(DailyBuilder.SyncDailyDir(outDir, _dir));
+            Assert.Equal(3, Directory.GetFiles(drive, "OIS_Runs_*.xlsx").Length);
+
+            // idempotent: nothing recopied when up to date; and an unreachable drive is a soft false
+            Assert.True(DailyBuilder.SyncDailyDir(outDir, _dir));
+            File.WriteAllText(Path.Combine(_dir, "publish.json"),
+                "{\"dailyDir\": \"Q:\\\\no\\\\such\\\\drive\"}");
+            Assert.False(DailyBuilder.SyncDailyDir(outDir, _dir));
+        }
+
+        [Fact]
+        public void ExportBook_RebuildsOffline_FromStoredReportAndStore()
+        {
+            var outDir = Path.Combine(_dir, "out2");
+            Directory.CreateDirectory(outDir);
+            using var store = new HistoryStore(Path.Combine(_dir, "h2.db"));
+            ReportStore.Save(Report(), Path.Combine(outDir, DailyBuilder.ReportFile));
+
+            var path = DailyBuilder.ExportBook(store, outDir, _dir);
+
+            Assert.True(File.Exists(path));
+            Assert.Equal("OIS_Runs_20August26.xlsx", Path.GetFileName(path));   // the report's own as-of
+            using var wb = new XLWorkbook(path);
+            Assert.Contains("ECB closing run",
+                string.Join("\n", wb.Worksheet("Runs").CellsUsed().Select(c => c.GetString())));
+        }
+
+        [Fact]
         public void FallbackIngest_MapsManualRowsToRungs_InsertOnly_BbgWins()
         {
             Directory.CreateDirectory(_dir);

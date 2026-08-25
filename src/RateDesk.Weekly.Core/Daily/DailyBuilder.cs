@@ -47,6 +47,68 @@ namespace RateDesk.Weekly.Core.Daily
             catch { return DailyBook.HistoryDays; }
         }
 
+        /// <summary>Mirror every local OIS_Runs workbook the shared drive is missing (or holds
+        /// an older copy of) — not just today's. A remote drive that was down for a week catches
+        /// up in one pass the moment it is back; until then everything lives locally in out\ and
+        /// the store, and NOTHING is lost (desk 2026-08-21). Returns true when the drive was
+        /// reachable and today's workbook is mirrored.</summary>
+        public static bool SyncDailyDir(string outDir, string appDataDir, Action<string>? log = null)
+        {
+            var dailyDir = LoadDailyDir(appDataDir);
+            if (dailyDir == null)
+            {
+                log?.Invoke("daily: no dailyDir in publish.json — shared-drive mirror off");
+                return false;
+            }
+            var local = Directory.Exists(outDir)
+                ? Directory.GetFiles(outDir, "OIS_Runs_*.xlsx") : Array.Empty<string>();
+            try
+            {
+                Directory.CreateDirectory(dailyDir);
+                int copied = 0;
+                foreach (var f in local)
+                {
+                    var target = Path.Combine(dailyDir, Path.GetFileName(f));
+                    if (File.Exists(target) && File.GetLastWriteTimeUtc(target) >= File.GetLastWriteTimeUtc(f))
+                        continue;
+                    File.Copy(f, target, overwrite: true);
+                    copied++;
+                }
+                log?.Invoke(copied > 0
+                    ? $"daily: mirrored {copied} workbook(s) to {dailyDir}" +
+                      (copied > 1 ? " (caught up days the drive was unreachable)" : "")
+                    : "daily: shared drive already up to date");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log?.Invoke($"! daily: shared drive unreachable ({ex.Message}) — {local.Length} local " +
+                            "workbook(s) held in out\\; they mirror automatically when it returns " +
+                            "(or via EXPORT XLS). The store and local files lose nothing.");
+                return false;
+            }
+        }
+
+        /// <summary>Rebuild the OIS workbook OFFLINE — from the last run's frozen report and the
+        /// store alone: no Bloomberg, no shared drive required (desk 2026-08-21, the unified-
+        /// information-store failsafe). Manual fallback days are ingested first so an export made
+        /// during an outage still carries them. Returns the local path; also mirrors to the
+        /// shared drive when reachable.</summary>
+        public static string ExportBook(HistoryStore store, string outDir, string appDataDir,
+            Action<string>? log = null)
+        {
+            var rep = ReportStore.Load(Path.Combine(outDir, ReportFile))
+                ?? throw new InvalidOperationException(
+                    "no stored daily report yet — run DAILY RUN once (with a terminal) first");
+            if (LoadFallbackBook(appDataDir) is { } fb)
+                FallbackIngest.Run(fb, store, log);
+            log?.Invoke($"export: rebuilding workbook from stored data as of " +
+                        $"{rep.AsOf:dd-MMM-yy HH:mm} — no Bloomberg required");
+            var path = DailyBook.Write(rep, store, outDir, log, LoadHistoryDays(appDataDir));
+            SyncDailyDir(outDir, appDataDir, log);
+            return path;
+        }
+
         private static string? LoadString(string appDataDir, string key)
         {
             var path = Path.Combine(appDataDir, "publish.json");
@@ -135,25 +197,8 @@ namespace RateDesk.Weekly.Core.Daily
             log?.Invoke($"daily: wrote {Path.GetFileName(bookPath)} " +
                         $"({new FileInfo(bookPath).Length / 1024.0:F0} KB)");
 
-            string? dailyCopy = null;
-            var dailyDir = LoadDailyDir(appDataDir);
-            if (dailyDir != null)
-            {
-                try
-                {
-                    Directory.CreateDirectory(dailyDir);
-                    dailyCopy = Path.Combine(dailyDir, Path.GetFileName(bookPath));
-                    File.Copy(bookPath, dailyCopy, overwrite: true);
-                    log?.Invoke($"daily: copied workbook to {dailyDir}");
-                }
-                catch (Exception ex)
-                {
-                    dailyCopy = null;
-                    log?.Invoke($"! daily: workbook copy to dailyDir failed — {ex.Message}");
-                }
-            }
-            else
-                log?.Invoke("daily: no dailyDir in publish.json — workbook not copied to the shared drive");
+            var dailyCopy = SyncDailyDir(outDir, appDataDir, log)
+                ? Path.Combine(LoadDailyDir(appDataDir)!, Path.GetFileName(bookPath)) : null;
 
             var frag = Path.Combine(outDir, FragmentFile);
             File.WriteAllText(frag, WeeklyEmail.Html(rep));
