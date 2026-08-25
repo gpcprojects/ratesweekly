@@ -159,8 +159,13 @@ namespace RateDesk.Weekly.Core.Daily
             WeeklyRun run, string pat, DateTime asOf, int historyDays)
         {
             string srcSuffix = string.IsNullOrEmpty(sched.Source) ? "" : " " + sched.Source;
-            var bounds = sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates)
-                .Select(d => d.Date).OrderBy(d => d).Distinct().ToList();
+            // start-renumbering families (SKSF) keep boundaries ON the start dates — including
+            // the decisions would cluster each boundary back onto the decision and mis-rung the
+            // decision→start week (the same rule as the stitcher, desk 2026-08-25)
+            var boundSrc = sched.RollsAtPeriodStart
+                ? sched.Dates.Concat(sched.PastDates)
+                : sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates);
+            var bounds = boundSrc.Select(d => d.Date).OrderBy(d => d).Distinct().ToList();
             var clustered = new List<DateTime>();
             foreach (var d in bounds)
                 if (clustered.Count == 0 || (d - clustered[^1]).TotalDays > 14) clustered.Add(d);

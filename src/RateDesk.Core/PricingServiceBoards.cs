@@ -113,6 +113,14 @@ namespace RateDesk.Core
         /// rendering and the row is excluded from movers ranking and chart scaling.</summary>
         public bool MarkTurnPeriods { get; set; }
 
+        /// <summary>This family's generics renumber when the period STARTS, not at the decision
+        /// (SKSF, probed 2026-08-25: five days after the 20-Aug decision SKSF1A still fronted
+        /// the 26-Aug period). The stitcher must then keep roll boundaries ON the start dates —
+        /// snapping them back to the decision (right for ECB/MPC/BOJ, whose feeds re-point at
+        /// the announcement) mis-rungs every lookback that lands inside a decision→start
+        /// window, which is how the Feb-27 row's Δ1d differenced the turn rung's history.</summary>
+        public bool RollsAtPeriodStart { get; set; }
+
         /// <summary>DESK-CONFIRMED config dates count as documented (hard-data rule carve-out,
         /// desk 2026-08-25): set only where the desk has verified the period grid against
         /// Bloomberg's own swap table but the far rungs quote prices WITHOUT eff/maturity
@@ -1318,10 +1326,13 @@ namespace RateDesk.Core
             // recorded separately from the swap grid (ECB decides Thursday, the period starts the
             // following Wednesday; BOJ Friday -> Thursday), the generics re-point after the DECISION,
             // so snap the clustered entry back to it or up to ~4 business days of closes stitch to
-            // the wrong index after every such meeting
-            foreach (var dd in sched.DecisionDates)
-                for (int i = 0; i < allMeet.Count; i++)
-                    if (dd < allMeet[i] && (allMeet[i] - dd).TotalDays <= 6) { allMeet[i] = dd; break; }
+            // the wrong index after every such meeting. EXCEPT families that renumber at the period
+            // START (SKSF): their boundary IS the start date, and the snap would mis-rung every
+            // lookback inside the decision→start week (desk 2026-08-25, the Feb-27 Δ1d fault).
+            if (!sched.RollsAtPeriodStart)
+                foreach (var dd in sched.DecisionDates)
+                    for (int i = 0; i < allMeet.Count; i++)
+                        if (dd < allMeet[i] && (allMeet[i] - dd).TotalDays <= 6) { allMeet[i] = dd; break; }
             // DESK CONVENTION (2026-08-06): history values are the daily 4:30pm-LONDON snaps, not
             // closes — the desk's incumbent sheet snaps then, and the changes must reconcile. The
             // snaps are also STRUCTURALLY cleaner at roll boundaries: at 16:30 on a decision day
