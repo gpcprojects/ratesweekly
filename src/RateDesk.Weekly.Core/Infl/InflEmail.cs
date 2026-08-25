@@ -46,25 +46,32 @@ namespace RateDesk.Weekly.Core.Infl
         public static string Html(Dictionary<string, List<InflHistory.DisplayRow>> rowsByFam,
             Dictionary<string, DateTime>? nextPrints)
         {
-            // the weekly email's own helpers, replicated (they are internal to Core by design)
-            string Td(string inner, string extra = "") =>
-                $"<td nowrap style=\"{WeeklyEmail.EmFont}padding:3px 8px;font-size:11.5px;" +
-                $"white-space:nowrap;mso-line-height-rule:exactly;line-height:15px;{extra}\">{inner}</td>";
-            string MH(string s, bool right = true) =>
-                Td($"<b>{s}</b>", $"background:{WeeklyEmail.EmHead};{(right ? "text-align:right;" : "")}" +
-                                  $"border-bottom:2px solid {WeeklyEmail.EmAccent};padding:4px 8px;");
+            // the weekly email's own helpers, replicated (they are internal to Core by design).
+            // WIDTHS LIVE ON EVERY CELL (attribute + css): Outlook renders through Word, which
+            // ignores colgroup widths and sizes columns from cells — without this the cards
+            // collapsed and wrapped ("Aug 26" onto two lines) on other desks (2026-08-25). All
+            // multi-word cell text uses &nbsp; — Word breaks at spaces even under nowrap.
+            var colW = new[] { 48, 58, 58, 48, 48, 56, 56, 56 };
+            string Td(string inner, int col, string extra = "") =>
+                $"<td nowrap width=\"{colW[col]}\" style=\"{WeeklyEmail.EmFont}padding:3px 8px;" +
+                $"font-size:11.5px;width:{colW[col]}px;white-space:nowrap;" +
+                $"mso-line-height-rule:exactly;line-height:15px;{extra}\">{inner}</td>";
+            string MH(string s, int col, bool right = true) =>
+                Td($"<b>{s.Replace(" ", "&nbsp;")}</b>", col,
+                   $"background:{WeeklyEmail.EmHead};{(right ? "text-align:right;" : "")}" +
+                   $"border-bottom:2px solid {WeeklyEmail.EmAccent};padding:4px 8px;");
             string RowBg(int i) => i % 2 == 1 ? "background:#f5f7fa;" : "";
-            string Num(double? v, string fmt, int rI) => v is { } x
-                ? Td(x.ToString(fmt), $"text-align:right;color:{WeeklyEmail.EmMut};{RowBg(rI)}")
-                : Td("&nbsp;", RowBg(rI));
+            string Num(double? v, string fmt, int col, int rI) => v is { } x
+                ? Td(x.ToString(fmt), col, $"text-align:right;color:{WeeklyEmail.EmMut};{RowBg(rI)}")
+                : Td("&nbsp;", col, RowBg(rI));
             // Δ columns carry the OIS cards' heat (desk 2026-08-25): the index-point change is
             // scaled to implied YoY bp through the row's own base so the monitor ramp applies
-            string ChgTd(double? v, double? scaleBase, int rI)
+            string ChgTd(double? v, double? scaleBase, int col, int rI)
             {
-                if (v is not { } x) return Td("&nbsp;", RowBg(rI));
+                if (v is not { } x) return Td("&nbsp;", col, RowBg(rI));
                 string bg = scaleBase is { } b && b > 0 && WeeklyEmail.HeatHex(x / b * 10000.0) is { } h
                     ? $"background:{h};" : RowBg(rI) + $"color:{WeeklyEmail.EmMut};";
-                return Td(x.ToString("+0.00;-0.00;0.00"), $"text-align:right;{bg}");
+                return Td(x.ToString("+0.00;-0.00;0.00"), col, $"text-align:right;{bg}");
             }
 
             var sb = new StringBuilder();
@@ -88,7 +95,7 @@ namespace RateDesk.Weekly.Core.Infl
                 var rows = rowsByFam.TryGetValue(key, out var r) ? r : new List<InflHistory.DisplayRow>();
                 var shown = rows.Take(Math.Max(0, rows.Count - 1)).ToList();   // drop the furthest fixing
                 string np = nextPrints != null && nextPrints.TryGetValue(key, out var d)
-                    ? $"Next Print: {d:dd-MMM-yy}" : "";
+                    ? $"Next&nbsp;Print:&nbsp;{d:dd-MMM-yy}" : "";
                 sb.Append("<table cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"border-collapse:collapse;" +
                           "table-layout:fixed;width:428px;\"><colgroup>" +
                           "<col style=\"width:48px;\"><col style=\"width:58px;\"><col style=\"width:58px;\">" +
@@ -99,23 +106,23 @@ namespace RateDesk.Weekly.Core.Infl
                           $"<span style=\"color:{WeeklyEmail.EmMut};font-weight:normal;\">· {index}</span></td>" +
                           $"<td colspan=\"3\" nowrap style=\"{WeeklyEmail.EmFont}font-size:10.5px;" +
                           $"color:{WeeklyEmail.EmMut};text-align:right;padding:2px 8px 3px 8px;\">{np}</td></tr>");
-                sb.Append("<tr>" + MH("Month", false) + MH("Base") + MH("Mid") + MH("YoY %") + MH("MoM %")
-                          + MH("Δ1d") + MH("Δ1w") + MH("Δ1m") + "</tr>");
+                sb.Append("<tr>" + MH("Month", 0, false) + MH("Base", 1) + MH("Mid", 2) + MH("YoY %", 3)
+                          + MH("MoM %", 4) + MH("Δ1d", 5) + MH("Δ1w", 6) + MH("Δ1m", 7) + "</tr>");
                 int rI = 0;
                 foreach (var row in shown)
                 {
                     string bg = RowBg(rI);
                     sb.Append("<tr>" +
-                        Td($"<b>{row.RefMonth:MMM yy}</b>", bg) +
-                        Num(row.BaseV, "0.00", rI) +
+                        Td($"<b>{row.RefMonth:MMM}&nbsp;{row.RefMonth:yy}</b>", 0, bg) +
+                        Num(row.BaseV, "0.00", 1, rI) +
                         (row.Mid is { } mid
-                            ? Td($"<b>{mid:0.00}</b>", $"text-align:right;{bg}")
-                            : Td("&nbsp;", bg)) +
-                        Num(row.Yoy, "0.00", rI) +
-                        Num(row.Mom, "0.00", rI) +
-                        ChgTd(row.D1, row.BaseV ?? row.Mid, rI) +
-                        ChgTd(row.W1, row.BaseV ?? row.Mid, rI) +
-                        ChgTd(row.M1, row.BaseV ?? row.Mid, rI) +
+                            ? Td($"<b>{mid:0.00}</b>", 2, $"text-align:right;{bg}")
+                            : Td("&nbsp;", 2, bg)) +
+                        Num(row.Yoy, "0.00", 3, rI) +
+                        Num(row.Mom, "0.00", 4, rI) +
+                        ChgTd(row.D1, row.BaseV ?? row.Mid, 5, rI) +
+                        ChgTd(row.W1, row.BaseV ?? row.Mid, 6, rI) +
+                        ChgTd(row.M1, row.BaseV ?? row.Mid, 7, rI) +
                         "</tr>");
                     rI++;
                 }
