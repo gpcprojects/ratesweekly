@@ -17,6 +17,7 @@ namespace RateDesk.Weekly.Core.Daily
     public static class DailyBuilder
     {
         public const string BlastFile = "daily_blast.txt";
+        public const string ReportFile = "daily_report.json";
         public const string FragmentFile = "daily_email.html";
         public const string PlainTextFile = "daily_email.txt";
         public const string PreviewFile = "daily_email_preview.html";
@@ -123,6 +124,8 @@ namespace RateDesk.Weekly.Core.Daily
                 FallbackIngest.Run(fb, store, log);
             else
                 log?.Invoke("daily: no fallbackBook in publish.json — manual-override ingest off");
+
+            ReportStore.Save(rep, Path.Combine(outDir, ReportFile));
 
             var blastPath = Path.Combine(outDir, BlastFile);
             File.WriteAllText(blastPath, DailyBlast.Render(rep));

@@ -26,6 +26,9 @@ namespace RateDesk.Weekly.Core
         public const string FragmentFile = "email.html";        // the exact clipboard fragment
         public const string PlainTextFile = "email.txt";
         public const string PreviewFile = "email_preview.html"; // browser-openable wrapper
+        /// <summary>The frozen report data, so the outgoing email can be COMPOSED at click time
+        /// under the current tickboxes (EmailSettings) without touching Bloomberg.</summary>
+        public const string ReportFile = "weekly_report.json";
 
         /// <summary>Site root for dashboard links, e.g. "https://…/". From
         /// %APPDATA%\RatesWeekly\publish.json {"siteBase": "…"} — the same file DESIGN.md §9
@@ -103,6 +106,8 @@ namespace RateDesk.Weekly.Core
 
             // NO footer ("dashboards updated … · source: Bloomberg") — removed permanently on
             // desk instruction 2026-08-11. Do not re-add it; the WeeklyEmail hook stays unused.
+
+            ReportStore.Save(rep, Path.Combine(outDir, ReportFile));
 
             var frag = Path.Combine(outDir, FragmentFile);
             var txt = Path.Combine(outDir, PlainTextFile);

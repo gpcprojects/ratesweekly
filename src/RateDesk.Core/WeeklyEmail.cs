@@ -58,9 +58,19 @@ namespace RateDesk.Core
         return sb.ToString();
     }
 
-    public static string Html(WeeklyReport rep, Func<string, string?>? ccyHref = null,
-        string? footerHtml = null, string? headerHtml = null)
+    /// <summary>Which report sections a rendering includes — the email settings tickboxes
+    /// (desk 2026-08-21). Composition only: the report always carries everything.</summary>
+    public readonly record struct EmailParts(bool Front = true, bool Runs = true, bool Grid = true)
     {
+        // explicit args: `new()` binds the implicit parameterless struct ctor (all FALSE),
+        // not the primary-constructor defaults — the all-off-renders-everything trap inverted
+        public static readonly EmailParts All = new(true, true, true);
+    }
+
+    public static string Html(WeeklyReport rep, Func<string, string?>? ccyHref = null,
+        string? footerHtml = null, string? headerHtml = null, EmailParts? partsOpt = null)
+    {
+        var parts = partsOpt ?? EmailParts.All;   // null = everything; all-false = truly empty
         var sb = new StringBuilder();
         // Outlook-safe anchor: inherit the cell's ink so the header stays a header; underline is
         // the only affordance. Absent a URL the cell renders exactly as before.
@@ -108,7 +118,7 @@ namespace RateDesk.Core
         sb.Append($"<div style=\"{EmFont}color:{EmTxt};font-size:14px;\">");
         if (headerHtml != null) sb.Append(headerHtml);
         // ---- 1. CB Front Meeting Market Pricing ----
-        if (rep.Fronts.Count > 0)
+        if (parts.Front && rep.Fronts.Count > 0)
         {
             bool anyStartOnly = false;
             sb.Append(H2("CB Front Meeting Market Pricing"));
@@ -152,9 +162,12 @@ namespace RateDesk.Core
         }
 
         // ---- 2. Central Bank OIS Meetings (3 cards per row) ----
-        sb.Append(Sp(10));
-        sb.Append(H2("Central Bank OIS Meetings"));
-        var runs = rep.Runs;
+        var runs = parts.Runs ? rep.Runs : new List<WeeklyRun>();
+        if (runs.Count > 0)
+        {
+            sb.Append(Sp(10));
+            sb.Append(H2("Central Bank OIS Meetings"));
+        }
         for (int i = 0; i < runs.Count; i += 3)
         {
             sb.Append(TableOpen(new[] { 428, 8, 428, 8, 428 }, "0 0 8px 0"));
@@ -212,12 +225,13 @@ namespace RateDesk.Core
         // ASIA EM — every currency of the line side by side, a 26px spacer column between currency
         // groups and 26px of air between the lines (the CB cards' own spacing unit). Each line
         // still stops at its own last populated row: a capped line must not print empty rows.
-        if (rep.Sections.Count > 0)
+        var secs = parts.Grid ? rep.Sections : new List<WeeklySection>();
+        if (secs.Count > 0)
         {
             sb.Append(Sp(6));
             sb.Append(H2("Forward Rates Summary"));
         }
-        foreach (var sec in rep.Sections)
+        foreach (var sec in secs)
         {
             var group = sec.Ccys;
             if (group.Count == 0) continue;
@@ -299,12 +313,14 @@ namespace RateDesk.Core
         return sb.ToString();
     }
 
-    public static string PlainText(WeeklyReport rep, string? footerText = null, string? headerText = null)
+    public static string PlainText(WeeklyReport rep, string? footerText = null, string? headerText = null,
+        EmailParts? partsOpt = null)
     {
+        var parts = partsOpt ?? EmailParts.All;
         var inv = System.Globalization.CultureInfo.InvariantCulture;
         var sb = new StringBuilder();
         if (headerText != null) sb.AppendLine(headerText);
-        if (rep.Fronts.Count > 0)
+        if (parts.Front && rep.Fronts.Count > 0)
         {
             sb.AppendLine();
             sb.AppendLine("CB Front Meeting Market Pricing");
@@ -317,9 +333,13 @@ namespace RateDesk.Core
                         : $"{f.MidPct:0.000}\t{(f.RefPct is double rr ? rr.ToString("0.000") : "")}\t" +
                           $"{(f.PricedBp is double p ? p.ToString("+0.0;-0.0") : "")}"));
         }
-        sb.AppendLine();
-        sb.AppendLine("Central Bank OIS Meetings");
-        foreach (var run in rep.Runs)
+        var truns = parts.Runs ? rep.Runs : new List<WeeklyRun>();
+        if (truns.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Central Bank OIS Meetings");
+        }
+        foreach (var run in truns)
         {
             sb.AppendLine();
             sb.AppendLine(run.Title + (run.RefPct is double rp ? $"  fixing {rp:0.000}" : ""));
@@ -332,12 +352,13 @@ namespace RateDesk.Core
                       $"{(m.W1Bp is double w ? w.ToString("+0.0;-0.0") : "")}\t{(m.M1Bp is double m1 ? m1.ToString("+0.0;-0.0") : "")}");
         }
 
-        if (rep.Sections.Count > 0)
+        var tsecs = parts.Grid ? rep.Sections : new List<WeeklySection>();
+        if (tsecs.Count > 0)
         {
             sb.AppendLine();
             sb.AppendLine("Forward Rates Summary");
         }
-        foreach (var sec in rep.Sections)
+        foreach (var sec in tsecs)
         {
             var labels = sec.Ccys[0].Cells.Select(cl => cl.Label).ToList();
             sb.AppendLine();
