@@ -63,9 +63,11 @@ namespace RateDesk.Weekly.Core.Daily
                     var pat = sched?.Tickers.FirstOrDefault(t => t.Contains("{N}"));
                     if (sched == null || pat == null) continue;
 
+                    var boundSrc = sched.RollsAtPeriodStart
+                        ? sched.Dates.Concat(sched.PastDates)
+                        : sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates);
                     var bounds = new List<DateTime>();
-                    foreach (var d in sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates)
-                                 .Select(x => x.Date).OrderBy(x => x))
+                    foreach (var d in boundSrc.Select(x => x.Date).OrderBy(x => x))
                         if (bounds.Count == 0 || (d - bounds[^1]).TotalDays > 14) bounds.Add(d);
 
                     // engine coverage per rung — across BOTH spellings (contributor + composite):

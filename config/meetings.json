@@ -498,6 +498,10 @@
       // year-end averages the turn, not the policy path — live 2026-08-20 the Dec-26 rung
       // printed ~1.47 vs ~1.93 on Coremont. Renders as "Y/E Turn" (desk 2026-08-20).
       "markTurnPeriods": true,
+      // SKSF generics renumber at the period START, not the decision (probed 2026-08-25:
+      // 5 days after the 20-Aug decision SKSF1A still fronted the 26-Aug period) — the
+      // stitcher keeps roll boundaries on the start dates for this family
+      "rollsAtPeriodStart": true,
       // SKSF5A+ quote REAL prices but publish no SW_EFF_DT/MATURITY (probed 2026-08-25:
       // 4A eff-only, 5A/6A price-only). The desk verified the period grid above against
       // Bloomberg's own swap table (10-Feb→31-Mar→12-May→30-Jun-27), so config dates are
