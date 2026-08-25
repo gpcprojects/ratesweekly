@@ -224,16 +224,17 @@ namespace RateDesk.Weekly.Core.Daily
                 {
                     var pat = sched.Tickers.FirstOrDefault(t => t.Contains("{N}"));
                     if (pat == null) continue;
+                    var srcSfx = string.IsNullOrEmpty(sched.Source) ? "" : " " + sched.Source;
                     for (int n = 1; n <= 13; n++)
                     {
-                        // the COMPOSITE spelling — the store key the stitcher and the workbook's
-                        // history sheets read (TickerUniverse's both-spellings lesson). Reads go
-                        // through the store-first provider: fresh tickers cost NO Bloomberg call,
-                        // stale ones gap-fill and upsert as a side effect.
-                        var tkr = pat.Replace("{N}", n.ToString()) + " Curncy";
+                        // BOTH spellings stay current on daily cadence: the contributor series
+                        // (the stitcher/history sheets' first read — desk sources 2026-08-25)
+                        // and the composite fallback. Store-first: fresh tickers cost nothing.
                         try
                         {
-                            if (sbh!.GetDaily(tkr, 70).Count > 0) wrote++;
+                            if (sbh!.GetDaily(pat.Replace("{N}", n.ToString()) + srcSfx + " Curncy", 70).Count > 0) wrote++;
+                            if (srcSfx.Length > 0)
+                                sbh!.GetDaily(pat.Replace("{N}", n.ToString()) + " Curncy", 70);
                         }
                         catch { /* a dead far rung is not an error */ }
                     }

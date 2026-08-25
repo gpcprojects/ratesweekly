@@ -68,13 +68,21 @@ namespace RateDesk.Weekly.Core.Daily
                                  .Select(x => x.Date).OrderBy(x => x))
                         if (bounds.Count == 0 || (d - bounds[^1]).TotalDays > 14) bounds.Add(d);
 
-                    // engine coverage per rung: only ingest dates the engine has NOTHING for
+                    // engine coverage per rung — across BOTH spellings (contributor + composite):
+                    // only ingest dates the engine has NOTHING for on either
+                    var srcSuffix = string.IsNullOrEmpty(sched.Source) ? "" : " " + sched.Source;
                     var have = new Dictionary<int, HashSet<DateTime>>();
                     HashSet<DateTime> Have(int rung)
                     {
                         if (!have.TryGetValue(rung, out var set))
-                            have[rung] = set = store.GetDaily(pat.Replace("{N}", rung.ToString()) + " Curncy", 400)
+                        {
+                            set = store.GetDaily(pat.Replace("{N}", rung.ToString()) + srcSuffix + " Curncy", 400)
                                 .Select(x => x.Date.Date).ToHashSet();
+                            if (srcSuffix.Length > 0)
+                                set.UnionWith(store.GetDaily(pat.Replace("{N}", rung.ToString()) + " Curncy", 400)
+                                    .Select(x => x.Date.Date));
+                            have[rung] = set;
+                        }
                         return set;
                     }
 
@@ -97,7 +105,9 @@ namespace RateDesk.Weekly.Core.Daily
                         if (rung < 1 || rung > 13) continue;
                         if (Have(rung).Contains(d.Value)) continue;   // engine data exists — never touch
 
-                        var tkr = pat.Replace("{N}", rung.ToString()) + " Curncy";
+                        // manual rows land under the run's ACTIVE contributor spelling — the
+                        // series the stitcher and history sheets read first (2026-08-25)
+                        var tkr = pat.Replace("{N}", rung.ToString()) + srcSuffix + " Curncy";
                         wrote += store.UpsertDaily(tkr,
                             new[] { new RateDesk.Core.Market.HistPoint(d.Value, rate.Value) },
                             excludeToday: true, source: "xls");
