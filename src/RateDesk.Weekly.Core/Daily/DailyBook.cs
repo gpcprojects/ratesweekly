@@ -80,9 +80,11 @@ namespace RateDesk.Weekly.Core.Daily
                         ws.Cell(r, 3).Value = m.Mid; ws.Cell(r, 3).Style.NumberFormat.Format = RunsTable.RateFmt;
                         SetBp(ws.Cell(r, 4), m.PricedBp);
                         SetBp(ws.Cell(r, 5), m.StepBp);
-                        SetBp(ws.Cell(r, 6), m.D1Bp);
-                        SetBp(ws.Cell(r, 7), m.W1Bp);
-                        SetBp(ws.Cell(r, 8), m.M1Bp);
+                        // CONDITIONAL FORMATTING now on the sheet too (desk 2026-08-26) — the
+                        // same monitor ramp the email paints, on the change columns only
+                        SetBp(ws.Cell(r, 6), m.D1Bp, heat: true);
+                        SetBp(ws.Cell(r, 7), m.W1Bp, heat: true);
+                        SetBp(ws.Cell(r, 8), m.M1Bp, heat: true);
                     }
                     r++;
                 }
@@ -206,11 +208,15 @@ namespace RateDesk.Weekly.Core.Daily
             return outRows;
         }
 
-        private static void SetBp(IXLCell cell, double? v)
+        private static void SetBp(IXLCell cell, double? v, bool heat = false)
         {
             if (v is not { } x) return;
             cell.Value = x;
             cell.Style.NumberFormat.Format = RunsTable.BpFmt;
+            // painted as a static fill, not an Excel CF rule, so the sheet shows EXACTLY the
+            // colour the email shows for the same number (one ramp, one definition)
+            if (heat && RateDesk.Core.WeeklyEmail.HeatHex(x) is string h)
+                cell.Style.Fill.SetBackgroundColor(XLColor.FromHtml(h));
         }
 
         private static DateTime PrevBd(DateTime d)
