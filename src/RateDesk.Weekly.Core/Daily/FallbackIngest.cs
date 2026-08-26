@@ -68,12 +68,10 @@ namespace RateDesk.Weekly.Core.Daily
                     var pat = sched?.Tickers.FirstOrDefault(t => t.Contains("{N}"));
                     if (sched == null || pat == null) continue;
 
-                    var boundSrc = sched.RollsAtPeriodStart
-                        ? sched.Dates.Concat(sched.PastDates)
-                        : sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates);
-                    var bounds = new List<DateTime>();
-                    foreach (var d in boundSrc.Select(x => x.Date).OrderBy(x => x))
-                        if (bounds.Count == 0 || (d - bounds[^1]).TotalDays > 14) bounds.Add(d);
+                    // ONE boundary derivation for every consumer — MeetingRungMap (fresh-eyes
+                    // review 2026-08-26): the reader (BankHistoryRows) and this writer must map
+                    // a (date, start) pair to the SAME rung or the manual row is stranded
+                    var map = new MeetingRungMap(sched);
 
                     // engine coverage per rung — across BOTH spellings (contributor + composite):
                     // only ingest dates the engine has NOTHING for on either
@@ -117,15 +115,14 @@ namespace RateDesk.Weekly.Core.Daily
                         // own rule (the stitcher excludes decision-day closes; renumbering is
                         // intraday and announcement-time-dependent) — refuse it rather than file
                         // it under a guessed rung (fresh-eyes review 2026-08-26)
-                        if (bounds.Contains(d.Value))
+                        if (map.IsBoundary(d.Value))
                         {
                             notes.Add($"fallback ingest: {runName} {d.Value:dd-MMM-yy} is a roll-" +
                                       "boundary day (mixed-state) — row skipped; the engine's own " +
                                       "pull supersedes");
                             continue;
                         }
-                        int rung = bounds.Count(b => b > d.Value && b <= start.Value);
-                        if (rung < 1 || rung > 13) continue;
+                        if (map.RungFor(start.Value, d.Value) is not { } rung) continue;
                         if (Have(rung).Contains(d.Value)) continue;   // engine data exists — never touch
 
                         // manual rows land under the run's ACTIVE contributor spelling — the

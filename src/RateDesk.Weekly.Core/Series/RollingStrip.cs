@@ -64,20 +64,25 @@ namespace RateDesk.Weekly.Core.Series
             // the contract — the same rule RolledValue applies to lookbacks. Positionally (i + 1)
             // is only equivalent while the list starts at the very next contract; once an announced
             // decision drops the front (ForMeetings), position and rung diverge by one.
-            int RungAt(DateTime contract)
+            // ZERO boundaries between asOf and the contract = the contract's own period already
+            // started: there is no rung, and the row publishes nothing (the old Max(1,…) coercion
+            // published the FRONT rung's rate there — fresh-eyes review 2026-08-26).
+            int? RungAt(DateTime contract)
             {
                 int idx = bounds.Count(b => b > asOf.Date && b <= contract.Date);
-                return idx < 1 ? 1 : idx;
+                return idx < 1 ? null : idx;
             }
             var mids = new double?[contracts.Count];
             for (int i = 0; i < contracts.Count; i++)
-                mids[i] = store.ValueAsOf(ticker(RungAt(contracts[i].Contract)), asOf);
+                mids[i] = RungAt(contracts[i].Contract) is { } r0
+                    ? store.ValueAsOf(ticker(r0), asOf) : null;
 
             int guarded = 0;
             for (int i = 0; i < contracts.Count; i++)
             {
                 var (label, contract) = contracts[i];
-                string tkNow = ticker(RungAt(contract));
+                if (RungAt(contract) is not { } rNow) continue;
+                string tkNow = ticker(rNow);
                 if (Guard(mids, i) is not { } mid) continue;
                 if (mids[i] is { } raw && Math.Abs(raw - mid) > 1e-9) { guarded++; label += "*"; }
 
@@ -137,11 +142,10 @@ namespace RateDesk.Weekly.Core.Series
             if (bounds.Any(b => b == then.Date)) then = then.Date.AddDays(-1);
 
             // Boundaries strictly after `then` and at or before the contract date are exactly the
-            // rolls that have happened between then and now for this contract.
-            int crossed = bounds.Count(b => b > then.Date && b <= contract.Date);
-            int idxThen = crossed;                       // 1-based: the contract was `crossed`-th next
-            if (idxThen < 1) idxThen = 1;
-            if (idxThen > maxIndex) return null;
+            // rolls that have happened between then and now for this contract. Zero = the
+            // contract's period had already started then: no rung, no value (never rung 1).
+            int idxThen = bounds.Count(b => b > then.Date && b <= contract.Date);
+            if (idxThen < 1 || idxThen > maxIndex) return null;
 
             // ...and if the walk-back itself resolves to a decision-day close (a weekend lookback
             // over a Friday decision, say), recompute from the day before that boundary — the
@@ -161,11 +165,33 @@ namespace RateDesk.Weekly.Core.Series
             return null;
         }
 
+        /// <summary>The ACTIVE-source-aware rung ticker: the contributor spelling when the store
+        /// holds data for that rung, the composite otherwise — the same per-rung fallback the
+        /// boards and history books use, so every surface reads the SAME series (desk 2026-08-26:
+        /// EVERYTHING follows the SOURCES selection).</summary>
+        public static Func<int, string> SourceAwareTicker(HistoryStore store, string pat, string src)
+        {
+            string Plain(int n) => pat.Replace("{N}", n.ToString()) + " Curncy";
+            if (string.IsNullOrEmpty(src)) return Plain;
+            var hasSrc = new Dictionary<int, bool>();
+            return n =>
+            {
+                var q = pat.Replace("{N}", n.ToString()) + " " + src + " Curncy";
+                if (!hasSrc.TryGetValue(n, out var h))
+                    hasSrc[n] = h = store.GetDaily(q, 40).Count > 0;
+                return h ? q : Plain(n);
+            };
+        }
+
         /// <summary>Central-bank runs from config: contracts are the future decision dates, roll
-        /// boundaries are every decision date including the settled ones.</summary>
+        /// boundaries come from the shared MeetingRungMap (fresh-eyes review 2026-08-26 — this
+        /// surface previously built its own list without the SKSF start rule or the settled-
+        /// announcement snap, so the SEK strip carried the bug the boards had already fixed).
+        /// <paramref name="source"/>: the run's ACTIVE contributor ("" = composite; null =
+        /// config default) — dashboards must price off the same feed as the email.</summary>
         public static StripTable ForMeetings(
             MeetingScheduleDef sched, HistoryStore store, DateTime asOf, int maxRows = 8,
-            DateTime? nowLondon = null)
+            DateTime? nowLondon = null, string? source = null)
         {
             // TIME-GATED FRONT ROLL (desk 2026-08-20), the boards' own rule: once a period's
             // decision is ANNOUNCED (decision date + decisionTimeLondon on the London clock) the
@@ -178,29 +204,23 @@ namespace RateDesk.Weekly.Core.Series
                               && RateDesk.Core.Dates.DecisionClock.Announced(fd, sched.DecisionTimeLondon, nowLdn)))
                 .OrderBy(d => d).Take(maxRows).ToList();
             var contracts = future.Select(d => (d.ToString("dd-MMM-yy"), d)).ToList();
-            // Roll boundaries SNAP TO DECISION DATES where the calendar has them: the numbered
-            // tickers re-point at the decision, not at the swap-period start — for the BOJ those
-            // differ by up to six days (settlement lag; RBA showed the 1-day version live
-            // 2026-08-11), and a lookback landing between them would shift by one index. The
-            // period dates still contribute for banks with no decision calendar; the 14-day
-            // cluster keeps the EARLIEST of each pair, which is the decision.
-            var bounds = sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates);
+            // ONE boundary derivation for every consumer — MeetingRungMap: announcements
+            // (recorded + stable-lag-derived) for decision-renumbering families, starts for
+            // SKSF, 14-day cluster keeping the earliest.
+            var map = new MeetingRungMap(sched);
             var pat = sched.Tickers.FirstOrDefault(t => t.Contains("{N}"));
 
             if (pat == null || contracts.Count == 0)
                 return new StripTable { Title = $"{sched.Name} · {sched.Ccy}", AsOf = asOf };
 
-            // The composite (source-less) spelling is what the store keys these under for the
-            // stitcher's benefit; see TickerUniverse.
+            var tick = SourceAwareTicker(store, pat, source ?? sched.Source ?? "");
+
             // HARD-DATA RULE (desk 2026-08-20): a strip row is published only while the rung that
             // carries it has a Bloomberg-DOCUMENTED contract (a recorded MATURITY in the store).
             // Config dates still order the roll boundaries internally, but they never label a
-            // published row past where Bloomberg's own fields stop.
+            // published row past where Bloomberg's own fields stop. Maturity records key the
+            // COMPOSITE spelling (the recording side is source-agnostic).
             {
-                var bl = bounds.Select(d => d.Date).OrderBy(d => d).ToList();
-                var clustered = new List<DateTime>();
-                foreach (var d in bl)
-                    if (clustered.Count == 0 || (d - clustered[^1]).TotalDays > 14) clustered.Add(d);
                 string Rung(int n) => pat.Replace("{N}", n.ToString()) + " Curncy";
                 // the family's current recording day, from the front rung; a family with NO
                 // maturity records at all (fixtures, families the engine has never snapped)
@@ -210,7 +230,7 @@ namespace RateDesk.Weekly.Core.Series
                     int keep = 0;
                     foreach (var (_, c) in contracts)
                     {
-                        int rung = Math.Max(1, clustered.Count(b => b > asOf.Date && b <= c.Date));
+                        if (map.RungFor(c, asOf) is not { } rung) break;
                         if (store.MaturityRecordDay(Rung(rung)) != famDay) break;
                         keep++;
                     }
@@ -218,8 +238,8 @@ namespace RateDesk.Weekly.Core.Series
                 }
             }
 
-            var t = RollingStrip.Build($"{sched.Name} · {sched.Ccy}", store, asOf, contracts, bounds,
-                n => pat.Replace("{N}", n.ToString()) + " Curncy");
+            var t = RollingStrip.Build($"{sched.Name} · {sched.Ccy}", store, asOf, contracts,
+                map.Boundaries, tick);
             // Y/E TURN (desk 2026-08-20): on marked runs, a period spanning a year-end renders
             // as a label — its average carries the turn dislocation (SWESTR's is extreme)
             if (sched.MarkTurnPeriods)

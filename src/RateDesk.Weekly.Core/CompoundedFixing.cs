@@ -82,6 +82,9 @@ namespace RateDesk.Weekly.Core
                     string.IsNullOrEmpty(s.Kind) && s.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
                 if (sched == null) continue;
                 run.Source = svc.MeetingSrc(sched);
+                // SILENT MECHANICS (desk 2026-08-26): the compounded fixing is computed and
+                // frozen into the report for the eventual install, but it is mentioned NOWHERE —
+                // no rendering, no log lines, no notes — until the desk switches it on.
                 try
                 {
                     if (svc.History != null
@@ -89,22 +92,9 @@ namespace RateDesk.Weekly.Core
                     {
                         run.CompoundedPct = cf.Pct;
                         run.CompoundedFrom = cf.From;
-                        log?.Invoke($"cmpd: {sched.Name} {cf.Pct:0.0000} " +
-                                    $"({cf.Ticker}, {cf.From:dd-MMM-yy} → , {cf.Days}d, ACT/{cf.Dcc})");
-                        // NOT tested against a re-based ref: inside a decision→start window the
-                        // compounded value is correctly the OLD rate while RefPct already carries
-                        // the new one — every 25bp move would cry wolf (fresh-eyes review 2026-08-26)
-                        if (!run.RefRebased && run.RefPct is { } spot
-                            && Math.Abs(cf.Pct - spot) * 100.0 > 15.0)
-                            rep.Notes.Add($"{OutlierGuard.Prefix}: {sched.Name} compounded fixing " +
-                                          $"{cf.Pct:0.000} vs spot {spot:0.000} — gap " +
-                                          $"{(cf.Pct - spot) * 100.0:+0.0;-0.0}bp exceeds 15bp; " +
-                                          "verify the fixing history before distribution");
                     }
-                    else log?.Invoke($"cmpd: {sched.Name} — no publishable value (window not yet " +
-                                     "open, or fixing history missing/stale; column stays blank)");
                 }
-                catch (Exception ex) { log?.Invoke($"! cmpd: {sched.Name}: {ex.Message}"); }
+                catch { /* mechanics only — never surfaces */ }
             }
             // COMPLETENESS GATE (fresh-eyes review 2026-08-26): a bank that silently dropped
             // out of the report (contributor page lost its date fields, family truncated) must
@@ -112,10 +102,18 @@ namespace RateDesk.Weekly.Core
             // where 9 belong without noticing.
             foreach (var sched in MeetingsStore.Schedules.Where(s => string.IsNullOrEmpty(s.Kind)
                          && !s.Name.Equals("SNB", StringComparison.OrdinalIgnoreCase)))
+            {
                 if (!rep.Runs.Any(r => r.Title.Split('·')[0].Trim()
                         .Equals(sched.Name, StringComparison.OrdinalIgnoreCase)))
                     rep.Notes.Add($"{OutlierGuard.Prefix}: {sched.Name} produced NO rows — the run " +
                                   "is missing from every surface; verify before distribution");
+                // ...and a bank the blast/workbook block list does not know publishes an email
+                // card that appears in NO other surface — same silent-divergence class
+                if (!Daily.DailyBlast.Blocks.Any(b =>
+                        b.Run.Equals(sched.Name, StringComparison.OrdinalIgnoreCase)))
+                    rep.Notes.Add($"{OutlierGuard.Prefix}: {sched.Name} is not in the blast/workbook " +
+                                  "block list — it would appear in the email only; update DailyBlast.Blocks");
+            }
         }
 
         /// <summary>Resolve the run's fixing ticker (schedule refTicker, else the currency's

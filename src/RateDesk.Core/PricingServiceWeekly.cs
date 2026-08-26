@@ -198,6 +198,7 @@ namespace RateDesk.Core
                 try
                 {
                     var run = MeetingRun(sched, meetingsPerRun);
+                    rep.Notes.AddRange(run.StaleNotes);   // non-blocking stale-feed warnings
                     if (run.Rows.Count == 0) { rep.Notes.Add($"{sched.Name}: {run.Warning ?? "no rows"}"); continue; }
                     var wr = new WeeklyRun
                     {
@@ -248,11 +249,14 @@ namespace RateDesk.Core
                             // change straddling a decision compares the same meeting on both
                             // sides — the 1d lookback (desk 2026-08-20) rides the same series,
                             // which also gives it the boundary-day rules (decision-day closes
-                            // excluded, 16:30 snaps included) for free
+                            // excluded, 16:30 snaps included) for free.
+                            // Per-horizon anchor caps (fresh-eyes review 2026-08-26): a Δ1d that
+                            // silently anchored 10 days back was a Δ10d under a Δ1d label —
+                            // 5/7/10 covers weekends and long holiday bridges, no more
                             var s = series(row.Date);
-                            wm.D1Bp = ChangeToBp(s, row.MidPct, DateTime.Today.AddDays(-1));
-                            wm.W1Bp = ChangeToBp(s, row.MidPct, DateTime.Today.AddDays(-7));
-                            wm.M1Bp = ChangeToBp(s, row.MidPct, MonthAgo(DateTime.Today));
+                            wm.D1Bp = ChangeToBp(s, row.MidPct, DateTime.Today.AddDays(-1), 5);
+                            wm.W1Bp = ChangeToBp(s, row.MidPct, DateTime.Today.AddDays(-7), 7);
+                            wm.M1Bp = ChangeToBp(s, row.MidPct, MonthAgo(DateTime.Today), 10);
                         }
                         catch { /* changes are best-effort per meeting */ }
                         // 1d fallback: a contract with no pre-roll snap history still has a
@@ -478,12 +482,14 @@ namespace RateDesk.Core
         /// naive "latest close at/before target" walks back into a MUCH older regime — BOJ's far
         /// rows printed +62.6bp "1w changes" that were live-minus-a-year-ago. A close more than 10
         /// days older than the target is a different world: publish a blank, never that.</summary>
-        private static double? ChangeToBp(IReadOnlyList<HistPoint> s, double liveMid, DateTime target)
+        private static double? ChangeToBp(IReadOnlyList<HistPoint> s, double liveMid, DateTime target,
+            int maxStaleDays = 10)
         {
             if (s.Count == 0) return null;
             for (int i = s.Count - 1; i >= 0; i--)
                 if (s[i].Date <= target)
-                    return (target - s[i].Date).TotalDays > 10 ? null : (liveMid - s[i].Value) * 100.0;
+                    return (target - s[i].Date).TotalDays > maxStaleDays
+                        ? null : (liveMid - s[i].Value) * 100.0;
             return null;
         }
     }

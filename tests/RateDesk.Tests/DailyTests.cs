@@ -172,11 +172,11 @@ namespace RateDesk.Tests
             Assert.Contains("ECB closing run", text);
             Assert.Contains("€STR fixing", text);
             Assert.Contains("Y/E Turn", text);
-            // desk 2026-08-25: Mid (not T), and column order Start/Maturity/Mid/Step/Priced/Δ1d/Δ1w/Δ1m
+            // desk 2026-08-26: Mid | Priced | Step — the SAME order as the email cards, everywhere
             var mid = ws.CellsUsed().FirstOrDefault(c => c.GetString() == "Mid");
             Assert.NotNull(mid);
-            Assert.Equal("Step (bp)", ws.Cell(mid!.Address.RowNumber, 4).GetString());
-            Assert.Equal("Priced (bp)", ws.Cell(mid.Address.RowNumber, 5).GetString());
+            Assert.Equal("Priced (bp)", ws.Cell(mid!.Address.RowNumber, 4).GetString());
+            Assert.Equal("Step (bp)", ws.Cell(mid.Address.RowNumber, 5).GetString());
             Assert.Equal("Δ 1m (bp)", ws.Cell(mid.Address.RowNumber, 8).GetString());
             Assert.Contains("DRAX OIS Runs 20Aug26", text);
         }

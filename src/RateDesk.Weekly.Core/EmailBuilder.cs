@@ -178,7 +178,7 @@ namespace RateDesk.Weekly.Core
             // desk instruction 2026-08-11. Do not re-add it; the WeeklyEmail hook stays unused.
 
             ReportStore.Save(rep, Path.Combine(outDir, ReportFile));
-            if (store != null) Infl.InflHistory.PersistMarks(outDir, rep.AsOf);
+            if (store != null) Infl.InflHistory.PersistMarks(outDir, rep.AsOf, prefix: "weekly_");
 
             string inflHtml = "", inflText = "";
             if (store != null)

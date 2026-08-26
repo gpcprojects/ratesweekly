@@ -56,8 +56,16 @@ namespace RateDesk.Weekly.Core
             PreferredObjectCreationHandling = System.Text.Json.Serialization.JsonObjectCreationHandling.Populate,
         };
 
-        public static void Save(RateDesk.Core.WeeklyReport rep, string path) =>
-            File.WriteAllText(path, JsonSerializer.Serialize(rep, Opts));
+        public static void Save(RateDesk.Core.WeeklyReport rep, string path)
+        {
+            // atomic write-then-rename (fresh-eyes review 2026-08-26): a crash mid-write left a
+            // truncated report that Load() turned into null, and the email composer then served
+            // a stale body with newest-glob attachments under today's subject
+            var tmp = path + ".tmp";
+            File.WriteAllText(tmp, JsonSerializer.Serialize(rep, Opts));
+            if (File.Exists(path)) File.Replace(tmp, path, null);
+            else File.Move(tmp, path);
+        }
 
         public static RateDesk.Core.WeeklyReport? Load(string path)
         {

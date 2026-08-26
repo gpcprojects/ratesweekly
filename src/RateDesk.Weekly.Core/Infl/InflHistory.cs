@@ -258,13 +258,14 @@ namespace RateDesk.Weekly.Core.Infl
         /// <summary>Persist the run's live marks + next prints (audit 2026-08-26): the offline
         /// paths (EXPORT XLS, CLI savedown) previously fell back to LatestMarks — LAST STORED
         /// CLOSES — and rewrote the very files the desk had just emailed with different numbers
-        /// under the same name. Persisted at run time, reloaded by every offline rebuild.</summary>
-        public static void PersistMarks(string outDir, DateTime asOf)
+        /// under the same name. PER-CADENCE files (prefix "daily_"/"weekly_", fresh-eyes review
+        /// 2026-08-26): the two cadences no longer clobber each other's frozen marks.</summary>
+        public static void PersistMarks(string outDir, DateTime asOf, string prefix = "")
         {
             try
             {
                 Directory.CreateDirectory(outDir);
-                File.WriteAllText(System.IO.Path.Combine(outDir, MarksFile),
+                File.WriteAllText(System.IO.Path.Combine(outDir, prefix + MarksFile),
                     System.Text.Json.JsonSerializer.Serialize(new MarksShape
                     {
                         AsOf = asOf,
@@ -278,14 +279,14 @@ namespace RateDesk.Weekly.Core.Infl
         /// <summary>Reload persisted marks into the statics when this session has none —
         /// the offline rebuild's first stop before any LatestMarks fallback. When
         /// <paramref name="expectAsOf"/> is given, marks persisted on a DIFFERENT day are
-        /// refused (fresh-eyes review 2026-08-26: the daily and weekly share this file, and an
-        /// offline rebuild of one must not wear the other's marks).</summary>
-        public static void LoadPersistedMarks(string outDir, DateTime? expectAsOf = null)
+        /// refused (fresh-eyes review 2026-08-26).</summary>
+        public static void LoadPersistedMarks(string outDir, DateTime? expectAsOf = null,
+            string prefix = "")
         {
             if (LastLiveMarks != null) return;
             try
             {
-                var p = System.IO.Path.Combine(outDir, MarksFile);
+                var p = System.IO.Path.Combine(outDir, prefix + MarksFile);
                 if (!File.Exists(p)) return;
                 var s = System.Text.Json.JsonSerializer.Deserialize<MarksShape>(File.ReadAllText(p));
                 if (s == null) return;
