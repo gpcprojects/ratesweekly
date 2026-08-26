@@ -158,6 +158,7 @@ namespace RateDesk.Weekly.Core
                         catch { /* an unquoted fixing month is not an error */ }
                     }
                 log?.Invoke($"email: topped up {fx} inflation fixing series");
+                // anchors stay on documented closes — see InflHistory.Maintain (desk call pending)
                 try { Infl.InflHistory.Maintain(store, log); }
                 catch (Exception ex) { log?.Invoke("  ! infl maintain: " + ex.Message); }
                 // re-collect the marks AFTER the snap pin so the cards publish the close

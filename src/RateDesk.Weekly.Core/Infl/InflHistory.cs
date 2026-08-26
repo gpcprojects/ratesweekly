@@ -182,29 +182,53 @@ namespace RateDesk.Weekly.Core.Infl
         /// via the maturity RECORDED for that day (ticker's own field; unrecorded days are
         /// skipped, never guessed) and upsert as 'bbg' — fills days the sheet lacks and keeps
         /// the unified history current from live runs alone.</summary>
-        public static int Maintain(HistoryStore store, Action<string>? log = null, int lookbackDays = 45)
+        /// <summary><paramref name="bars"/>: when given, every day's value is the LONDON SNAP from
+        /// intraday bars (16:15, or 16:30 up to the cutover) with the daily close as the fallback —
+        /// the OIS boards' own convention, now applied here too (desk 2026-08-26, the "CoD looks
+        /// rough" question). WHY it matters: the fixing strip's months are posted by contributors
+        /// at DIFFERENT times — probed today the twelve RPI months last updated between 16:39 and
+        /// 17:15 — so a close-stamped anchor differenced against a snap-stamped mark mixes up to
+        /// 40 minutes of tape PER MONTH, and adjacent fixings dislocate for no market reason. Both
+        /// sides of every change must be the same construct at the same time of day.</summary>
+        public static int Maintain(HistoryStore store, Action<string>? log = null, int lookbackDays = 45,
+            IHistoryProvider? bars = null)
         {
-            int wrote = 0;
+            int wrote = 0, snapped = 0;
             foreach (var fam in Families)
             {
                 var byFix = new Dictionary<string, List<HistPoint>>();
                 for (int m = 1; m <= 12; m++)
                 {
                     var tk = $"{fam.Root}{m} Curncy";
-                    foreach (var p in store.GetDaily(tk, lookbackDays))
+                    var vals = store.GetDaily(tk, lookbackDays)
+                        .ToDictionary(p => p.Date.Date, p => p.Value);
+                    if (bars != null)
+                        try
+                        {
+                            // same snap discipline (and same cutover) as the meeting boards
+                            foreach (var sp in bars.GetLondonSnaps(tk, lookbackDays, new TimeSpan(16, 30, 0)))
+                                if (sp.Date.Date < RateDesk.Core.PricingService.SnapTimeCutover)
+                                { vals[sp.Date.Date] = sp.Value; snapped++; }
+                            foreach (var sp in bars.GetLondonSnaps(tk, lookbackDays, new TimeSpan(16, 15, 0)))
+                                if (sp.Date.Date >= RateDesk.Core.PricingService.SnapTimeCutover)
+                                { vals[sp.Date.Date] = sp.Value; snapped++; }
+                        }
+                        catch { /* no bars for this rung — closes still serve */ }
+                    foreach (var (day, value) in vals)
                     {
-                        if (store.MaturityAsOf(tk, p.Date) is not { } mat) continue;
+                        if (store.MaturityAsOf(tk, day) is not { } mat) continue;
                         var refMonth = RefMonth(mat, m);
                         if (refMonth is null) continue;
                         var fix = $"{refMonth.Value.Year:0000}-{refMonth.Value.Month:00}";
                         if (!byFix.TryGetValue(fix, out var l)) byFix[fix] = l = new List<HistPoint>();
-                        l.Add(p);
+                        l.Add(new HistPoint(day, value));
                     }
                 }
                 foreach (var (fix, pts) in byFix)
                     wrote += store.UpsertFixings(fam.Key, fix, pts, "bbg");
             }
-            log?.Invoke($"infl: bbg maintain wrote {wrote} rows (maturity-documented days only)");
+            log?.Invoke($"infl: bbg maintain wrote {wrote} rows (maturity-documented days only" +
+                        (bars != null ? $"; {snapped} day(s) taken from London snaps, not closes)" : ")"));
             return wrote;
         }
 
