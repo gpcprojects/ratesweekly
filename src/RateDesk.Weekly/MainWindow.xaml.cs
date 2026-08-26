@@ -19,6 +19,11 @@ namespace RateDesk.Weekly
         private bool _updating;
         private EmailSettings _emailSettings = new();
         private bool _settingsLoading;
+        // ONE busy notion across WEEKLY / DAILY / EXPORT (fresh-eyes review 2026-08-26): two
+        // concurrent builders share the store, the out\ files and the inflation statics —
+        // running them together is a data hazard, not a convenience
+        private bool Busy => _updating || _dailyRunning || _exporting;
+        private System.Threading.Mutex? _instanceMutex;
 
         /// <summary>Load the tickbox matrices from disk into the UI without firing the save
         /// handler. Called from the ctor; always clickable from the first frame — the settings
@@ -64,6 +69,19 @@ namespace RateDesk.Weekly
 
         public MainWindow()
         {
+            // SINGLE INSTANCE (fresh-eyes review 2026-08-26): two copies under one login write
+            // the same history.db and out\ — refuse the second loudly rather than corrupt quietly
+            _instanceMutex = new System.Threading.Mutex(true, @"Local\RatesWeekly-single-instance",
+                out bool firstInstance);
+            if (!firstInstance)
+            {
+                MessageBox.Show(
+                    "RatesWeekly is already running on this machine.\n\nTwo copies share one " +
+                    "data store and would corrupt each other's runs — use the existing window.",
+                    "RatesWeekly", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Application.Current.Shutdown();
+                return;
+            }
             InitializeComponent();
             VersionText.Text = "v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?");
             Directory.CreateDirectory(AppDataDir);
@@ -238,28 +256,22 @@ namespace RateDesk.Weekly
             dlg.ShowDialog();
         }
 
-        /// <summary>Outlier CHECK notes demand eyes before distribution (desk 2026-08-25, the
-        /// BOJ Δ1m question) — surfaced as a blocking message box on top of the log lines.</summary>
-        private void ShowCheckNotes(IEnumerable<string> notes)
-        {
-            var checks = notes.Where(n => n.StartsWith(OutlierGuard.Prefix + ":")).ToList();
-            if (checks.Count == 0) return;
-            MessageBox.Show(this,
-                "Outlier check — verify these before distributing:\n\n" + string.Join("\n", checks),
-                "RatesWeekly — manual check required", MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-
-        /// <summary>The CHECK gate, moved BEFORE anything is written or mirrored (audit
-        /// 2026-08-26: the popup used to fire after the blast, workbooks and shared-drive
-        /// copies were already published everywhere except the email body). Returns true to
-        /// proceed; false aborts the render with nothing on disk changed.</summary>
+        /// <summary>The CHECK gate, BEFORE the distribution artefacts are written or mirrored
+        /// (audit 2026-08-26: the popup used to fire after the blast, workbooks and shared-drive
+        /// copies were already published). PRE-CLOSE is informational, not blocking — a morning
+        /// run is a normal way of working, and a modal that fires every morning trains the desk
+        /// to click through the gate that matters (fresh-eyes review 2026-08-26). Returns true
+        /// to proceed; false aborts the render before the blast/workbooks/fragments exist
+        /// (data-store upkeep and dashboards from the build phase have already run).</summary>
         private bool ConfirmChecks(IEnumerable<string> notes, string what)
         {
-            var checks = notes.Where(n => n.StartsWith(OutlierGuard.Prefix + ":")).ToList();
+            var checks = notes.Where(n => n.StartsWith(OutlierGuard.Prefix + ":")
+                                          && !n.Contains("PRE-CLOSE RUN")).ToList();
             if (checks.Count == 0) return true;
             var r = MessageBox.Show(this,
                 "Outlier check — verify these before distributing:\n\n" + string.Join("\n", checks) +
-                $"\n\nContinue and write/publish the {what}?  (No = nothing is written)",
+                $"\n\nContinue and write/publish the {what}?\n" +
+                "(No = the blast/workbooks/email fragments are NOT written)",
                 "RatesWeekly — manual check required", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             return r == MessageBoxResult.Yes;
         }
@@ -275,8 +287,11 @@ namespace RateDesk.Weekly
             try
             {
                 var overrides = SourceStore.Load(AppDataDir);
+                // SNB excluded: its mids come from the SARON futures strip, not meeting OIS
+                // contributors — a source pick there does nothing (fresh-eyes review 2026-08-26)
                 var scheds = MeetingsStore.Schedules
-                    .Where(s => string.IsNullOrEmpty(s.Kind) && s.Tickers.Any(t => t.Contains("{N}")))
+                    .Where(s => string.IsNullOrEmpty(s.Kind) && s.Tickers.Any(t => t.Contains("{N}"))
+                                && !s.Name.Equals("SNB", StringComparison.OrdinalIgnoreCase))
                     .ToList();
                 var dlg = new Window
                 {
@@ -294,6 +309,7 @@ namespace RateDesk.Weekly
                     TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 10), FontSize = 11.5,
                 });
                 RateDesk.Bloomberg.RefDataClient? probe = null;
+                var probeTask = Task.CompletedTask;   // outstanding probes — disposal waits for them
                 RateDesk.Bloomberg.RefDataClient? Probe()
                 {
                     try { return probe ??= new RateDesk.Bloomberg.RefDataClient(); }
@@ -307,35 +323,55 @@ namespace RateDesk.Weekly
                     var row = new System.Windows.Controls.DockPanel { Margin = new Thickness(0, 2, 0, 2) };
                     var cmb = new System.Windows.Controls.ComboBox { Width = 120, FontSize = 11 };
                     bool filling = false;
-                    void Fill(List<(string Src, double? AgeMinutes)>? probed)
+                    void Fill()
                     {
                         filling = true;
-                        var sel = Sel(cmb) ?? cur;
                         cmb.Items.Clear();
-                        var opts = probed != null
-                            ? probed.Select(p => (p.Src, Label: (p.Src.Length == 0 ? "comp" : p.Src)
-                                                               + (p.AgeMinutes is > 60 ? " *>1h" : ""))).ToList()
-                            : new[] { "" }.Concat(SourceCatalog.Candidates.Where(c => c.Length > 0))
-                                .Distinct(StringComparer.OrdinalIgnoreCase)
-                                .Select(s => (Src: s, Label: s.Length == 0 ? "comp" : s)).ToList();
-                        if (!opts.Any(x => x.Src.Equals(sel, StringComparison.OrdinalIgnoreCase)))
-                            opts.Insert(0, (sel, sel.Length == 0 ? "comp" : sel));
+                        var opts = new[] { "" }.Concat(SourceCatalog.Candidates.Where(c => c.Length > 0))
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .Select(s => (Src: s, Label: s.Length == 0 ? "comp" : s)).ToList();
+                        if (!opts.Any(x => x.Src.Equals(cur, StringComparison.OrdinalIgnoreCase)))
+                            opts.Insert(0, (cur, cur.Length == 0 ? "comp" : cur));
                         foreach (var op in opts) cmb.Items.Add(op.Label);
-                        cmb.SelectedItem = opts.First(x => x.Src.Equals(sel, StringComparison.OrdinalIgnoreCase)).Label;
+                        cmb.SelectedItem = opts.First(x => x.Src.Equals(cur, StringComparison.OrdinalIgnoreCase)).Label;
                         filling = false;
                     }
-                    Fill(null);
-                    cmb.DropDownOpened += async (_, _) =>
+                    // probe results ANNOTATE the open list in place — never Clear()/reorder under
+                    // an open popup, or the async refill moves items under the cursor and the
+                    // desk saves a contributor they did not click (fresh-eyes review 2026-08-26)
+                    void Annotate(List<(string Src, double? AgeMinutes)> probed)
+                    {
+                        filling = true;
+                        var byRoot = probed.ToDictionary(
+                            p => p.Src.Length == 0 ? "comp" : p.Src,
+                            p => (p.Src.Length == 0 ? "comp" : p.Src) + (p.AgeMinutes is > 60 ? " *>1h" : ""),
+                            StringComparer.OrdinalIgnoreCase);
+                        int selIdx = cmb.SelectedIndex;
+                        for (int ii = 0; ii < cmb.Items.Count; ii++)
+                        {
+                            var root0 = ((string)cmb.Items[ii]).Split(' ')[0];
+                            if (byRoot.TryGetValue(root0, out var lbl))
+                            {
+                                if ((string)cmb.Items[ii] != lbl) cmb.Items[ii] = lbl;
+                                byRoot.Remove(root0);
+                            }
+                        }
+                        foreach (var extra in byRoot.Values) cmb.Items.Add(extra);   // discoveries at the END
+                        cmb.SelectedIndex = selIdx;
+                        filling = false;
+                    }
+                    Fill();
+                    cmb.DropDownOpened += (_, _) =>
                     {
                         if (filling || Probe() is not { } rd) return;
                         var root = sched.Tickers.First(t => t.Contains("{N}")).Replace("{N}", "1");
-                        try
+                        var t0 = Task.Run(() => rd.DiscoverSourcesWithAge(root, SourceCatalog.Candidates));
+                        probeTask = Task.WhenAll(probeTask, t0.ContinueWith(_ => { }));
+                        _ = t0.ContinueWith(t =>
                         {
-                            var probed = await Task.Run(() =>
-                                rd.DiscoverSourcesWithAge(root, SourceCatalog.Candidates));
-                            if (probed.Count > 0) Fill(probed);
-                        }
-                        catch { /* probe is best-effort */ }
+                            if (t.Status == TaskStatus.RanToCompletion && t.Result.Count > 0)
+                                Dispatcher.Invoke(() => Annotate(t.Result));
+                        });
                     };
                     System.Windows.Controls.DockPanel.SetDock(cmb, System.Windows.Controls.Dock.Right);
                     row.Children.Add(cmb);
@@ -376,7 +412,18 @@ namespace RateDesk.Weekly
                 buttons.Children.Add(cancel);
                 stack.Children.Add(buttons);
                 dlg.Content = stack;
-                dlg.Closed += (_, _) => { try { probe?.Dispose(); } catch { } };
+                // never tear down a BLPAPI session with a probe still in flight (native-crash
+                // class) — dispose only after the outstanding probes have drained
+                dlg.Closed += (_, _) =>
+                {
+                    var p = probe;
+                    probe = null;
+                    _ = Task.Run(async () =>
+                    {
+                        try { await probeTask; } catch { }
+                        try { p?.Dispose(); } catch { }
+                    });
+                };
                 dlg.ShowDialog();
 
                 static string? Sel(System.Windows.Controls.ComboBox c) =>
@@ -397,9 +444,11 @@ namespace RateDesk.Weekly
 
         private async void Update_Click(object sender, RoutedEventArgs e)
         {
-            if (_updating) return;
+            if (Busy) return;
             _updating = true;
             UpdateBtn.IsEnabled = false;
+            DailyBtn.IsEnabled = false;
+            ExportXlsBtn.IsEnabled = false;
             SetOutputButtons(false, false);   // re-lock during the rebuild — mid-update output is mixed-state
             LogBox.Clear();   // the startup instructions give way to the run log
             StatusText.Text = "running weekly...";
@@ -472,6 +521,8 @@ namespace RateDesk.Weekly
             {
                 _updating = false;
                 UpdateBtn.IsEnabled = true;
+                DailyBtn.IsEnabled = true;
+                ExportXlsBtn.IsEnabled = true;
             }
         }
 
@@ -611,9 +662,11 @@ namespace RateDesk.Weekly
 
         private async void Daily_Click(object sender, RoutedEventArgs e)
         {
-            if (_dailyRunning) return;
+            if (Busy) return;
             _dailyRunning = true;
             DailyBtn.IsEnabled = false;
+            UpdateBtn.IsEnabled = false;
+            ExportXlsBtn.IsEnabled = false;
             CopyBlastBtn.IsEnabled = false;
             DailyEmailBtn.IsEnabled = false;
             StatusText.Text = "building daily OIS run...";
@@ -647,6 +700,8 @@ namespace RateDesk.Weekly
             {
                 _dailyRunning = false;
                 DailyBtn.IsEnabled = true;
+                UpdateBtn.IsEnabled = true;
+                ExportXlsBtn.IsEnabled = true;
             }
         }
 
@@ -772,7 +827,7 @@ namespace RateDesk.Weekly
 
         private async void ExportXls_Click(object sender, RoutedEventArgs e)
         {
-            if (_exporting) return;
+            if (Busy) return;
             _exporting = true;
             ExportXlsBtn.IsEnabled = false;
             StatusText.Text = "exporting workbook from stored data...";

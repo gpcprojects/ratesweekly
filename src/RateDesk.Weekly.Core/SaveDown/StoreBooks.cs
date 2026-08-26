@@ -219,11 +219,5 @@ namespace RateDesk.Weekly.Core.SaveDown
             tbl.Resize(ws.Range(hdrRow, col0, hdrRow + Math.Max(1, rows.Count), col0 + cols - 1));
         }
 
-        private static DateTime PrevBd(DateTime d)
-        {
-            var p = d.AddDays(-1);
-            while (p.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) p = p.AddDays(-1);
-            return p;
-        }
     }
 }

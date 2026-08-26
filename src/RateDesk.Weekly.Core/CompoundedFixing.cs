@@ -55,6 +55,10 @@ namespace RateDesk.Weekly.Core
                 if (next > to.Date) next = to.Date;
                 if (next <= cur) { i++; continue; }   // superseded same-day duplicates
                 int n = (int)(next - cur).TotalDays;
+                // an INTERIOR hole longer than the publication lag is a broken series, not a
+                // weekend/holiday — fill-forwarding across it manufactures a number (fresh-eyes
+                // review 2026-08-26; the gradually-deepened store makes holes an expected state)
+                if (n > MaxStaleDays) return null;
                 growth *= 1 + r * n / dcc;
                 cur = next;
                 if (i + 1 < pts.Count && pts[i + 1].Date.Date <= cur) i++;
@@ -81,23 +85,37 @@ namespace RateDesk.Weekly.Core
                 try
                 {
                     if (svc.History != null
-                        && ComputeFor(sched, configs, svc.History, DateTime.Today) is { } cf)
+                        && ComputeFor(sched, configs, svc.History, rep.AsOf) is { } cf)
                     {
                         run.CompoundedPct = cf.Pct;
                         run.CompoundedFrom = cf.From;
                         log?.Invoke($"cmpd: {sched.Name} {cf.Pct:0.0000} " +
                                     $"({cf.Ticker}, {cf.From:dd-MMM-yy} → , {cf.Days}d, ACT/{cf.Dcc})");
-                        if (run.RefPct is { } spot && Math.Abs(cf.Pct - spot) * 100.0 > 15.0)
+                        // NOT tested against a re-based ref: inside a decision→start window the
+                        // compounded value is correctly the OLD rate while RefPct already carries
+                        // the new one — every 25bp move would cry wolf (fresh-eyes review 2026-08-26)
+                        if (!run.RefRebased && run.RefPct is { } spot
+                            && Math.Abs(cf.Pct - spot) * 100.0 > 15.0)
                             rep.Notes.Add($"{OutlierGuard.Prefix}: {sched.Name} compounded fixing " +
                                           $"{cf.Pct:0.000} vs spot {spot:0.000} — gap " +
                                           $"{(cf.Pct - spot) * 100.0:+0.0;-0.0}bp exceeds 15bp; " +
                                           "verify the fixing history before distribution");
                     }
-                    else log?.Invoke($"cmpd: {sched.Name} — no publishable value (fixing history " +
-                                     "missing or stale; column stays blank)");
+                    else log?.Invoke($"cmpd: {sched.Name} — no publishable value (window not yet " +
+                                     "open, or fixing history missing/stale; column stays blank)");
                 }
                 catch (Exception ex) { log?.Invoke($"! cmpd: {sched.Name}: {ex.Message}"); }
             }
+            // COMPLETENESS GATE (fresh-eyes review 2026-08-26): a bank that silently dropped
+            // out of the report (contributor page lost its date fields, family truncated) must
+            // demand eyes, not just a log line — the desk must never mail an 8-bank table
+            // where 9 belong without noticing.
+            foreach (var sched in MeetingsStore.Schedules.Where(s => string.IsNullOrEmpty(s.Kind)
+                         && !s.Name.Equals("SNB", StringComparison.OrdinalIgnoreCase)))
+                if (!rep.Runs.Any(r => r.Title.Split('·')[0].Trim()
+                        .Equals(sched.Name, StringComparison.OrdinalIgnoreCase)))
+                    rep.Notes.Add($"{OutlierGuard.Prefix}: {sched.Name} produced NO rows — the run " +
+                                  "is missing from every surface; verify before distribution");
         }
 
         /// <summary>Resolve the run's fixing ticker (schedule refTicker, else the currency's
@@ -110,11 +128,23 @@ namespace RateDesk.Weekly.Core
                 ?? configs.Enabled.FirstOrDefault(c =>
                     c.Ccy.Equals(sched.Ccy, StringComparison.OrdinalIgnoreCase))?.Ois?.OnFixingTicker;
             if (string.IsNullOrEmpty(refTicker)) return null;
-            if (CurrentPeriodStart(sched, asOf) is not { } from) return null;
+            if (MeetingCalendar.CurrentPeriodStartEx(sched, asOf) is not { } ps) return null;
+            var from = ps.Start;
             int lookback = Math.Max(30, (int)(asOf.Date - from).TotalDays + 15);
             List<HistPoint> hist;
             try { hist = history.GetDaily(refTicker, lookback).ToList(); }
             catch { return null; }
+            // a DERIVED window start (median lag off a hand-entered decision) can sit a day or
+            // two off the true effective date — harmless on a flat fixing, but if the fixing
+            // CHANGED near the derived start the window is ambiguous and a wrong day means a
+            // wrong number: publish nothing (fresh-eyes review 2026-08-26)
+            if (ps.Derived)
+            {
+                var near = hist.Where(p => Math.Abs((p.Date.Date - from).TotalDays) <= 4)
+                    .OrderBy(p => p.Date).ToList();
+                for (int k = 1; k < near.Count; k++)
+                    if (Math.Abs(near[k].Value - near[k - 1].Value) > 0.05) return null;
+            }
             return Compound(hist, from, asOf.Date, sched.FixingDcc) is { } pct
                 ? new Result(pct, from, (int)(asOf.Date - from).TotalDays, sched.FixingDcc, refTicker)
                 : null;

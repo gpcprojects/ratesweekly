@@ -49,7 +49,8 @@ namespace RateDesk.Weekly.Core.Daily
 
                 sb.AppendLine();
                 sb.Append($"{flag} {runName} Run");
-                if (run.RefPct is { } rp) sb.Append($"   ({fixing} {rp.ToString("0.000", inv)})");
+                if (run.RefPct is { } rp)
+                    sb.Append($"   ({fixing} {rp.ToString("0.000", inv)}{(run.RefRebased ? " rebased" : "")})");
                 if (run.CompoundedPct is { } cp) sb.Append($"   (cmpd {cp.ToString("0.000", inv)})");
                 sb.AppendLine();
                 // same table as the workbook's Runs sheet, minus Maturity (IB window widths —
@@ -107,7 +108,7 @@ namespace RateDesk.Weekly.Core.Daily
                 if (run == null || run.Rows.Count == 0) continue;
 
                 sb.Append("<tr>" + Wide($"<b>{runName} closing run</b>") + "</tr>");
-                sb.Append("<tr>" + Td($"{fixing} fixing")
+                sb.Append("<tr>" + Td($"{fixing} fixing" + (run.RefRebased ? " (rebased)" : ""))
                     + Td(run.RefPct is { } rp ? rp.ToString("0.000", inv) : "&nbsp;", "text-align:right;")
                     + (run.CompoundedPct is { } cp
                         ? Td("compounded") + Td(cp.ToString("0.000", inv), "text-align:right;")

@@ -228,8 +228,13 @@ namespace RateDesk.Weekly.Core.Series
                 for (int i = 0; i < t.Rows.Count; i++)
                 {
                     var end = all.FirstOrDefault(d => d > t.Rows[i].Contract);
-                    if (end == default) end = t.Rows[i].Contract.AddDays(42);
-                    if (t.Rows[i].Contract.Year != end.Year) t.Rows[i] = t.Rows[i] with { Turn = true };
+                    // unresolved end: only a DECEMBER start provably spans the year-end — the
+                    // same rule as the boards (the old 42-day guess could disagree with the
+                    // email on which row is a turn; fresh-eyes review 2026-08-26)
+                    bool turn = end == default
+                        ? t.Rows[i].Contract.Month == 12
+                        : t.Rows[i].Contract.Year != end.Year;
+                    if (turn) t.Rows[i] = t.Rows[i] with { Turn = true };
                 }
             }
             return t;

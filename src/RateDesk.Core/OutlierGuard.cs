@@ -24,6 +24,8 @@ namespace RateDesk.Core
 
         public static List<string> Check(WeeklyReport rep)
         {
+            // notes render in the CHECK popup and the log — INVARIANT like every other surface
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
             var notes = new List<string>();
             foreach (var run in rep.Runs)
             {
@@ -38,8 +40,8 @@ namespace RateDesk.Core
                     // absolute-size flag first — fires even on a single row or a uniform strip
                     foreach (var (m, v) in vals)
                         if (Math.Abs(v) > abs)
-                            notes.Add($"{Prefix}: {name} {m.Date:dd-MMM-yy} {label} " +
-                                      $"{v:+0.0;-0.0}bp exceeds the {abs:0}bp sanity bar — " +
+                            notes.Add($"{Prefix}: {name} {m.Date.ToString("dd-MMM-yy", inv)} {label} " +
+                                      $"{v.ToString("+0.0;-0.0;0.0", inv)}bp exceeds the {abs:0}bp sanity bar — " +
                                       "verify before distribution");
                     if (vals.Count < 4) continue;
                     double med = Median(vals.Select(x => x.v));
@@ -47,8 +49,8 @@ namespace RateDesk.Core
                     double thresh = Math.Max(FloorBp, MadMult * mad);
                     foreach (var (m, v) in vals)
                         if (Math.Abs(v - med) > thresh && Math.Abs(v) <= abs)
-                            notes.Add($"{Prefix}: {name} {m.Date:dd-MMM-yy} {label} " +
-                                      $"{v:+0.0;-0.0}bp vs run median {med:+0.0;-0.0}bp — " +
+                            notes.Add($"{Prefix}: {name} {m.Date.ToString("dd-MMM-yy", inv)} {label} " +
+                                      $"{v.ToString("+0.0;-0.0;0.0", inv)}bp vs run median {med.ToString("+0.0;-0.0;0.0", inv)}bp — " +
                                       "verify before distribution");
                 }
             }
@@ -60,6 +62,7 @@ namespace RateDesk.Core
         public static List<string> CheckStrip(string stripName, string changeLabel,
             IEnumerable<(string RowLabel, double Value)> rows)
         {
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
             var vals = rows.ToList();
             var notes = new List<string>();
             if (vals.Count < 4) return notes;
@@ -68,8 +71,8 @@ namespace RateDesk.Core
             double thresh = Math.Max(FloorBp, MadMult * mad);
             foreach (var (label, v) in vals)
                 if (Math.Abs(v - med) > thresh)
-                    notes.Add($"{Prefix}: {stripName} {label} {changeLabel} {v:+0.0;-0.0}bp vs " +
-                              $"strip median {med:+0.0;-0.0}bp — verify before distribution");
+                    notes.Add($"{Prefix}: {stripName} {label} {changeLabel} {v.ToString("+0.0;-0.0;0.0", inv)}bp vs " +
+                              $"strip median {med.ToString("+0.0;-0.0;0.0", inv)}bp — verify before distribution");
             return notes;
         }
 

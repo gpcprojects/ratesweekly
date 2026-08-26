@@ -26,6 +26,10 @@ namespace RateDesk.Weekly.Core
             _db = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = path }.ToString());
             _db.Open();
             Exec("PRAGMA journal_mode=WAL;");
+            // a second connection (weekly + daily overlapping, a CLI run beside the app) must
+            // WAIT, not throw SQLITE_BUSY into a swallowed catch and silently lose the day's
+            // rows (fresh-eyes review 2026-08-26)
+            Exec("PRAGMA busy_timeout=15000;");
             Exec("""
                 CREATE TABLE IF NOT EXISTS daily(
                     ticker TEXT NOT NULL,

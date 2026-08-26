@@ -31,10 +31,16 @@ namespace RateDesk.Weekly.Core
 
         public static void Save(string appDataDir, Dictionary<string, string> overrides)
         {
+            // atomic write-then-rename: this file decides which FEED a traded number comes
+            // from — a torn write must never quietly revert the desk to different contributors
+            // (fresh-eyes review 2026-08-26)
             Directory.CreateDirectory(appDataDir);
-            File.WriteAllText(Path.Combine(appDataDir, FileName),
-                JsonSerializer.Serialize(new Shape { Overrides = overrides },
-                    new JsonSerializerOptions { WriteIndented = true }));
+            var path = Path.Combine(appDataDir, FileName);
+            var tmp = path + ".tmp";
+            File.WriteAllText(tmp, JsonSerializer.Serialize(new Shape { Overrides = overrides },
+                new JsonSerializerOptions { WriteIndented = true }));
+            if (File.Exists(path)) File.Replace(tmp, path, null);
+            else File.Move(tmp, path);
         }
 
         /// <summary>Push the saved overrides into the service (before ticker collection, so the
@@ -43,7 +49,21 @@ namespace RateDesk.Weekly.Core
         public static void Apply(PricingService svc, string? appDataDir, Action<string>? log = null)
         {
             if (appDataDir == null) return;
-            foreach (var (run, src) in Load(appDataDir))
+            // an unreadable file must be LOUD: it silently reverts every run to the config
+            // default feed (fresh-eyes review 2026-08-26)
+            var path = Path.Combine(appDataDir, FileName);
+            var loaded = Load(appDataDir);
+            if (File.Exists(path) && loaded.Count == 0)
+                try
+                {
+                    JsonSerializer.Deserialize<Shape>(File.ReadAllText(path));
+                }
+                catch
+                {
+                    log?.Invoke("! sources: sources.json is unreadable — ALL runs are on their " +
+                                "config-default feeds until it is re-saved (SOURCES button)");
+                }
+            foreach (var (run, src) in loaded)
             {
                 var sched = MeetingsStore.Schedules.FirstOrDefault(s =>
                     s.Name.Equals(run, StringComparison.OrdinalIgnoreCase));

@@ -60,6 +60,10 @@ namespace RateDesk.Core
         public double? RefPct { get; set; }
         /// <summary>The ref rate was replaced by a manual override (post-decision, fixing not yet printed).</summary>
         public bool RefOverridden { get; set; }
+        /// <summary>The ref was AUTO re-based onto the just-decided period's own OIS (the
+        /// decision→start compensation) — a swap mid standing in for the fixing until the new
+        /// rate prints. Renderers must mark it (fresh-eyes review 2026-08-26).</summary>
+        public bool RefRebased { get; set; }
         /// <summary>Next decision date + announcement time on the London clock.</summary>
         public DateTime? NextDecision { get; set; }
         public string DecisionTimeLondon { get; set; } = "";
@@ -866,7 +870,7 @@ namespace RateDesk.Core
                                         pat.Replace("{N}", "1") + " Curncy", span))
                                         if (pt.Date.Date < dec) pending = pt.Value;
                             }
-                            if (pending is { } pv) res.RefPct = pv;
+                            if (pending is { } pv) { res.RefPct = pv; res.RefRebased = true; }
                         }
                     }
                 }
@@ -1396,8 +1400,14 @@ namespace RateDesk.Core
             // the wrong index after every such meeting. EXCEPT families that renumber at the period
             // START (SKSF): their boundary IS the start date, and the snap would mis-rung every
             // lookback inside the decision→start week (desk 2026-08-25, the Feb-27 Δ1d fault).
+            // The snap reads MeetingCalendar.AnnouncementDates, NOT sched.DecisionDates alone
+            // (fresh-eyes review 2026-08-26): the config's decision list is FUTURE-only, so the
+            // just-settled announcement (ECB 23-Jul-26) was never a boundary and up to a week of
+            // closes after every recent decision stitched to the wrong contract — including the
+            // Δ1m anchors in that window. Derived dates come only from stable-lag families.
             if (!sched.RollsAtPeriodStart)
-                foreach (var dd in sched.DecisionDates)
+                foreach (var dd in MeetingCalendar.AnnouncementDates(sched)
+                             .Select(d => d.Date).Distinct().OrderBy(d => d))
                     for (int i = 0; i < allMeet.Count; i++)
                         if (dd < allMeet[i] && (allMeet[i] - dd).TotalDays <= 6) { allMeet[i] = dd; break; }
             // DESK CONVENTION (2026-08-06): history values are the daily 4:30pm-LONDON snaps, not
