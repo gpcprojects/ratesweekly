@@ -288,6 +288,9 @@ namespace RateDesk.Weekly.Core.Daily
                 log?.Invoke($"daily: topped up {fx} inflation fixing series");
                 try { Infl.InflHistory.Maintain(store, log); }
                 catch (Exception ex) { log?.Invoke("  ! infl maintain: " + ex.Message); }
+                // fixings nobody quoted today (their 0.00 is silence, not a flat market)
+                try { rep.Notes.AddRange(Infl.InflHistory.StaleNotes(store)); }
+                catch { /* informational */ }
                 // capture the live fixing marks while the snapshot is in hand — the email
                 // section, lean xlsx and save-down book all publish these
                 try { Infl.InflHistory.LastLiveMarks = Infl.InflHistory.CollectLiveMarks(snap, store); }

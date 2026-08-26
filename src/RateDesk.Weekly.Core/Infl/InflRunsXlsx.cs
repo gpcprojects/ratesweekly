@@ -14,6 +14,10 @@ namespace RateDesk.Weekly.Core.Infl
         public static string FileName(DateTime asOf) =>
             $"DRAX Fixing Runs {asOf.ToString("dMMMyy", System.Globalization.CultureInfo.InvariantCulture)}.xlsx";
 
+        /// <summary>The sheet's own title row — shared with the email facsimile.</summary>
+        public static string Title(DateTime asOf) =>
+            $"DRAX Fixing Runs {asOf.ToString("dMMMyy", System.Globalization.CultureInfo.InvariantCulture)}";
+
         public static string Write(HistoryStore store, string outDir, DateTime asOf,
             Dictionary<string, List<InflHistory.Mark>>? marks,
             Dictionary<string, DateTime>? nextPrints, Action<string>? log = null)
@@ -34,8 +38,7 @@ namespace RateDesk.Weekly.Core.Infl
             Dictionary<string, DateTime>? nextPrints, DateTime asOf)
         {
             int r = 1;
-            ws.Cell(r, 1).Value = $"DRAX Fixing Runs {asOf.ToString("dMMMyy",
-                System.Globalization.CultureInfo.InvariantCulture)}";
+            ws.Cell(r, 1).Value = Title(asOf);
             ws.Cell(r, 1).Style.Font.SetBold();
             r += 2;
 
@@ -63,12 +66,15 @@ namespace RateDesk.Weekly.Core.Infl
                 ws.Cell(r, 6).Value = "Index Change";
                 ws.Cell(r, 6).Style.Font.SetBold();
                 r++;
+                int hdrRow = r;
                 string[] hdr = { "Month", "Base Index", "Mid Index", "YoY %", "MoM %", "Daily", "Weekly", "Monthly" };
                 for (int c = 0; c < hdr.Length; c++)
                 {
                     ws.Cell(r, c + 1).Value = hdr[c];
                     ws.Cell(r, c + 1).Style.Font.SetBold();
-                    ws.Cell(r, c + 1).Style.Fill.SetBackgroundColor(XLColor.FromArgb(217, 217, 217));
+                    // DRAX blue band (desk 2026-08-26, was grey)
+                    ws.Cell(r, c + 1).Style.Fill.SetBackgroundColor(
+                        XLColor.FromHtml(RateDesk.Weekly.Core.Daily.RunsTable.BrandBlue));
                 }
                 r++;
                 foreach (var row in shown)
@@ -84,6 +90,13 @@ namespace RateDesk.Weekly.Core.Infl
                     Set(ws.Cell(r, 8), row.M1, "+0.00;-0.00;0.00");
                     r++;
                 }
+                // GRID LINES on the attachment (desk 2026-08-26) — the email carries none
+                var grid = ws.Range(hdrRow, 1, r - 1, hdr.Length);
+                grid.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                grid.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+                var gc = XLColor.FromHtml(RateDesk.Weekly.Core.Daily.RunsTable.GridLine);
+                grid.Style.Border.OutsideBorderColor = gc;
+                grid.Style.Border.InsideBorderColor = gc;
                 r++;   // blank separator between families
             }
             ws.Columns(1, 8).Width = 11;

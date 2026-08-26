@@ -22,6 +22,19 @@ namespace RateDesk.Weekly.Core.Daily
         public const string DateFmt = "dd-MMM-yy";
         public const string TurnLabel = "Y/E Turn";
 
+        /// <summary>DRAX blue — sampled from the logo in assets\jbdh_banner.jpg (rgb 1,162,230),
+        /// desk 2026-08-26: the header band on every published table, xls and email alike, in
+        /// place of the old grey.</summary>
+        public const string BrandBlue = "#01A2E6";
+        /// <summary>The xls's hairline grid. The EMAIL carries no grid at all — gridlines and
+        /// conditional formatting are the only two differences the desk wants between the
+        /// attachment and the inline content.</summary>
+        public const string GridLine = "#BFBFBF";
+
+        /// <summary>Excel column width (characters) → CSS pixels, so the email's columns are the
+        /// SAME measure as the sheet's: Excel's own 7px-per-character plus 5px of cell padding.</summary>
+        public static int PxForChars(double chars) => (int)Math.Round(chars * 7 + 5);
+
         /// <summary>Column headers, in the desk's order: Mid | Priced | Step, then the changes
         /// (desk 2026-08-26, "mid/priced/step everywhere *everywhere*").</summary>
         public static readonly string[] Headers =

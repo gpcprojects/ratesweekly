@@ -434,6 +434,48 @@ namespace RateDesk.Weekly.Core.Infl
             return p;
         }
 
+        /// <summary>UNQUOTED FIXINGS (desk 2026-08-26, probed): the front months of a fixing strip
+        /// are thinly quoted — BPSWIF8/9 sat unchanged for days while the rest of the RPI curve
+        /// moved 2-6bp, and BPSWIF8 skipped a day entirely. Their change columns then print 0.00,
+        /// which READS as "the market did not move" when the truth is "nobody quoted it". Flagged
+        /// the same way as a stale OIS feed: named, non-blocking, never suppressed — the numbers
+        /// still publish, the desk just knows which ones are asleep.</summary>
+        public static List<string> StaleNotes(HistoryStore store)
+        {
+            var notes = new List<string>();
+            foreach (var fam in Families)
+            {
+                var hist = store.GetFixingHistory(fam.Key);
+                if (hist.Count == 0) continue;
+                var days = hist.Select(x => x.Date).Distinct().OrderByDescending(d => d).Take(4).ToList();
+                if (days.Count < 3) continue;
+                var byFix = hist.GroupBy(x => x.Fix)
+                    .ToDictionary(g => g.Key, g => g.ToDictionary(x => x.Date, x => x.Value));
+                var live = byFix.Where(kv => kv.Value.ContainsKey(days[0])).ToList();
+                if (live.Count < 4) continue;
+                // did the family move at all on the latest save? (else it is a quiet day, not staleness)
+                int moved = live.Count(kv => kv.Value.TryGetValue(days[1], out var prev)
+                                             && Math.Abs(kv.Value[days[0]] - prev) > 1e-9);
+                if (moved < live.Count / 2) continue;
+                var stale = new List<string>();
+                foreach (var (fix, series) in live.OrderBy(kv => kv.Key))
+                {
+                    // unchanged across the last three saves = asleep while its neighbours traded
+                    bool flat = days.Take(3).All(d => series.ContainsKey(d))
+                                && Math.Abs(series[days[0]] - series[days[1]]) < 1e-9
+                                && Math.Abs(series[days[1]] - series[days[2]]) < 1e-9;
+                    if (flat) stale.Add(DateTime.ParseExact(fix + "-01", "yyyy-MM-dd",
+                        System.Globalization.CultureInfo.InvariantCulture)
+                        .ToString("MMM-yy", System.Globalization.CultureInfo.InvariantCulture));
+                }
+                if (stale.Count > 0)
+                    notes.Add($"STALE: {fam.Key} {string.Join(", ", stale)} unquoted — unchanged " +
+                              $"across the last 3 saves while {moved}/{live.Count} of the strip moved; " +
+                              "their change columns read 0.00 because nobody quoted them");
+            }
+            return notes;
+        }
+
         // ------------------------------------------------------------------- helpers ----
         /// <summary>Reference month from a maturity: walk the lag back until the month matches
         /// the ticker's own calendar-month index (USD/EUR are +3m, GBP +2m — but derived, never

@@ -53,11 +53,13 @@ namespace RateDesk.Weekly.Core.Daily
                 if (b.FixingPct is { } rp) ws.Cell(r, 2).Value = rp;
                 ws.Cell(r, 2).Style.NumberFormat.Format = RunsTable.RateFmt;
                 r++;
+                int hdrRow = r;
                 for (int c = 0; c < RunsTable.Headers.Length; c++)
                 {
                     ws.Cell(r, c + 1).Value = RunsTable.Headers[c];
                     ws.Cell(r, c + 1).Style.Font.SetBold();
-                    ws.Cell(r, c + 1).Style.Fill.SetBackgroundColor(XLColor.FromArgb(217, 217, 217));
+                    // DRAX blue band (desk 2026-08-26, was grey)
+                    ws.Cell(r, c + 1).Style.Fill.SetBackgroundColor(XLColor.FromHtml(RunsTable.BrandBlue));
                 }
                 r++;
                 foreach (var m in b.Rows)
@@ -84,6 +86,14 @@ namespace RateDesk.Weekly.Core.Daily
                     }
                     r++;
                 }
+                // GRID LINES on the attachment (desk 2026-08-26): the sheet is gridded, the
+                // email is not — that and the email's conditional formatting are the only
+                // differences between the two
+                var grid = ws.Range(hdrRow, 1, r - 1, RunsTable.Headers.Length);
+                grid.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                grid.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+                grid.Style.Border.OutsideBorderColor = XLColor.FromHtml(RunsTable.GridLine);
+                grid.Style.Border.InsideBorderColor = XLColor.FromHtml(RunsTable.GridLine);
                 r++;   // blank separator
             }
             ws.Columns(1, 2).Width = 12;
