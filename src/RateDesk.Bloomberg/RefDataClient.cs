@@ -527,10 +527,18 @@ namespace RateDesk.Bloomberg
                     ? fieldData.GetElement("LAST_UPDATE_DT").GetValueAsString() : "";
                 string t = fieldData.HasElement("LAST_UPDATE")
                     ? fieldData.GetElement("LAST_UPDATE").GetValueAsString() : "";
+                // AGES ARE RELATIVE, NEVER ABSOLUTE (desk 2026-08-26, probed): LAST_UPDATE comes
+                // back on the TERMINAL's display timezone while DateTime.Now is the WINDOWS
+                // clock (this desk's box runs GTB/UTC+3 with a London terminal — every liquid
+                // front read "120m quiet"). No wall-clock basis is trustworthy across machines,
+                // so the raw number here is just (machine now − stamp-as-parsed), UNCLAMPED and
+                // internally consistent — consumers judge staleness ONLY as the gap to the
+                // snapshot's own baseline (RatesSnapshot.BaselineAgeMinutes), where any constant
+                // offset cancels exactly.
                 if (d.Length > 0 && DateTime.TryParse(d + (t.Length > 0 ? " " + t : ""),
                         System.Globalization.CultureInfo.InvariantCulture,
                         System.Globalization.DateTimeStyles.AssumeLocal, out var ts))
-                    return Math.Max(0, (DateTime.Now - ts).TotalMinutes);
+                    return (DateTime.Now - ts).TotalMinutes;
             }
             catch { /* age is best-effort */ }
             return null;

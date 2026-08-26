@@ -51,7 +51,8 @@ namespace RateDesk.Weekly.Core.Series
             IReadOnlyList<(string Label, DateTime Contract)> contracts,
             IEnumerable<DateTime> boundaries,
             Func<int, string> ticker,
-            int maxIndexProbe = 13)
+            int maxIndexProbe = 13,
+            MeetingRungMap? map = null)
         {
             var res = new StripTable { Title = title, AsOf = asOf };
 
@@ -86,8 +87,8 @@ namespace RateDesk.Weekly.Core.Series
                 if (Guard(mids, i) is not { } mid) continue;
                 if (mids[i] is { } raw && Math.Abs(raw - mid) > 1e-9) { guarded++; label += "*"; }
 
-                double? w = RolledValue(store, ticker, bounds, contract, asOf.AddDays(-WeeklyCurves.WeekDays), maxIndexProbe);
-                double? m = RolledValue(store, ticker, bounds, contract, WeeklyCurves.MonthAgo(asOf), maxIndexProbe);
+                double? w = RolledValue(store, ticker, bounds, contract, asOf.AddDays(-WeeklyCurves.WeekDays), maxIndexProbe, map);
+                double? m = RolledValue(store, ticker, bounds, contract, WeeklyCurves.MonthAgo(asOf), maxIndexProbe, map);
 
                 res.Rows.Add(new StripRow(label, contract, mid, w, m, tkNow));
             }
@@ -137,9 +138,12 @@ namespace RateDesk.Weekly.Core.Series
         /// contract and must never source a change.</summary>
         public static double? RolledValue(
             HistoryStore store, Func<int, string> ticker, List<DateTime> bounds,
-            DateTime contract, DateTime then, int maxIndex)
+            DateTime contract, DateTime then, int maxIndex, MeetingRungMap? map = null)
         {
-            if (bounds.Any(b => b == then.Date)) then = then.Date.AddDays(-1);
+            // boundary days and mixed-state days (announcement→start) never source a value
+            then = then.Date;
+            while (bounds.Any(b => b == then) || (map?.IsMixedState(then) ?? false))
+                then = then.AddDays(-1);
 
             // Boundaries strictly after `then` and at or before the contract date are exactly the
             // rolls that have happened between then and now for this contract. Zero = the
@@ -147,13 +151,14 @@ namespace RateDesk.Weekly.Core.Series
             int idxThen = bounds.Count(b => b > then.Date && b <= contract.Date);
             if (idxThen < 1 || idxThen > maxIndex) return null;
 
-            // ...and if the walk-back itself resolves to a decision-day close (a weekend lookback
-            // over a Friday decision, say), recompute from the day before that boundary — the
-            // index shifts too: before the roll, this contract lived under the NEXT number up.
+            // ...and if the walk-back itself resolves to a decision-day or mixed-state close (a
+            // weekend lookback over a Friday decision, say), recompute from the day before —
+            // the index shifts too: before the roll, this contract lived under the NEXT number up.
             var read = store.ValueAsOf(ticker(idxThen), then);
             if (read is null) return null;
-            if (LastCloseDate(store, ticker(idxThen), then) is { } d && bounds.Contains(d.Date))
-                return RolledValue(store, ticker, bounds, contract, d.Date.AddDays(-1), maxIndex);
+            if (LastCloseDate(store, ticker(idxThen), then) is { } d
+                && (bounds.Contains(d.Date) || (map?.IsMixedState(d.Date) ?? false)))
+                return RolledValue(store, ticker, bounds, contract, d.Date.AddDays(-1), maxIndex, map);
             return read;
         }
 
@@ -239,7 +244,7 @@ namespace RateDesk.Weekly.Core.Series
             }
 
             var t = RollingStrip.Build($"{sched.Name} · {sched.Ccy}", store, asOf, contracts,
-                map.Boundaries, tick);
+                map.Boundaries, tick, map: map);
             // Y/E TURN (desk 2026-08-20): on marked runs, a period spanning a year-end renders
             // as a label — its average carries the turn dislocation (SWESTR's is extreme)
             if (sched.MarkTurnPeriods)

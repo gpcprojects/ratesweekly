@@ -142,15 +142,16 @@ namespace RateDesk.Weekly.Core.Daily
             (DateTime Date, double Value, string Source)? ValueAt(DateTime contract, DateTime then, int depth = 0)
             {
                 if (depth > 6) return null;
-                if (map.IsBoundary(then)) then = then.Date.AddDays(-1);
+                // boundary days and mixed-state days (announcement→start, renumber in flight)
+                // never source a value — step back to the last clean day (desk 2026-08-26)
+                then = then.Date;
+                while (map.IsBoundary(then) || map.IsMixedState(then)) then = then.AddDays(-1);
                 if (map.RungFor(contract, then) is not { } idx) return null;
                 var l = RungHist(idx);
                 for (int i = l.Count - 1; i >= 0; i--)
                     if (l[i].Date.Date <= then.Date)
                     {
-                        // a walk-back RESOLVING to a boundary close recomputes from the day
-                        // before it (mixed-state decision-day closes — the stitcher's rule)
-                        if (map.IsBoundary(l[i].Date.Date))
+                        if (map.IsBoundary(l[i].Date.Date) || map.IsMixedState(l[i].Date.Date))
                             return ValueAt(contract, l[i].Date.Date.AddDays(-1), depth + 1);
                         return (l[i].Date.Date, l[i].Value, l[i].Source);
                     }

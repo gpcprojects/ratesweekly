@@ -157,7 +157,8 @@ namespace RateDesk.Weekly.Core.Series
         /// unattributable to either contract.</summary>
         public static List<HistPoint> MeetingSeries(
             HistoryStore store, IEnumerable<DateTime> boundaries, Func<int, string> ticker,
-            DateTime contract, DateTime asOf, int windowDays, int maxIndexProbe = 13)
+            DateTime contract, DateTime asOf, int windowDays, int maxIndexProbe = 13,
+            MeetingRungMap? map = null)
         {
             // 14-day cluster, matching RollingStrip — the dodgeball stitcher's hardened width
             var cl = new List<DateTime>();
@@ -180,6 +181,9 @@ namespace RateDesk.Weekly.Core.Series
                 if (idx < 1 || idx > maxIndexProbe) continue;
                 foreach (var p in store.GetDaily(ticker(idx), windowDays + 10))
                 {
+                    // mixed-state days (announcement→start renumber window) never enter a
+                    // roll-corrected series (desk 2026-08-26)
+                    if (map?.IsMixedState(p.Date) ?? false) continue;
                     if (p.Date.Date < cuts[s] || p.Date.Date >= cuts[s + 1]) continue;
                     if (boundarySet.Contains(p.Date.Date)) continue;
                     res.Add(p);
@@ -303,7 +307,8 @@ namespace RateDesk.Weekly.Core.Series
                 var strip = RollingStrip.ForMeetings(sched, store, asOf, source: activeSrc);
                 // ONE boundary derivation for every consumer — MeetingRungMap (this scan
                 // previously ignored the SKSF start rule and settled announcements)
-                var bounds = new MeetingRungMap(sched).Boundaries.ToList();
+                var rmap = new MeetingRungMap(sched);
+                var bounds = rmap.Boundaries.ToList();
                 var tick = RollingStrip.SourceAwareTicker(store, pat, activeSrc);
                 foreach (var row in strip.Rows)
                 {
@@ -311,7 +316,7 @@ namespace RateDesk.Weekly.Core.Series
                     // a year-end-turn period's "move" is the turn breathing, not policy repricing
                     if (row.Turn) { excluded++; continue; }
                     var series = MeetingSeries(store, bounds, tick,
-                        row.Contract, asOf, SparkDays + 40);
+                        row.Contract, asOf, SparkDays + 40, map: rmap);
                     Add(series, 100.0, ccy, group, "meeting",
                         $"{sched.Name} {row.Contract:dd-MMM-yy}", RateText);
                 }

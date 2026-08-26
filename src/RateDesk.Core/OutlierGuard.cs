@@ -44,10 +44,17 @@ namespace RateDesk.Core
                                       $"{v.ToString("+0.0;-0.0;0.0", inv)}bp exceeds the {abs:0}bp sanity bar — " +
                                       "verify before distribution");
                     if (vals.Count < 4) continue;
-                    double med = Median(vals.Select(x => x.v));
-                    double mad = Median(vals.Select(x => Math.Abs(x.v - med)));
+                    // the FRONT row is EXCLUDED from the cross-sectional test (desk 2026-08-26,
+                    // the RBNZ -1.0-vs--20.3 false flag): a front converging on the fixing
+                    // legitimately decouples from the strip — its own pricer showed the same
+                    // shape. The absolute bars above still cover it.
+                    var front = run.Rows.FirstOrDefault(m => !m.TurnPeriod);
+                    var body = vals.Where(x => !ReferenceEquals(x.m, front)).ToList();
+                    if (body.Count < 3) continue;
+                    double med = Median(body.Select(x => x.v));
+                    double mad = Median(body.Select(x => Math.Abs(x.v - med)));
                     double thresh = Math.Max(FloorBp, MadMult * mad);
-                    foreach (var (m, v) in vals)
+                    foreach (var (m, v) in body)
                         if (Math.Abs(v - med) > thresh && Math.Abs(v) <= abs)
                             notes.Add($"{Prefix}: {name} {m.Date.ToString("dd-MMM-yy", inv)} {label} " +
                                       $"{v.ToString("+0.0;-0.0;0.0", inv)}bp vs run median {med.ToString("+0.0;-0.0;0.0", inv)}bp — " +

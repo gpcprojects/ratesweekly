@@ -254,6 +254,15 @@ namespace RateDesk.Weekly.Core.Daily
                             if (sbh!.GetDaily(pat.Replace("{N}", n.ToString()) + srcSfx + " Curncy", 70).Count > 0) wrote++;
                             if (srcSfx.Length > 0)
                                 sbh!.GetDaily(pat.Replace("{N}", n.ToString()) + " Curncy", 70);
+                            // RUNG-BY-DATE DOCUMENTATION (desk 2026-08-26, the ECB Δ1m mis-rung):
+                            // record every rung's own SW_EFF_DT/MATURITY today, both spellings —
+                            // renumber timing becomes Bloomberg's own fields, not inference
+                            foreach (var sp in srcSfx.Length > 0 ? new[] { srcSfx, "" } : new[] { "" })
+                            {
+                                var tk = pat.Replace("{N}", n.ToString()) + sp + " Curncy";
+                                if (snap.Get(tk) is { Maturity: { } mm } q0)
+                                    store.SetMaturity(tk, DateTime.Today, mm, q0.Effective);
+                            }
                         }
                         catch { /* a dead far rung is not an error */ }
                     }
