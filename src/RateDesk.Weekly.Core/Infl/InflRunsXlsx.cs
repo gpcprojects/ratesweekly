@@ -85,9 +85,13 @@ namespace RateDesk.Weekly.Core.Infl
                     Set(ws.Cell(r, 3), row.Mid, "0.00");
                     Set(ws.Cell(r, 4), row.Yoy, "0.00");
                     Set(ws.Cell(r, 5), row.Mom, "0.00");
-                    Set(ws.Cell(r, 6), row.D1, "+0.00;-0.00;0.00");
-                    Set(ws.Cell(r, 7), row.W1, "+0.00;-0.00;0.00");
-                    Set(ws.Cell(r, 8), row.M1, "+0.00;-0.00;0.00");
+                    // CONDITIONAL FORMATTING now on the sheet too (desk 2026-08-26): the same
+                    // ramp the email paints, the index move scaled through the row's own base
+                    // so a bp-calibrated ramp applies to an index-point change
+                    double sc = (row.BaseV ?? row.Mid) is double bs && bs > 0 ? 10000.0 / bs : 0;
+                    Set(ws.Cell(r, 6), row.D1, "+0.00;-0.00;0.00", sc);
+                    Set(ws.Cell(r, 7), row.W1, "+0.00;-0.00;0.00", sc);
+                    Set(ws.Cell(r, 8), row.M1, "+0.00;-0.00;0.00", sc);
                     r++;
                 }
                 // GRID LINES on the attachment (desk 2026-08-26) — the email carries none, and
@@ -108,11 +112,13 @@ namespace RateDesk.Weekly.Core.Infl
             ws.RangeUsed()?.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Left);
         }
 
-        private static void Set(IXLCell cell, double? v, string fmt)
+        private static void Set(IXLCell cell, double? v, string fmt, double heatScale = 0)
         {
             if (v is not { } x) return;
             cell.Value = x;
             cell.Style.NumberFormat.Format = fmt;
+            if (heatScale != 0 && RateDesk.Core.WeeklyEmail.HeatHex(x * heatScale) is string h)
+                cell.Style.Fill.SetBackgroundColor(XLColor.FromHtml(h));
         }
     }
 }

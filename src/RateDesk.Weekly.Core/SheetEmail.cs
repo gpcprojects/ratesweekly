@@ -44,9 +44,15 @@ namespace RateDesk.Weekly.Core
         // table = its widest header at 11pt bold + 6px, so nothing wraps and nothing clips:
         // runs "Priced (bp)" ~72px, fixings "Base Index" ~66px, front "Central Bank" ~78px.
         // 3px side padding keeps the columns visually close now everything is left-justified.
-        private static readonly int[] RunW = Enumerable.Repeat(78, 8).ToArray();    // 624
-        private static readonly int[] InflW = Enumerable.Repeat(72, 8).ToArray();   // 576
-        private static readonly int[] FrontW = Enumerable.Repeat(84, 7).ToArray();  // 588
+        /// <summary>ONE column measure for the ENTIRE email (desk 2026-08-26: "all the columns
+        /// are in line and EXACTLY THE SAME ACROSS THE BOARD"): 8 columns of 78px = 624px, used
+        /// by the OIS runs, the inflation runs and the front table alike. The front table has
+        /// seven labelled columns and carries an eighth blank one so its grid still lines up
+        /// with the others, column boundary for column boundary.</summary>
+        private const int ColW = 78, Cols = 8, Measure = 624;
+        private static readonly int[] RunW = Enumerable.Repeat(ColW, Cols).ToArray();
+        private static readonly int[] InflW = Enumerable.Repeat(ColW, Cols).ToArray();
+        private static readonly int[] FrontW = Enumerable.Repeat(ColW, Cols).ToArray();
 
         private static readonly System.Globalization.CultureInfo Inv =
             System.Globalization.CultureInfo.InvariantCulture;
@@ -100,13 +106,12 @@ namespace RateDesk.Weekly.Core
             $"table-layout:fixed;width:{width}px;max-width:100%;margin:0;mso-table-lspace:0pt;" +
             "mso-table-rspace:0pt;\">";
 
-        /// <summary>The sheet's own title row (bold, top-left), then a blank row.</summary>
-        private static string SheetTitle(string title, int[] w) =>
-            TableOpen(Sum(w)) +
-            $"<tr><td colspan=\"{w.Length}\" nowrap style=\"{Font}font-size:11pt;font-weight:bold;" +
+        /// <summary>The sheet's own title row (bold, top-left) — a ROW, not a table of its own,
+        /// so it shares the section's single column grid.</summary>
+        private static string TitleRow(string title, int cols) =>
+            $"<tr><td colspan=\"{cols}\" nowrap style=\"{Font}font-size:11pt;font-weight:bold;" +
             $"color:{Ink};padding:1px {TitlePad}px 1px {TitlePad}px;mso-line-height-rule:exactly;" +
-            $"line-height:15pt;\">{Nb(title)}</td></tr>" +
-            BlankRow(w.Length) + "</table>";
+            $"line-height:15pt;\">{Nb(title)}</td></tr>";
 
         private static string BlankRow(int cols) =>
             $"<tr><td colspan=\"{cols}\" height=\"20\" style=\"font-size:1px;line-height:20px;\">" +
@@ -136,11 +141,13 @@ namespace RateDesk.Weekly.Core
         private static string FrontTable(WeeklyReport rep)
         {
             var sb = new StringBuilder();
-            sb.Append(SheetTitle("CB Front Meeting Market Pricing", FrontW));
-            sb.Append(TableOpen(Sum(FrontW)));
+            sb.Append(TableOpen(Measure));
+            sb.Append(TitleRow("CB Front Meeting Market Pricing", FrontW.Length)
+                + BlankRow(FrontW.Length));
             sb.Append("<tr>" + Head("Central Bank", FrontW[0]) + Head("Decision", FrontW[1])
                 + Head("Start", FrontW[2]) + Head("OIS Mid", FrontW[3]) + Head("Fixing", FrontW[4])
-                + Head("Priced (bp)", FrontW[5]) + Head("% 25bp", FrontW[6]) + "</tr>");
+                + Head("Priced (bp)", FrontW[5]) + Head("% 25bp", FrontW[6])
+                + Head("", FrontW[7]) + "</tr>");
             bool anyStartOnly = false, anyRebased = false;
             foreach (var f in rep.Fronts)
             {
@@ -164,6 +171,7 @@ namespace RateDesk.Weekly.Core
                         : Cell(f.PricedBp is double pv
                             ? NoBrk((pv / 25.0 * 100.0).ToString("+0;-0;0", Inv)) + "%" : "&nbsp;",
                             FrontW[6], true))
+                    + Cell("&nbsp;", FrontW[7], false)
                     + "</tr>");
             }
             sb.Append(BlankRow(FrontW.Length));
@@ -183,11 +191,14 @@ namespace RateDesk.Weekly.Core
             var blocks = RunsTable.Build(rep);
             if (blocks.Count == 0) return "";
             var sb = new StringBuilder();
-            sb.Append(SheetTitle(RunsTable.Title(rep.AsOf), RunW));
+            // ONE TABLE for every block (desk 2026-08-26: the blocks were separate tables and
+            // Word sized each one from its own content, so the columns did not line up between
+            // banks). A single table = a single column grid, by construction.
+            sb.Append(TableOpen(Measure));
+            sb.Append(TitleRow(RunsTable.Title(rep.AsOf), RunW.Length) + BlankRow(RunW.Length));
             bool anySynth = false;
             foreach (var b in blocks)
             {
-                sb.Append(TableOpen(Sum(RunW)));
                 // the sheet's two label rows: the bank, then its fixing with the value in col B
                 sb.Append($"<tr><td colspan=\"{RunW.Length}\" nowrap style=\"{Font}font-size:11pt;" +
                     $"font-weight:bold;color:{Ink};padding:1px 3px;mso-line-height-rule:exactly;" +
@@ -230,13 +241,13 @@ namespace RateDesk.Weekly.Core
                     sb.Append("</tr>");
                 }
                 sb.Append(BlankRow(RunW.Length));   // the sheet's blank separator row
-                sb.Append("</table>");
             }
             if (anySynth)
-                sb.Append(TableOpen(Sum(RunW)) + $"<tr><td colspan=\"{RunW.Length}\" style=\"{Font}" +
+                sb.Append($"<tr><td colspan=\"{RunW.Length}\" style=\"{Font}" +
                     $"font-size:11pt;color:{Ink};padding:1px {TitlePad}px;line-height:15pt;\">" +
                     "†&nbsp;mid is the neighbour midpoint — the quoted print was rejected as implausible" +
-                    "</td></tr>" + BlankRow(RunW.Length) + "</table>");
+                    "</td></tr>" + BlankRow(RunW.Length));
+            sb.Append("</table>");
             return sb.ToString();
         }
 
@@ -261,7 +272,6 @@ namespace RateDesk.Weekly.Core
                     var rows = rowsByFam.TryGetValue(key, out var r) ? r : new List<InflHistory.DisplayRow>();
                     var shown = rows.Take(Math.Max(0, rows.Count - 1)).ToList();
                     if (shown.Count == 0) continue;
-                    body.Append(TableOpen(Sum(InflW)));
                     // the sheet's title row: name in col A, "Next Print:" in col D, date in col E
                     body.Append("<tr>"
                         + $"<td colspan=\"3\" nowrap style=\"{Font}font-size:11pt;font-weight:bold;" +
@@ -307,14 +317,17 @@ namespace RateDesk.Weekly.Core
                             + "</tr>");
                     }
                     body.Append(BlankRow(InflW.Length));
-                    body.Append("</table>");
                 }
                 if (body.Length == 0) return "";
                 var sb = new StringBuilder();
                 sb.Append(Style);
                 sb.Append($"<div style=\"{Font}color:{Ink};font-size:11pt;-webkit-text-size-adjust:100%;\">");
-                sb.Append(SheetTitle(InflRunsXlsx.Title(asOf), InflW));
+                // ONE table for all three families — same single-grid rule as the OIS section,
+                // and the SAME 624px measure so the two sections line up column for column
+                sb.Append(TableOpen(Measure));
+                sb.Append(TitleRow(InflRunsXlsx.Title(asOf), InflW.Length) + BlankRow(InflW.Length));
                 sb.Append(body);
+                sb.Append("</table>");
                 sb.Append("</div>");
                 return sb.ToString();
             }
