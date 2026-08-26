@@ -237,16 +237,26 @@ namespace RateDesk.Tests
             };
             var nextPrints = new Dictionary<string, DateTime> { ["CPI"] = new(2026, 9, 11) };
 
+            // WriteFragments returns the DEFAULT flavour, which since 2026-08-26 is SHEET style
+            // (dates carry U+2011 non-breaking hyphens there); normalise to compare
             var html = InflEmail.WriteFragments(store, marks, nextPrints,
-                new DateTime(2026, 8, 20), _dir, daily: true);
+                new DateTime(2026, 8, 20), _dir, daily: true).Replace('‑', '-');
             Assert.Contains("Inflation Fixing Runs", html);
             // Word breaks at spaces even under nowrap, so all multi-word cell text is &nbsp;-joined
             Assert.Contains("Next&nbsp;Print:&nbsp;11-Sep-26", html);
-            Assert.Contains("Aug&nbsp;26", html);
-            Assert.DoesNotContain("Sep&nbsp;26", html);     // furthest fixing dropped
+            // the Month column is the bold cell — Sep-26 also appears in the Next Print caption,
+            // so the drop is asserted on the month cell itself
+            Assert.Contains("<b>Aug-26</b>", html);
+            Assert.DoesNotContain("<b>Sep-26</b>", html);   // furthest fixing dropped
             Assert.Contains("<td nowrap width=", html);     // widths live ON the cells (Word rule)
             Assert.True(File.Exists(Path.Combine(_dir, InflEmail.DailyHtmlFile)));
+            Assert.True(File.Exists(Path.Combine(_dir, InflEmail.DailySheetHtmlFile)));
             Assert.True(File.Exists(Path.Combine(_dir, InflEmail.DailyTextFile)));
+            // ...and the CARD flavour is still written, unchanged, for the legacy option
+            var cards = File.ReadAllText(Path.Combine(_dir, InflEmail.DailyHtmlFile));
+            Assert.Contains("Next&nbsp;Print:&nbsp;11-Sep-26", cards);
+            Assert.Contains("Aug&nbsp;26", cards);
+            Assert.DoesNotContain("Sep&nbsp;26", cards);
 
             var path = InflRunsXlsx.Write(store, _dir, new DateTime(2026, 8, 20), marks, nextPrints);
             Assert.Equal("DRAX Fixing Runs 20Aug26.xlsx", Path.GetFileName(path));

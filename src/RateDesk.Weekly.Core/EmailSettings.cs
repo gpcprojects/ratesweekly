@@ -23,6 +23,17 @@ namespace RateDesk.Weekly.Core
         public bool DailyXlsAttachment { get; set; } = true;
         public bool DailyInflXlsAttachment { get; set; } = true;
 
+        // BODY STYLE per cadence (desk 2026-08-26). Sheet style is the DEFAULT: the inline
+        // content is the attachment's own table (same rows, same column order, same number
+        // strings) with conditional formatting, minimal rules and a phone-legible measure.
+        // The 3-across card grid is kept as an option and ticked OFF — it was ~1300px wide,
+        // which forced phones to scale the whole mail to about a third. Both on = both render
+        // (sheet first); both off = no OIS/front content at all, which the app says out loud.
+        public bool DailySheetStyle { get; set; } = true;
+        public bool DailyCardStyle { get; set; }
+        public bool WeeklySheetStyle { get; set; } = true;
+        public bool WeeklyCardStyle { get; set; }
+
         public const string FileName = "emailsettings.json";
 
         public static EmailSettings Load(string appDataDir)

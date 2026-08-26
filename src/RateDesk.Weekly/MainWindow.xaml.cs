@@ -48,6 +48,10 @@ namespace RateDesk.Weekly
             CbWeeklyGrid.IsChecked = _emailSettings.WeeklyForwardGrid;
             CbWeeklyInfl.IsChecked = _emailSettings.WeeklyInflRuns;
             CbWeeklyDash.IsChecked = _emailSettings.WeeklyDashboardsAttachment;
+            CbDailySheet.IsChecked = _emailSettings.DailySheetStyle;
+            CbDailyCards.IsChecked = _emailSettings.DailyCardStyle;
+            CbWeeklySheet.IsChecked = _emailSettings.WeeklySheetStyle;
+            CbWeeklyCards.IsChecked = _emailSettings.WeeklyCardStyle;
             _settingsLoading = false;
         }
 
@@ -64,6 +68,10 @@ namespace RateDesk.Weekly
             _emailSettings.WeeklyForwardGrid = CbWeeklyGrid.IsChecked == true;
             _emailSettings.WeeklyInflRuns = CbWeeklyInfl.IsChecked == true;
             _emailSettings.WeeklyDashboardsAttachment = CbWeeklyDash.IsChecked == true;
+            _emailSettings.DailySheetStyle = CbDailySheet.IsChecked == true;
+            _emailSettings.DailyCardStyle = CbDailyCards.IsChecked == true;
+            _emailSettings.WeeklySheetStyle = CbWeeklySheet.IsChecked == true;
+            _emailSettings.WeeklyCardStyle = CbWeeklyCards.IsChecked == true;
             try { _emailSettings.Save(AppDataDir); } catch { /* next change retries */ }
         }
 
@@ -643,9 +651,24 @@ namespace RateDesk.Weekly
                 var siteBase = EmailBuilder.LoadSiteBase(AppDataDir);
                 Func<string, string?>? href = siteBase == null
                     ? null : ccy => $"{siteBase}/{ccy.ToLowerInvariant()}.html";
-                return WeeklyEmail.Html(rep, href, partsOpt: WeeklyParts())
-                       + InflFragment(RateDesk.Weekly.Core.Infl.InflEmail.WeeklyHtmlFile,
-                           _emailSettings.WeeklyInflRuns);
+                var sb = new System.Text.StringBuilder();
+                // SHEET STYLE first (the default): the attachment's own tables inline
+                if (_emailSettings.WeeklySheetStyle)
+                    sb.Append(SheetEmail.Body(rep, _emailSettings.WeeklyFrontTable,
+                        _emailSettings.WeeklyOisRuns));
+                // the forward grid has no sheet counterpart — it renders in its own layout
+                if (_emailSettings.WeeklyForwardGrid)
+                    sb.Append(WeeklyEmail.Html(rep, href,
+                        partsOpt: new WeeklyEmail.EmailParts(false, false, true)));
+                // legacy card grid, when the desk ticks it back on
+                if (_emailSettings.WeeklyCardStyle)
+                    sb.Append(WeeklyEmail.Html(rep, href, partsOpt: new WeeklyEmail.EmailParts(
+                        _emailSettings.WeeklyFrontTable, _emailSettings.WeeklyOisRuns, false)));
+                sb.Append(InflFragment(_emailSettings.WeeklySheetStyle
+                        ? RateDesk.Weekly.Core.Infl.InflEmail.WeeklySheetHtmlFile
+                        : RateDesk.Weekly.Core.Infl.InflEmail.WeeklyHtmlFile,
+                    _emailSettings.WeeklyInflRuns));
+                return sb.ToString();
             }
             var frag = Path.Combine(OutDir, EmailBuilder.FragmentFile);
             return File.Exists(frag) ? File.ReadAllText(frag) : null;
@@ -805,9 +828,20 @@ namespace RateDesk.Weekly
                 return;
             }
             if (rep != null)
-                body = WeeklyEmail.Html(rep, partsOpt: DailyParts())
-                       + InflFragment(RateDesk.Weekly.Core.Infl.InflEmail.DailyHtmlFile,
-                           _emailSettings.DailyInflRuns);
+            {
+                var sb = new System.Text.StringBuilder();
+                // SHEET STYLE first (the default): the attached workbook's own tables inline
+                if (_emailSettings.DailySheetStyle)
+                    sb.Append(SheetEmail.Body(rep, _emailSettings.DailyFrontTable,
+                        _emailSettings.DailyOisRuns));
+                if (_emailSettings.DailyCardStyle)
+                    sb.Append(WeeklyEmail.Html(rep, partsOpt: DailyParts()));
+                sb.Append(InflFragment(_emailSettings.DailySheetStyle
+                        ? RateDesk.Weekly.Core.Infl.InflEmail.DailySheetHtmlFile
+                        : RateDesk.Weekly.Core.Infl.InflEmail.DailyHtmlFile,
+                    _emailSettings.DailyInflRuns));
+                body = sb.ToString();
+            }
             else
             {
                 var frag0 = Path.Combine(OutDir, Core.Daily.DailyBuilder.FragmentFile);
