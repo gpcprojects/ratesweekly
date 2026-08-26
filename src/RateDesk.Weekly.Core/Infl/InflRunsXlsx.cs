@@ -90,16 +90,22 @@ namespace RateDesk.Weekly.Core.Infl
                     Set(ws.Cell(r, 8), row.M1, "+0.00;-0.00;0.00");
                     r++;
                 }
-                // GRID LINES on the attachment (desk 2026-08-26) — the email carries none
-                var grid = ws.Range(hdrRow, 1, r - 1, hdr.Length);
-                grid.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-                grid.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
-                var gc = XLColor.FromHtml(RateDesk.Weekly.Core.Daily.RunsTable.GridLine);
-                grid.Style.Border.OutsideBorderColor = gc;
-                grid.Style.Border.InsideBorderColor = gc;
+                // GRID LINES on the attachment (desk 2026-08-26) — the email carries none, and
+                // the header row is EXCLUDED so the coloured band stays one continuous strip
+                if (r - 1 > hdrRow)
+                {
+                    var grid = ws.Range(hdrRow + 1, 1, r - 1, hdr.Length);
+                    grid.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                    grid.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+                    var gc = XLColor.FromHtml(RateDesk.Weekly.Core.Daily.RunsTable.GridLine);
+                    grid.Style.Border.OutsideBorderColor = gc;
+                    grid.Style.Border.InsideBorderColor = gc;
+                }
                 r++;   // blank separator between families
             }
             ws.Columns(1, 8).Width = 11;
+            // EVERYTHING left-justified (desk 2026-08-26)
+            ws.RangeUsed()?.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Left);
         }
 
         private static void Set(IXLCell cell, double? v, string fmt)

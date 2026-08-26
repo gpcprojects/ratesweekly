@@ -88,16 +88,23 @@ namespace RateDesk.Weekly.Core.Daily
                 }
                 // GRID LINES on the attachment (desk 2026-08-26): the sheet is gridded, the
                 // email is not — that and the email's conditional formatting are the only
-                // differences between the two
-                var grid = ws.Range(hdrRow, 1, r - 1, RunsTable.Headers.Length);
-                grid.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-                grid.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
-                grid.Style.Border.OutsideBorderColor = XLColor.FromHtml(RunsTable.GridLine);
-                grid.Style.Border.InsideBorderColor = XLColor.FromHtml(RunsTable.GridLine);
+                // differences between the two. The HEADER ROW IS EXCLUDED so the coloured band
+                // stays one continuous strip, exactly as the old grey band read.
+                if (r - 1 > hdrRow)
+                {
+                    var grid = ws.Range(hdrRow + 1, 1, r - 1, RunsTable.Headers.Length);
+                    grid.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                    grid.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+                    grid.Style.Border.OutsideBorderColor = XLColor.FromHtml(RunsTable.GridLine);
+                    grid.Style.Border.InsideBorderColor = XLColor.FromHtml(RunsTable.GridLine);
+                }
                 r++;   // blank separator
             }
             ws.Columns(1, 2).Width = 12;
             ws.Columns(3, 8).Width = 10;
+            // EVERYTHING left-justified (desk 2026-08-26) — Excel right-aligns numbers and dates
+            // by default, so this is set explicitly across the sheet
+            ws.RangeUsed()?.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Left);
         }
 
         // (the old per-bank Hist_ sheet writer was deleted 2026-08-26 — dead since the books

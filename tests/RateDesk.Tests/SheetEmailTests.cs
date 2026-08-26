@@ -150,6 +150,10 @@ namespace RateDesk.Tests
             // one-line headers, exactly the sheet's labels
             Assert.Contains("Priced&nbsp;(bp)", html);
             Assert.Contains("Δ&nbsp;1m&nbsp;(bp)", html);
+            // EVERYTHING left-justified (desk 2026-08-26) — no right-aligned cell anywhere
+            Assert.DoesNotContain("text-align:right", html);
+            // ...and the band is a MUTED tint, carrying the old grey's weight
+            Assert.Equal("#B3E3F8", RunsTable.BrandBlue);
         }
 
         [Fact]
