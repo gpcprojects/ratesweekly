@@ -39,9 +39,14 @@ namespace RateDesk.Weekly.Core
         // header, never a number — plus the 8px of padding. Excel's own 10/12-character columns
         // left 30-40px of dead air per column; these close it up while keeping every header on
         // one line and every number un-wrapped. 488px total for the runs table.
-        private static readonly int[] RunW = { 64, 64, 44, 70, 60, 62, 62, 62 };   // 488
-        private static readonly int[] InflW = { 48, 66, 62, 46, 46, 44, 50, 56 };  // 418
-        private static readonly int[] FrontW = { 78, 64, 64, 50, 48, 70, 56 };     // 430
+        // UNIFORM widths, tight gaps (desk 2026-08-26: "all the columns need to be the same
+        // width but with smaller space between them otherwise it looks messy"). One width per
+        // table = its widest header at 11pt bold + 6px, so nothing wraps and nothing clips:
+        // runs "Priced (bp)" ~72px, fixings "Base Index" ~66px, front "Central Bank" ~78px.
+        // 3px side padding keeps the columns visually close now everything is left-justified.
+        private static readonly int[] RunW = Enumerable.Repeat(78, 8).ToArray();    // 624
+        private static readonly int[] InflW = Enumerable.Repeat(72, 8).ToArray();   // 576
+        private static readonly int[] FrontW = Enumerable.Repeat(84, 7).ToArray();  // 588
 
         private static readonly System.Globalization.CultureInfo Inv =
             System.Globalization.CultureInfo.InvariantCulture;
@@ -51,13 +56,13 @@ namespace RateDesk.Weekly.Core
         /// <summary>The responsive rules — emitted at the top of any sheet-style fragment.</summary>
         public const string Style =
             "<style type=\"text/css\">" +
-            "@media only screen and (max-width:560px){" +
-            ".rwc{font-size:10.5px!important;padding:1px 4px!important}" +
-            ".rwh{font-size:10.5px!important;padding:1px 4px!important}}" +
-            "@media only screen and (max-width:430px){" +
+            "@media only screen and (max-width:700px){" +
+            ".rwc{font-size:10pt!important;padding:1px 2px!important}" +
+            ".rwh{font-size:10pt!important;padding:1px 2px!important}}" +
+            "@media only screen and (max-width:520px){" +
             ".rwm{display:none!important}" +
-            ".rwc{font-size:9.5px!important;padding:1px 3px!important}" +
-            ".rwh{font-size:9.5px!important;padding:1px 3px!important}}" +
+            ".rwc{font-size:9pt!important;padding:1px 2px!important}" +
+            ".rwh{font-size:9pt!important;padding:1px 2px!important}}" +
             "</style>";
 
         private static string Nb(string s) => s.Replace(" ", "&nbsp;");
@@ -70,16 +75,16 @@ namespace RateDesk.Weekly.Core
         /// so the call sites keep documenting which columns are numeric.</summary>
         private static string Cell(string inner, int w, bool right, string extra = "",
             string cls = "rwc") =>
-            $"<td nowrap width=\"{w}\" class=\"{cls}\" style=\"{Font}width:{w}px;padding:1px 4px;" +
-            $"font-size:11px;color:{Ink};white-space:nowrap;mso-line-height-rule:exactly;" +
-            $"line-height:15px;text-align:left;{extra}\">{inner}</td>";
+            $"<td nowrap width=\"{w}\" class=\"{cls}\" style=\"{Font}width:{w}px;padding:1px 3px;" +
+            $"font-size:11pt;color:{Ink};white-space:nowrap;mso-line-height-rule:exactly;" +
+            $"line-height:15pt;text-align:left;{extra}\">{inner}</td>";
 
         /// <summary>Header cell: the sheet's own label, bold, LEFT-aligned as Excel leaves text,
         /// on the DRAX-blue band.</summary>
         private static string Head(string label, int w, string cls = "rwh") =>
-            $"<td nowrap width=\"{w}\" class=\"{cls}\" style=\"{Font}width:{w}px;padding:1px 4px;" +
-            $"font-size:11px;font-weight:bold;color:{Ink};background:{Blue};white-space:nowrap;" +
-            $"mso-line-height-rule:exactly;line-height:15px;text-align:left;\">{Nb(label)}</td>";
+            $"<td nowrap width=\"{w}\" class=\"{cls}\" style=\"{Font}width:{w}px;padding:1px 3px;" +
+            $"font-size:11pt;font-weight:bold;color:{Ink};background:{Blue};white-space:nowrap;" +
+            $"mso-line-height-rule:exactly;line-height:15pt;text-align:left;\">{Nb(label)}</td>";
 
         /// <summary>A change cell — the ONE thing the sheet does not have: the monitor's ramp,
         /// green for higher yield, red for lower, nothing under 2bp.</summary>
@@ -98,13 +103,13 @@ namespace RateDesk.Weekly.Core
         /// <summary>The sheet's own title row (bold, top-left), then a blank row.</summary>
         private static string SheetTitle(string title, int[] w) =>
             TableOpen(Sum(w)) +
-            $"<tr><td colspan=\"{w.Length}\" nowrap style=\"{Font}font-size:11px;font-weight:bold;" +
+            $"<tr><td colspan=\"{w.Length}\" nowrap style=\"{Font}font-size:11pt;font-weight:bold;" +
             $"color:{Ink};padding:1px {TitlePad}px 1px {TitlePad}px;mso-line-height-rule:exactly;" +
-            $"line-height:15px;\">{Nb(title)}</td></tr>" +
+            $"line-height:15pt;\">{Nb(title)}</td></tr>" +
             BlankRow(w.Length) + "</table>";
 
         private static string BlankRow(int cols) =>
-            $"<tr><td colspan=\"{cols}\" height=\"15\" style=\"font-size:11px;line-height:15px;\">" +
+            $"<tr><td colspan=\"{cols}\" height=\"20\" style=\"font-size:1px;line-height:20px;\">" +
             "&nbsp;</td></tr>";
 
         // ---- body ----
@@ -119,7 +124,7 @@ namespace RateDesk.Weekly.Core
             {
                 var sb = new StringBuilder();
                 sb.Append(Style);
-                sb.Append($"<div style=\"{Font}color:{Ink};font-size:11px;-webkit-text-size-adjust:100%;\">");
+                sb.Append($"<div style=\"{Font}color:{Ink};font-size:11pt;-webkit-text-size-adjust:100%;\">");
                 if (front && rep.Fronts.Count > 0) sb.Append(FrontTable(rep));
                 if (runs) sb.Append(RunTables(rep));
                 sb.Append("</div>");
@@ -163,8 +168,8 @@ namespace RateDesk.Weekly.Core
             }
             sb.Append(BlankRow(FrontW.Length));
             if (anyStartOnly || anyRebased)
-                sb.Append($"<tr><td colspan=\"{FrontW.Length}\" style=\"{Font}font-size:11px;" +
-                    $"color:{Ink};padding:1px {TitlePad}px;line-height:15px;\">"
+                sb.Append($"<tr><td colspan=\"{FrontW.Length}\" style=\"{Font}font-size:11pt;" +
+                    $"color:{Ink};padding:1px {TitlePad}px;line-height:15pt;\">"
                     + (anyStartOnly ? "*&nbsp;swap-period start shown (no decision calendar)" : "")
                     + (anyStartOnly && anyRebased ? "<br>" : "")
                     + (anyRebased ? "†&nbsp;fixing re-based onto the just-decided period's OIS" : "")
@@ -184,9 +189,9 @@ namespace RateDesk.Weekly.Core
             {
                 sb.Append(TableOpen(Sum(RunW)));
                 // the sheet's two label rows: the bank, then its fixing with the value in col B
-                sb.Append($"<tr><td colspan=\"{RunW.Length}\" nowrap style=\"{Font}font-size:11px;" +
-                    $"font-weight:bold;color:{Ink};padding:1px 4px;mso-line-height-rule:exactly;" +
-                    $"line-height:15px;\">{Nb(b.Bank + " closing run")}</td></tr>");
+                sb.Append($"<tr><td colspan=\"{RunW.Length}\" nowrap style=\"{Font}font-size:11pt;" +
+                    $"font-weight:bold;color:{Ink};padding:1px 3px;mso-line-height-rule:exactly;" +
+                    $"line-height:15pt;\">{Nb(b.Bank + " closing run")}</td></tr>");
                 sb.Append("<tr>"
                     + Cell(Nb(b.FixingLabel + " fixing" + (b.Rebased ? " (rebased)" : "")), RunW[0], false)
                     + Cell(b.FixingPct is { } fp ? RunsTable.RateText(fp) : "&nbsp;", RunW[1], true)
@@ -229,7 +234,7 @@ namespace RateDesk.Weekly.Core
             }
             if (anySynth)
                 sb.Append(TableOpen(Sum(RunW)) + $"<tr><td colspan=\"{RunW.Length}\" style=\"{Font}" +
-                    $"font-size:11px;color:{Ink};padding:1px {TitlePad}px;line-height:15px;\">" +
+                    $"font-size:11pt;color:{Ink};padding:1px {TitlePad}px;line-height:15pt;\">" +
                     "†&nbsp;mid is the neighbour midpoint — the quoted print was rejected as implausible" +
                     "</td></tr>" + BlankRow(RunW.Length) + "</table>");
             return sb.ToString();
@@ -259,8 +264,8 @@ namespace RateDesk.Weekly.Core
                     body.Append(TableOpen(Sum(InflW)));
                     // the sheet's title row: name in col A, "Next Print:" in col D, date in col E
                     body.Append("<tr>"
-                        + $"<td colspan=\"3\" nowrap style=\"{Font}font-size:11px;font-weight:bold;" +
-                          $"color:{Ink};padding:1px 4px;mso-line-height-rule:exactly;line-height:15px;\">" +
+                        + $"<td colspan=\"3\" nowrap style=\"{Font}font-size:11pt;font-weight:bold;" +
+                          $"color:{Ink};padding:1px 3px;mso-line-height-rule:exactly;line-height:15pt;\">" +
                           $"{Nb(title)}</td>"
                         + Cell(nextPrints != null && nextPrints.ContainsKey(key)
                             ? Nb("Next Print:") : "&nbsp;", InflW[3], false)
@@ -274,8 +279,8 @@ namespace RateDesk.Weekly.Core
                         + Cell(index, InflW[0], false) + Cell("&nbsp;", InflW[1], false)
                         + Cell("&nbsp;", InflW[2], false) + Cell("&nbsp;", InflW[3], false)
                         + Cell("&nbsp;", InflW[4], false)
-                        + $"<td colspan=\"3\" nowrap style=\"{Font}font-size:11px;font-weight:bold;" +
-                          $"color:{Ink};padding:1px 4px;mso-line-height-rule:exactly;line-height:15px;\">" +
+                        + $"<td colspan=\"3\" nowrap style=\"{Font}font-size:11pt;font-weight:bold;" +
+                          $"color:{Ink};padding:1px 3px;mso-line-height-rule:exactly;line-height:15pt;\">" +
                           $"{Nb("Index Change")}</td>"
                         + "</tr>");
                     string[] hdr = { "Month", "Base Index", "Mid Index", "YoY %", "MoM %",
@@ -307,7 +312,7 @@ namespace RateDesk.Weekly.Core
                 if (body.Length == 0) return "";
                 var sb = new StringBuilder();
                 sb.Append(Style);
-                sb.Append($"<div style=\"{Font}color:{Ink};font-size:11px;-webkit-text-size-adjust:100%;\">");
+                sb.Append($"<div style=\"{Font}color:{Ink};font-size:11pt;-webkit-text-size-adjust:100%;\">");
                 sb.Append(SheetTitle(InflRunsXlsx.Title(asOf), InflW));
                 sb.Append(body);
                 sb.Append("</div>");
