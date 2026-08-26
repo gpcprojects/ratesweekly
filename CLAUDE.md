@@ -10,8 +10,13 @@ terminal running + logged in) → maintained SQLite history → ~29 self-contain
 with hardwired links. Investor-facing output: pages are viewable by external people, zero sign-in.
 
 ## Hard constraints
-- STANDALONE EXE: configs are EMBEDDED resources; user/market state lives in %APPDATA%\RatesWeekly
-  only. Never add external file dependencies.
+- STANDALONE EXE: configs are EMBEDDED resources; settings live in %APPDATA%\RatesWeekly, the
+  DATA STORE (history.db) in %LOCALAPPDATA%\RatesWeekly (desk 2026-08-26 — never on a
+  roaming/synced/shared path: SQLite WAL + file sync corrupts). Cross-machine continuity =
+  StoreBackup snapshots (VACUUM INTO) on the save-down share, restore offered on first run of
+  an empty machine. The store is partly IRREPLACEABLE (incumbent-sheet 'xls' rows, manual
+  marks, per-day maturity records) — never treat it as a rebuildable cache, never put the live
+  .db next to the exe or in OneDrive. Never add external file dependencies.
 - This repo is FULLY SEPARATE from dodgeball. Teammates here may have no dodgeball access.
 - HISTORY DEPTH: seed is 45d by design for now (desk call 2026-08-05). Deepen later by raising
   UpdateEngine.SeedDays/CorrSeedDays and re-running `update` several times — each run deepens up to

@@ -15,6 +15,12 @@ namespace RateDesk.Weekly
         public static readonly string AppDataDir =
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly");
         public static readonly string OutDir = Path.Combine(AppDataDir, "out");
+        // the WORKING data store lives on the LOCAL disk (never a roaming/synced profile —
+        // SQLite WAL + profile sync is a corruption class); continuity across machines comes
+        // from StoreBackup snapshots on the save-down share (desk 2026-08-26)
+        public static readonly string DbPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "RatesWeekly", "history.db");
 
         private bool _updating;
         private EmailSettings _emailSettings = new();
@@ -86,6 +92,8 @@ namespace RateDesk.Weekly
             VersionText.Text = "v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?");
             Directory.CreateDirectory(AppDataDir);
             Directory.CreateDirectory(OutDir);
+            // one-time Roaming → Local store migration, BEFORE anything can open the db
+            RateDesk.Weekly.Core.SaveDown.StoreBackup.MigrateRoamingToLocal(AppDataDir, DbPath, Log);
             Loaded += async (_, _) => await SetupSaveDown();
             // one line per button; the first WEEKLY RUN clears these and takes the box over
             LogBox.Text =
@@ -128,6 +136,7 @@ namespace RateDesk.Weekly
                     await Task.Run(() => RateDesk.Weekly.Core.SaveDown.SaveDownConfig.EnsureFolders(detected));
                     StatusText.Text = "C+C folder located successfully.";
                     Log($"save-down: OIS Runs / Inflation Runs ready under {detected}");
+                    OfferStoreRestore(detected);
                     return;
                 }
                 var cfg = RateDesk.Weekly.Core.SaveDown.SaveDownConfig.Load(AppDataDir);
@@ -137,11 +146,36 @@ namespace RateDesk.Weekly
                     StatusText.Text = cfg.Mode == "cc"
                         ? "C+C folder located successfully."
                         : "History saves to your Documents folder (OIS Runs / Inflation Runs).";
+                    OfferStoreRestore(cfg.Root);
                     return;
                 }
                 AskSaveDownChoice();
             }
             catch (Exception ex) { Log("! save-down setup: " + ex.Message); }
+        }
+
+        /// <summary>NEW MACHINE INHERITANCE (desk 2026-08-26): a machine with NO local data
+        /// store that finds a snapshot on the save-down share offers to restore it — the
+        /// irreplaceable rows (incumbent-sheet marks, manual entries, maturity records) travel
+        /// with the desk. An existing local store is never touched.</summary>
+        private void OfferStoreRestore(string root)
+        {
+            try
+            {
+                if (File.Exists(DbPath)) return;
+                if (RateDesk.Weekly.Core.SaveDown.StoreBackup.FindBackup(root) is not { } bk) return;
+                var r = MessageBox.Show(this,
+                    $"No local data store on this machine, but a backup from " +
+                    $"{bk.AsOf:dd-MMM-yy HH:mm} exists on the shared drive.\n\n" +
+                    "Restore it? (Yes = inherit the full history — incumbent-sheet marks, manual " +
+                    "entries and maturity records included. No = start a fresh store and reseed " +
+                    "from Bloomberg; the old sheets' data would NOT come back.)",
+                    "RatesWeekly — data store found", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (r == MessageBoxResult.Yes
+                    && RateDesk.Weekly.Core.SaveDown.StoreBackup.Restore(bk.Path, DbPath, Log))
+                    StatusText.Text = $"data store restored from the shared backup ({bk.AsOf:dd-MMM-yy HH:mm}).";
+            }
+            catch (Exception ex) { Log("! store restore: " + ex.Message); }
         }
 
         private void AskSaveDownChoice()
@@ -468,7 +502,7 @@ namespace RateDesk.Weekly
             StatusText.Text = "running weekly...";
             try
             {
-                using var store = new HistoryStore(Path.Combine(AppDataDir, "history.db"));
+                using var store = new HistoryStore(DbPath);
                 var (result, pages, weeklyRep, emailErr0) = await Task.Run(() =>
                 {
                     var r = UpdateEngine.Run(store, new RatesSnapshot(), Log);
@@ -510,6 +544,8 @@ namespace RateDesk.Weekly
                             }
                         });
                 }
+                // snapshot after the weekly too — same inheritance rule
+                await Task.Run(() => RateDesk.Weekly.Core.SaveDown.StoreBackup.AfterRun(store, AppDataDir, Log));
                 StatusText.Text = $"updated {DateTime.Now:HH:mm:ss} — {result.Tickers} tickers, " +
                                   $"{result.RowsWritten} rows written, {pages} pages rendered, " +
                                   (emailErr == null ? "email ready " : "EMAIL FAILED — see log ") +
@@ -692,7 +728,7 @@ namespace RateDesk.Weekly
             StatusText.Text = "building daily OIS run...";
             try
             {
-                using var store = new HistoryStore(Path.Combine(AppDataDir, "history.db"));
+                using var store = new HistoryStore(DbPath);
                 var rep = await Task.Run(() => Core.Daily.DailyBuilder.Build(store, Log, AppDataDir));
                 // GATE BEFORE PUBLISH (audit 2026-08-26): flagged numbers must be seen before
                 // the blast/workbooks/shared-drive copies exist, not after
@@ -704,6 +740,9 @@ namespace RateDesk.Weekly
                 }
                 var output = await Task.Run(() =>
                     Core.Daily.DailyBuilder.Render(rep, store, OutDir, AppDataDir, Log));
+                // the store snapshot rides every successful run to the share — a new machine
+                // inherits the data instead of reseeding (desk 2026-08-26)
+                await Task.Run(() => Core.SaveDown.StoreBackup.AfterRun(store, AppDataDir, Log));
                 CopyBlastBtn.IsEnabled = true;
                 DailyEmailBtn.IsEnabled = true;
                 StatusText.Text = $"daily built {DateTime.Now:HH:mm:ss} — blast + workbook" +
@@ -864,7 +903,7 @@ namespace RateDesk.Weekly
             {
                 var path = await Task.Run(() =>
                 {
-                    using var store = new HistoryStore(Path.Combine(AppDataDir, "history.db"));
+                    using var store = new HistoryStore(DbPath);
                     return Core.Daily.DailyBuilder.ExportBook(store, OutDir, AppDataDir, Log);
                 });
                 StatusText.Text = $"workbook exported: {Path.GetFileName(path)} — opening.";

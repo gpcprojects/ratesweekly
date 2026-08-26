@@ -16,9 +16,14 @@ using RateDesk.Weekly.Core.Series;
 // Requires a running, logged-in Bloomberg terminal on localhost:8194 for `update` and `email`.
 
 var cmd = args.Length > 0 ? args[0].ToLowerInvariant() : "help";
+// the working store lives on the LOCAL disk (never a roaming/synced profile — SQLite WAL +
+// profile sync is a corruption class); continuity across machines = StoreBackup snapshots
 var dbPath = Path.Combine(
-    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
     "RatesWeekly", "history.db");
+RateDesk.Weekly.Core.SaveDown.StoreBackup.MigrateRoamingToLocal(
+    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly"),
+    dbPath, Console.WriteLine);
 
 for (int i = 1; i < args.Length - 1; i++)
     if (args[i].Equals("--db", StringComparison.OrdinalIgnoreCase)) dbPath = args[i + 1];
