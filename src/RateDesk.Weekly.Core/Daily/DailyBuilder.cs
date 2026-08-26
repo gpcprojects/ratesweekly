@@ -286,6 +286,12 @@ namespace RateDesk.Weekly.Core.Daily
                         catch { /* an unquoted fixing month is not an error */ }
                     }
                 log?.Invoke($"daily: topped up {fx} inflation fixing series");
+                // anchors stay on DOCUMENTED CLOSES pending the desk's call on the snapshot
+                // convention (measured 2026-08-26: instant-16:15, close, and window-average
+                // marks all leave 2-6bp of adjacent-month dispersion, because each monthly
+                // fixing is quoted independently and swings multiple bp intraday — BPSWIF12
+                // ranged 444.38-455.88 on 26-Aug). Pass `bars: refData` to move both sides
+                // onto the 16:15 snap; one line, no other change needed.
                 try { Infl.InflHistory.Maintain(store, log); }
                 catch (Exception ex) { log?.Invoke("  ! infl maintain: " + ex.Message); }
                 // fixings nobody quoted today (their 0.00 is silence, not a flat market)
