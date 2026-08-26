@@ -34,17 +34,14 @@ namespace RateDesk.Weekly.Core
         private const string Blue = RunsTable.BrandBlue;
         private const int TitlePad = 1;
 
-        // Excel widths → px: the runs sheet sets cols 1-2 to 12 chars and 3-8 to 10
-        private static readonly int[] RunW =
-        {
-            RunsTable.PxForChars(12), RunsTable.PxForChars(12), RunsTable.PxForChars(10),
-            RunsTable.PxForChars(10), RunsTable.PxForChars(10), RunsTable.PxForChars(10),
-            RunsTable.PxForChars(10), RunsTable.PxForChars(10),
-        };
-        // the fixing sheet sets every column to 11 chars
-        private static readonly int[] InflW = Enumerable.Repeat(RunsTable.PxForChars(11), 8).ToArray();
-        // the front table has no sheet counterpart; it borrows the runs measure
-        private static readonly int[] FrontW = { 96, 82, 82, 75, 75, 75, 68 };
+        // COLUMN WIDTHS (desk 2026-08-26, "pull all the numbers a bit closer together"): each
+        // column is exactly as wide as its widest CONTENT at 11px — which is always the one-line
+        // header, never a number — plus the 8px of padding. Excel's own 10/12-character columns
+        // left 30-40px of dead air per column; these close it up while keeping every header on
+        // one line and every number un-wrapped. 488px total for the runs table.
+        private static readonly int[] RunW = { 64, 64, 44, 70, 60, 62, 62, 62 };   // 488
+        private static readonly int[] InflW = { 48, 66, 62, 46, 46, 44, 50, 56 };  // 418
+        private static readonly int[] FrontW = { 78, 64, 64, 50, 48, 70, 56 };     // 430
 
         private static readonly System.Globalization.CultureInfo Inv =
             System.Globalization.CultureInfo.InvariantCulture;
@@ -54,10 +51,10 @@ namespace RateDesk.Weekly.Core
         /// <summary>The responsive rules — emitted at the top of any sheet-style fragment.</summary>
         public const string Style =
             "<style type=\"text/css\">" +
-            "@media only screen and (max-width:700px){" +
+            "@media only screen and (max-width:560px){" +
             ".rwc{font-size:10.5px!important;padding:1px 4px!important}" +
             ".rwh{font-size:10.5px!important;padding:1px 4px!important}}" +
-            "@media only screen and (max-width:470px){" +
+            "@media only screen and (max-width:430px){" +
             ".rwm{display:none!important}" +
             ".rwc{font-size:9.5px!important;padding:1px 3px!important}" +
             ".rwh{font-size:9.5px!important;padding:1px 3px!important}}" +
@@ -73,14 +70,14 @@ namespace RateDesk.Weekly.Core
         /// so the call sites keep documenting which columns are numeric.</summary>
         private static string Cell(string inner, int w, bool right, string extra = "",
             string cls = "rwc") =>
-            $"<td nowrap width=\"{w}\" class=\"{cls}\" style=\"{Font}width:{w}px;padding:1px 5px;" +
+            $"<td nowrap width=\"{w}\" class=\"{cls}\" style=\"{Font}width:{w}px;padding:1px 4px;" +
             $"font-size:11px;color:{Ink};white-space:nowrap;mso-line-height-rule:exactly;" +
             $"line-height:15px;text-align:left;{extra}\">{inner}</td>";
 
         /// <summary>Header cell: the sheet's own label, bold, LEFT-aligned as Excel leaves text,
         /// on the DRAX-blue band.</summary>
         private static string Head(string label, int w, string cls = "rwh") =>
-            $"<td nowrap width=\"{w}\" class=\"{cls}\" style=\"{Font}width:{w}px;padding:1px 5px;" +
+            $"<td nowrap width=\"{w}\" class=\"{cls}\" style=\"{Font}width:{w}px;padding:1px 4px;" +
             $"font-size:11px;font-weight:bold;color:{Ink};background:{Blue};white-space:nowrap;" +
             $"mso-line-height-rule:exactly;line-height:15px;text-align:left;\">{Nb(label)}</td>";
 
@@ -166,8 +163,8 @@ namespace RateDesk.Weekly.Core
             }
             sb.Append(BlankRow(FrontW.Length));
             if (anyStartOnly || anyRebased)
-                sb.Append($"<tr><td colspan=\"{FrontW.Length}\" style=\"{Font}font-size:10px;" +
-                    $"color:{Ink};padding:1px {TitlePad}px;line-height:14px;\">"
+                sb.Append($"<tr><td colspan=\"{FrontW.Length}\" style=\"{Font}font-size:11px;" +
+                    $"color:{Ink};padding:1px {TitlePad}px;line-height:15px;\">"
                     + (anyStartOnly ? "*&nbsp;swap-period start shown (no decision calendar)" : "")
                     + (anyStartOnly && anyRebased ? "<br>" : "")
                     + (anyRebased ? "†&nbsp;fixing re-based onto the just-decided period's OIS" : "")
@@ -188,7 +185,7 @@ namespace RateDesk.Weekly.Core
                 sb.Append(TableOpen(Sum(RunW)));
                 // the sheet's two label rows: the bank, then its fixing with the value in col B
                 sb.Append($"<tr><td colspan=\"{RunW.Length}\" nowrap style=\"{Font}font-size:11px;" +
-                    $"font-weight:bold;color:{Ink};padding:1px 5px;mso-line-height-rule:exactly;" +
+                    $"font-weight:bold;color:{Ink};padding:1px 4px;mso-line-height-rule:exactly;" +
                     $"line-height:15px;\">{Nb(b.Bank + " closing run")}</td></tr>");
                 sb.Append("<tr>"
                     + Cell(Nb(b.FixingLabel + " fixing" + (b.Rebased ? " (rebased)" : "")), RunW[0], false)
@@ -232,7 +229,7 @@ namespace RateDesk.Weekly.Core
             }
             if (anySynth)
                 sb.Append(TableOpen(Sum(RunW)) + $"<tr><td colspan=\"{RunW.Length}\" style=\"{Font}" +
-                    $"font-size:10px;color:{Ink};padding:1px {TitlePad}px;line-height:14px;\">" +
+                    $"font-size:11px;color:{Ink};padding:1px {TitlePad}px;line-height:15px;\">" +
                     "†&nbsp;mid is the neighbour midpoint — the quoted print was rejected as implausible" +
                     "</td></tr>" + BlankRow(RunW.Length) + "</table>");
             return sb.ToString();
@@ -263,7 +260,7 @@ namespace RateDesk.Weekly.Core
                     // the sheet's title row: name in col A, "Next Print:" in col D, date in col E
                     body.Append("<tr>"
                         + $"<td colspan=\"3\" nowrap style=\"{Font}font-size:11px;font-weight:bold;" +
-                          $"color:{Ink};padding:1px 5px;mso-line-height-rule:exactly;line-height:15px;\">" +
+                          $"color:{Ink};padding:1px 4px;mso-line-height-rule:exactly;line-height:15px;\">" +
                           $"{Nb(title)}</td>"
                         + Cell(nextPrints != null && nextPrints.ContainsKey(key)
                             ? Nb("Next Print:") : "&nbsp;", InflW[3], false)
@@ -278,7 +275,7 @@ namespace RateDesk.Weekly.Core
                         + Cell("&nbsp;", InflW[2], false) + Cell("&nbsp;", InflW[3], false)
                         + Cell("&nbsp;", InflW[4], false)
                         + $"<td colspan=\"3\" nowrap style=\"{Font}font-size:11px;font-weight:bold;" +
-                          $"color:{Ink};padding:1px 5px;mso-line-height-rule:exactly;line-height:15px;\">" +
+                          $"color:{Ink};padding:1px 4px;mso-line-height-rule:exactly;line-height:15px;\">" +
                           $"{Nb("Index Change")}</td>"
                         + "</tr>");
                     string[] hdr = { "Month", "Base Index", "Mid Index", "YoY %", "MoM %",
