@@ -66,19 +66,23 @@ namespace RateDesk.Weekly.Core
         private static string Nb(string s) => s.Replace(" ", "&nbsp;");
         private static string NoBrk(string s) => s.Replace("-", "‑");
 
-        /// <summary>One sheet cell. 11px Calibri, the sheet's own row rhythm, no borders.</summary>
+        /// <summary>One sheet cell. 11px Calibri, the sheet's own row rhythm, no borders.
+        /// <paramref name="right"/> is IGNORED since desk 2026-08-26 — "everything EVERYTHING
+        /// needs to be left justified", on both surfaces (the sheet sets Left explicitly too,
+        /// since Excel would otherwise right-align its numbers and dates). The parameter stays
+        /// so the call sites keep documenting which columns are numeric.</summary>
         private static string Cell(string inner, int w, bool right, string extra = "",
             string cls = "rwc") =>
             $"<td nowrap width=\"{w}\" class=\"{cls}\" style=\"{Font}width:{w}px;padding:1px 5px;" +
             $"font-size:11px;color:{Ink};white-space:nowrap;mso-line-height-rule:exactly;" +
-            $"line-height:15px;{(right ? "text-align:right;" : "")}{extra}\">{inner}</td>";
+            $"line-height:15px;text-align:left;{extra}\">{inner}</td>";
 
         /// <summary>Header cell: the sheet's own label, bold, LEFT-aligned as Excel leaves text,
         /// on the DRAX-blue band.</summary>
         private static string Head(string label, int w, string cls = "rwh") =>
             $"<td nowrap width=\"{w}\" class=\"{cls}\" style=\"{Font}width:{w}px;padding:1px 5px;" +
             $"font-size:11px;font-weight:bold;color:{Ink};background:{Blue};white-space:nowrap;" +
-            $"mso-line-height-rule:exactly;line-height:15px;\">{Nb(label)}</td>";
+            $"mso-line-height-rule:exactly;line-height:15px;text-align:left;\">{Nb(label)}</td>";
 
         /// <summary>A change cell — the ONE thing the sheet does not have: the monitor's ramp,
         /// green for higher yield, red for lower, nothing under 2bp.</summary>

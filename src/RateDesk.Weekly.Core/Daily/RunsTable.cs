@@ -22,10 +22,15 @@ namespace RateDesk.Weekly.Core.Daily
         public const string DateFmt = "dd-MMM-yy";
         public const string TurnLabel = "Y/E Turn";
 
-        /// <summary>DRAX blue — sampled from the logo in assets\jbdh_banner.jpg (rgb 1,162,230),
-        /// desk 2026-08-26: the header band on every published table, xls and email alike, in
-        /// place of the old grey.</summary>
-        public const string BrandBlue = "#01A2E6";
+        /// <summary>DRAX blue, MUTED — a 30% tint of the logo blue (#01A2E6, sampled from
+        /// assets\jbdh_banner.jpg) over white, desk 2026-08-26 ("more faded... a bit more
+        /// muted"). Chosen to carry the same visual weight as the grey band it replaces:
+        /// luminance 215 against the old #D9D9D9's 217, so the header reads as a tint rather
+        /// than a shout and bold black sits on it cleanly. The band has NO internal dividers
+        /// on either surface — it is one continuous strip, as the grey one was.</summary>
+        public const string BrandBlue = "#B3E3F8";
+        /// <summary>The logo blue at full strength, for anything that needs the brand itself.</summary>
+        public const string BrandBlueFull = "#01A2E6";
         /// <summary>The xls's hairline grid. The EMAIL carries no grid at all — gridlines and
         /// conditional formatting are the only two differences the desk wants between the
         /// attachment and the inline content.</summary>
