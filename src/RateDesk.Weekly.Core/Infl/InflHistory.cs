@@ -144,15 +144,25 @@ namespace RateDesk.Weekly.Core.Infl
                     l.Add(new HistPoint(obs.Value, val.Value));
                 }
 
-                Dictionary<(string, DateTime), double>? existing = null;
+                Dictionary<(string, DateTime), (double V, string Src)>? existing = null;
                 if (onlyMissingOrChanged)
                     existing = store.GetFixingHistory(fam.Key)
-                        .ToDictionary(x => (x.Fix, x.Date), x => x.Value);
+                        .ToDictionary(x => (x.Fix, x.Date), x => (x.Value, x.Source));
                 foreach (var (fix, pts) in byFix)
                 {
                     var keep = existing == null ? pts
                         : pts.Where(p => !existing.TryGetValue((fix, p.Date.Date), out var v)
-                                         || Math.Abs(v - p.Value) > 1e-9).ToList();
+                                         || Math.Abs(v.V - p.Value) > 1e-9).ToList();
+                    // a saved-book row DISPLACING a documented Bloomberg close is honoured (the
+                    // override capability is the point of the books) but never silent (audit
+                    // 2026-08-26: an Excel recalc could otherwise shadow real closes forever)
+                    if (existing != null)
+                        foreach (var p in keep)
+                            if (existing.TryGetValue((fix, p.Date.Date), out var old)
+                                && old.Src == "bbg" && Math.Abs(old.V - p.Value) > 1e-9)
+                                log?.Invoke($"! CHECK: {fam.Key} {fix} {p.Date:dd-MMM-yy} — saved book " +
+                                            $"overrides a Bloomberg close {old.V:0.####} → {p.Value:0.####} " +
+                                            "(override honoured; verify it was deliberate)");
                     if (keep.Count > 0) ingested += store.UpsertFixings(fam.Key, fix, keep, "xls");
                 }
                 log?.Invoke($"infl: {fam.Key} sheet ingest — {byFix.Values.Sum(v => v.Count)} validated rows" +
@@ -236,6 +246,52 @@ namespace RateDesk.Weekly.Core.Infl
         /// OMITTED downstream, never guessed.</summary>
         public static Dictionary<string, DateTime>? LastNextPrints { get; set; }
 
+        private sealed class MarksShape
+        {
+            public DateTime AsOf { get; set; }
+            public Dictionary<string, List<Mark>> Marks { get; set; } = new();
+            public Dictionary<string, DateTime> NextPrints { get; set; } = new();
+        }
+
+        public const string MarksFile = "infl_marks.json";
+
+        /// <summary>Persist the run's live marks + next prints (audit 2026-08-26): the offline
+        /// paths (EXPORT XLS, CLI savedown) previously fell back to LatestMarks — LAST STORED
+        /// CLOSES — and rewrote the very files the desk had just emailed with different numbers
+        /// under the same name. Persisted at run time, reloaded by every offline rebuild.</summary>
+        public static void PersistMarks(string outDir, DateTime asOf)
+        {
+            try
+            {
+                Directory.CreateDirectory(outDir);
+                File.WriteAllText(System.IO.Path.Combine(outDir, MarksFile),
+                    System.Text.Json.JsonSerializer.Serialize(new MarksShape
+                    {
+                        AsOf = asOf,
+                        Marks = LastLiveMarks ?? new(),
+                        NextPrints = LastNextPrints ?? new(),
+                    }));
+            }
+            catch { /* persistence is best-effort; the live statics still serve this session */ }
+        }
+
+        /// <summary>Reload persisted marks into the statics when this session has none —
+        /// the offline rebuild's first stop before any LatestMarks fallback.</summary>
+        public static void LoadPersistedMarks(string outDir)
+        {
+            if (LastLiveMarks != null) return;
+            try
+            {
+                var p = System.IO.Path.Combine(outDir, MarksFile);
+                if (!File.Exists(p)) return;
+                var s = System.Text.Json.JsonSerializer.Deserialize<MarksShape>(File.ReadAllText(p));
+                if (s == null) return;
+                LastLiveMarks = s.Marks;
+                LastNextPrints ??= s.NextPrints.Count > 0 ? s.NextPrints : null;
+            }
+            catch { /* fall through to LatestMarks */ }
+        }
+
         public static Dictionary<string, List<Mark>> CollectLiveMarks(
             RateDesk.Core.Market.RatesSnapshot snap, HistoryStore store)
         {
@@ -265,8 +321,14 @@ namespace RateDesk.Weekly.Core.Infl
             {
                 var hist = store.GetFixingHistory(fam.Key);
                 if (hist.Count == 0) { all[fam.Key] = new(); continue; }
+                // per-FIXING latest within 5 days of the family's newest save (audit
+                // 2026-08-26): a partial maintain — one fixing filled a day later than the
+                // rest — used to shrink the family to a single mark, and the drop-the-furthest
+                // display rule then emptied it entirely
                 var lastDay = hist.Max(x => x.Date);
-                all[fam.Key] = hist.Where(x => x.Date == lastDay)
+                all[fam.Key] = hist.GroupBy(x => x.Fix)
+                    .Select(g => g.OrderBy(x => x.Date).Last())
+                    .Where(x => (lastDay - x.Date).TotalDays <= 5)
                     .Select(x => new Mark(
                         DateTime.ParseExact(x.Fix + "-01", "yyyy-MM-dd",
                             System.Globalization.CultureInfo.InvariantCulture), x.Value))
@@ -285,10 +347,36 @@ namespace RateDesk.Weekly.Core.Infl
 
         public static Dictionary<(int M, int Y), double> PrintsOf(HistoryStore store, Fam fam)
         {
+            // a REAL Bloomberg print always beats an adopted sheet base for the same month
+            // (audit 2026-08-26: adoption stamps month-END, so a later genuine print stamped
+            // earlier in the month used to lose the last-write-wins scan permanently)
             var d = new Dictionary<(int, int), double>();
-            foreach (var p in store.GetDaily(fam.IndexTicker, 2600))
-                d[(p.Date.Month, p.Date.Year)] = p.Value;   // stamped at the reference month
+            var src = new Dictionary<(int, int), string>();
+            foreach (var p in store.GetDailyWithSource(fam.IndexTicker, 2600))
+            {
+                var k = (p.Date.Month, p.Date.Year);
+                if (d.ContainsKey(k) && src[k] == "bbg" && p.Source != "bbg") continue;
+                d[k] = p.Value;
+                src[k] = p.Source;
+            }
             return d;
+        }
+
+        /// <summary>ONE definition of Base/Mid/YoY/MoM per fixing row — consumed by
+        /// BuildDisplayRows AND the save-down book's History pages (audit 2026-08-26: the
+        /// latter carried a hand-cloned copy of this arithmetic).</summary>
+        public static (double? BaseV, double? Mid, double? Yoy, double? Mom) DeriveRow(
+            Fam fam, Dictionary<(int M, int Y), double> prints, DateTime fixMonth, double value,
+            double? prevMid)
+        {
+            double? baseV = prints.TryGetValue((fixMonth.Month, fixMonth.Year - 1), out var b) ? b : null;
+            double? mid, yoy;
+            if (fam.IsIndexUnit) { mid = value; yoy = baseV is { } b2 ? (value / b2 - 1) * 100.0 : null; }
+            else { yoy = value / 100.0; mid = baseV is { } b3 ? b3 * (1 + value / 10000.0) : null; }
+            double? anchor = prevMid ?? (prints.TryGetValue(
+                (fixMonth.AddMonths(-1).Month, fixMonth.AddMonths(-1).Year), out var pa) ? pa : null);
+            double? mom = mid is { } m0 && anchor is { } a0 ? (m0 / a0 - 1) * 100.0 : null;
+            return (baseV, mid, yoy, mom);
         }
 
         /// <summary>Derive the full display block for one family from marks (native unit) +
@@ -305,13 +393,7 @@ namespace RateDesk.Weekly.Core.Infl
             double? prevMid = null;
             foreach (var mk in famMarks.OrderBy(x => x.RefMonth))
             {
-                double? baseV = prints.TryGetValue((mk.RefMonth.Month, mk.RefMonth.Year - 1), out var b) ? b : null;
-                double? mid, yoy;
-                if (fam.IsIndexUnit) { mid = mk.Value; yoy = baseV is { } b2 ? (mk.Value / b2 - 1) * 100.0 : null; }
-                else { yoy = mk.Value / 100.0; mid = baseV is { } b3 ? b3 * (1 + mk.Value / 10000.0) : null; }
-                double? anchor = prevMid ?? (prints.TryGetValue(
-                    (mk.RefMonth.AddMonths(-1).Month, mk.RefMonth.AddMonths(-1).Year), out var pa) ? pa : null);
-                double? mom = mid is { } m0 && anchor is { } a0 ? (m0 / a0 - 1) * 100.0 : null;
+                var (baseV, mid, yoy, mom) = DeriveRow(fam, prints, mk.RefMonth, mk.Value, prevMid);
                 double? d1 = null, w1 = null, m1 = null;
                 if (mid is { } midNow && hist.TryGetValue($"{mk.RefMonth:yyyy-MM}", out var series))
                 {

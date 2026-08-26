@@ -27,6 +27,13 @@ namespace RateDesk.Weekly.Core.Daily
             ("RIKSBANK", "{SW}", "SWESTR"),
         };
 
+        /// <summary>ONE run-lookup predicate for every surface that resolves a bank block from
+        /// the report (blast, both workbooks — audit 2026-08-26: three subtly different
+        /// predicates could disagree). Titles are "FOMC · USD" by construction.</summary>
+        public static WeeklyRun? Find(WeeklyReport rep, string runName) =>
+            rep.Runs.FirstOrDefault(r =>
+                r.Title.Split('·')[0].Trim().Equals(runName, StringComparison.OrdinalIgnoreCase));
+
         public static string Render(WeeklyReport rep)
         {
             var inv = System.Globalization.CultureInfo.InvariantCulture;
@@ -37,14 +44,13 @@ namespace RateDesk.Weekly.Core.Daily
 
             foreach (var (runName, flag, fixing) in Blocks)
             {
-                var run = rep.Runs.FirstOrDefault(r =>
-                    r.Title.StartsWith(runName + " ", StringComparison.OrdinalIgnoreCase)
-                    || r.Title.Split('·')[0].Trim().Equals(runName, StringComparison.OrdinalIgnoreCase));
+                var run = Find(rep, runName);
                 if (run == null || run.Rows.Count == 0) continue;
 
                 sb.AppendLine();
                 sb.Append($"{flag} {runName} Run");
                 if (run.RefPct is { } rp) sb.Append($"   ({fixing} {rp.ToString("0.000", inv)})");
+                if (run.CompoundedPct is { } cp) sb.Append($"   (cmpd {cp.ToString("0.000", inv)})");
                 sb.AppendLine();
                 // same table as the workbook's Runs sheet, minus Maturity (IB window widths —
                 // desk 2026-08-25); fixed-width columns so a chat paste reads as a table
@@ -90,21 +96,23 @@ namespace RateDesk.Weekly.Core.Daily
                     System.Globalization.CultureInfo.InvariantCulture) : "&nbsp;", "text-align:right;");
 
             var sb = new StringBuilder();
-            sb.Append("<table cellspacing=\"0\" cellpadding=\"0\" style=\"border-collapse:collapse;\">");
+            // border="0" — Word-targeted pastes must never pick up default table borders
+            sb.Append("<table cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"border-collapse:collapse;\">");
             // row 1 of the sheet: the bold title
             sb.Append("<tr>" + Wide($"<b>DRAX OIS Runs {rep.AsOf.ToString("dMMMyy", inv)}</b>") + "</tr>");
             sb.Append(Blank());
             foreach (var (runName, _, fixing) in Blocks)
             {
-                var run = rep.Runs.FirstOrDefault(r =>
-                    r.Title.StartsWith(runName + " ", StringComparison.OrdinalIgnoreCase)
-                    || r.Title.Split('·')[0].Trim().Equals(runName, StringComparison.OrdinalIgnoreCase));
+                var run = Find(rep, runName);
                 if (run == null || run.Rows.Count == 0) continue;
 
                 sb.Append("<tr>" + Wide($"<b>{runName} closing run</b>") + "</tr>");
                 sb.Append("<tr>" + Td($"{fixing} fixing")
                     + Td(run.RefPct is { } rp ? rp.ToString("0.000", inv) : "&nbsp;", "text-align:right;")
-                    + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + "</tr>");
+                    + (run.CompoundedPct is { } cp
+                        ? Td("compounded") + Td(cp.ToString("0.000", inv), "text-align:right;")
+                        : Td("&nbsp;") + Td("&nbsp;"))
+                    + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + "</tr>");
                 sb.Append("<tr>");
                 foreach (var h in new[]
                          { "StartDate", "Mid", "Step (bp)", "Priced (bp)", "Δ 1d (bp)", "Δ 1w (bp)", "Δ 1m (bp)" })

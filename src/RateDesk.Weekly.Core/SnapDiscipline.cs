@@ -58,8 +58,12 @@ namespace RateDesk.Weekly.Core
                         double? v = null;
                         try
                         {
+                            // compare LONDON date to LONDON date — bars are keyed on the London
+                            // calendar, and a machine east of London is already on tomorrow's
+                            // LOCAL date at 16:15 London, which silently unpinned every mark
+                            // (audit 2026-08-26)
                             var s = bars.GetLondonSnaps(t, 4, SnapAt);
-                            if (s.Count > 0 && s[^1].Date.Date == DateTime.Today) v = s[^1].Value;
+                            if (s.Count > 0 && s[^1].Date.Date == now.Date) v = s[^1].Value;
                         }
                         catch { /* bars unavailable — fall back below */ }
                         if (v is { } sv)

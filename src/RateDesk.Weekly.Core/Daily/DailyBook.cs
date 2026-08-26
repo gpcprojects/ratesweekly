@@ -14,12 +14,6 @@ namespace RateDesk.Weekly.Core.Daily
     /// daily email, and optionally copied to publish.json's "dailyDir".</summary>
     public static class DailyBook
     {
-        /// <summary>Default trailing window for the per-bank history sheets — overridable via
-        /// publish.json "historyDays". The workbook is REGENERATED from the store every run
-        /// (never appended), so the store stays the single source of truth and manual fallback
-        /// days ingested from the incumbent sheet appear here automatically, marked by Source.</summary>
-        public const int HistoryDays = 250;
-
         /// <summary>Attachment name per desk 2026-08-25: "DRAX OIS Runs 25Aug26.xlsx".</summary>
         public static string FileName(DateTime asOf) =>
             $"DRAX OIS Runs {asOf.ToString("dMMMyy", System.Globalization.CultureInfo.InvariantCulture)}.xlsx";
@@ -50,8 +44,7 @@ namespace RateDesk.Weekly.Core.Daily
 
             foreach (var (runName, _, fixing) in DailyBlast.Blocks)
             {
-                var run = rep.Runs.FirstOrDefault(x =>
-                    x.Title.Split('·')[0].Trim().Equals(runName, StringComparison.OrdinalIgnoreCase));
+                var run = DailyBlast.Find(rep, runName);
                 if (run == null || run.Rows.Count == 0) continue;
 
                 ws.Cell(r, 1).Value = $"{runName} closing run";
@@ -60,6 +53,15 @@ namespace RateDesk.Weekly.Core.Daily
                 ws.Cell(r, 1).Value = $"{fixing} fixing";
                 if (run.RefPct is { } rp) ws.Cell(r, 2).Value = rp;
                 ws.Cell(r, 2).Style.NumberFormat.Format = "0.000";
+                // compounded fixing (trial, desk 2026-08-26) — same row, window shown
+                if (run.CompoundedPct is { } cmp)
+                {
+                    ws.Cell(r, 3).Value = "compounded";
+                    ws.Cell(r, 4).Value = cmp;
+                    ws.Cell(r, 4).Style.NumberFormat.Format = "0.000";
+                    if (run.CompoundedFrom is { } cf)
+                        ws.Cell(r, 5).Value = "since " + cf.ToString("dd-MMM-yy", inv);
+                }
                 r++;
                 string[] hdr = { "StartDate", "Maturity", "Mid", "Step (bp)", "Priced (bp)", "Δ 1d (bp)", "Δ 1w (bp)", "Δ 1m (bp)" };
                 for (int c = 0; c < hdr.Length; c++)
@@ -101,51 +103,8 @@ namespace RateDesk.Weekly.Core.Daily
             ws.Columns(3, 8).Width = 10;
         }
 
-        /// <summary>The per-bank Hist_ sheets (roll-corrected daily rate per current meeting).</summary>
-        public static void WriteHistorySheets(XLWorkbook wb, WeeklyReport rep, HistoryStore store,
-            int historyDays, Action<string>? log)
-        {
-            foreach (var sched in MeetingsStore.Schedules.Where(s => string.IsNullOrEmpty(s.Kind)))
-            {
-                if (!DailyBlast.Blocks.Any(b => b.Run.Equals(sched.Name, StringComparison.OrdinalIgnoreCase)))
-                    continue;
-                var run = rep.Runs.FirstOrDefault(x =>
-                    x.Title.Split('·')[0].Trim().Equals(sched.Name, StringComparison.OrdinalIgnoreCase));
-                var pat = sched.Tickers.FirstOrDefault(t => t.Contains("{N}"));
-                if (run == null || pat == null || run.Rows.Count == 0) continue;
-
-                var hs = wb.Worksheets.Add("Hist_" + sched.Name);
-                string[] hh = { "Date", "StartDate", "EndDate", "Rate", "Δ 1d (bp)", "Δ 1w (bp)", "Δ 1m (bp)", "Source" };
-                // one column-group per meeting would sprawl; long format instead — filterable
-                for (int c = 0; c < hh.Length; c++)
-                {
-                    hs.Cell(1, c + 1).Value = hh[c];
-                    hs.Cell(1, c + 1).Style.Font.SetBold();
-                }
-                int hr = 2;
-                foreach (var row in BankHistoryRows(store, sched, run, pat, rep.AsOf, historyDays))
-                {
-                    hs.Cell(hr, 1).Value = row.Day; hs.Cell(hr, 1).Style.DateFormat.Format = "dd-mmm-yy";
-                    hs.Cell(hr, 2).Value = row.Start; hs.Cell(hr, 2).Style.DateFormat.Format = "dd-mmm-yy";
-                    if (row.End is { } he)
-                    {
-                        hs.Cell(hr, 3).Value = he;
-                        hs.Cell(hr, 3).Style.DateFormat.Format = "dd-mmm-yy";
-                    }
-                    hs.Cell(hr, 4).Value = row.Rate; hs.Cell(hr, 4).Style.NumberFormat.Format = "0.000";
-                    if (row.D1 is { } d1) SetBp(hs.Cell(hr, 5), d1);
-                    if (row.W1 is { } w1) SetBp(hs.Cell(hr, 6), w1);
-                    if (row.M1 is { } m1) SetBp(hs.Cell(hr, 7), m1);
-                    hs.Cell(hr, 8).Value = row.Source;
-                    if (row.Source != "bbg") hs.Cell(hr, 8).Style.Font.SetBold();
-                    hr++;
-                }
-                hs.Columns(1, 3).Width = 12;
-                hs.Columns(4, 7).Width = 10;
-                hs.Column(8).Width = 8;
-                log?.Invoke($"daily book: {sched.Name} history {hr - 2} rows ({historyDays}d window)");
-            }
-        }
+        // (the old per-bank Hist_ sheet writer was deleted 2026-08-26 — dead since the books
+        // went lean; history lives in the macro-enabled save-down books via BankHistoryRows)
 
         public sealed record HistRow(DateTime Day, DateTime Start, DateTime? End, double Rate,
             string Source, double? D1, double? W1, double? M1);
@@ -158,41 +117,55 @@ namespace RateDesk.Weekly.Core.Daily
         public static List<HistRow> BankHistoryRows(HistoryStore store, MeetingScheduleDef sched,
             WeeklyRun run, string pat, DateTime asOf, int historyDays)
         {
-            string srcSuffix = string.IsNullOrEmpty(sched.Source) ? "" : " " + sched.Source;
+            // the run's ACTIVE contributor (source-selection trial 2026-08-26), so the history
+            // pages read the same source the mids were built on; config default otherwise
+            var activeSrc = run.Source ?? sched.Source ?? "";
+            string srcSuffix = activeSrc.Length == 0 ? "" : " " + activeSrc;
             // start-renumbering families (SKSF) keep boundaries ON the start dates — including
             // the decisions would cluster each boundary back onto the decision and mis-rung the
-            // decision→start week (the same rule as the stitcher, desk 2026-08-25)
-            var boundSrc = sched.RollsAtPeriodStart
-                ? sched.Dates.Concat(sched.PastDates)
-                : sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates);
+            // decision→start week (the same rule as the stitcher, desk 2026-08-25). The RUN'S
+            // OWN dates (ticker-derived truth) are unioned in like the stitcher does (audit
+            // 2026-08-26: a config grid drifting late — BOJ 2027 sat 8-11 days off — otherwise
+            // drops the true boundary and mis-rungs every row of that period).
+            var boundSrc = (sched.RollsAtPeriodStart
+                    ? sched.Dates.Concat(sched.PastDates)
+                    : sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates))
+                .Concat(run.Rows.Select(r => r.Date))
+                .Concat(run.Rows.Where(r => r.EndDate is { }).Select(r => r.EndDate!.Value));
             var bounds = boundSrc.Select(d => d.Date).OrderBy(d => d).Distinct().ToList();
             var clustered = new List<DateTime>();
             foreach (var d in bounds)
                 if (clustered.Count == 0 || (d - clustered[^1]).TotalDays > 14) clustered.Add(d);
 
             // one store read per rung, then everything from memory — full-depth sheets
-            // would take minutes with a store round-trip per (day x meeting x horizon)
+            // would take minutes with a store round-trip per (day x meeting x horizon).
+            // Lookback anchored on the REPORT's asOf, not the wall clock (audit 2026-08-26:
+            // an offline export of an old report silently lost its early rows).
+            int lookback = historyDays + 60 + Math.Max(0, (int)(DateTime.Today - asOf.Date).TotalDays);
             var rungData = new Dictionary<int, List<(DateTime Date, double Value, string Source)>>();
             List<(DateTime Date, double Value, string Source)> RungHist(int n)
             {
                 if (!rungData.TryGetValue(n, out var l))
                 {
                     l = store.GetDailyWithSource(
-                        pat.Replace("{N}", n.ToString()) + srcSuffix + " Curncy", historyDays + 60);
+                        pat.Replace("{N}", n.ToString()) + srcSuffix + " Curncy", lookback);
                     if (l.Count == 0 && srcSuffix.Length > 0)
                         l = store.GetDailyWithSource(
-                            pat.Replace("{N}", n.ToString()) + " Curncy", historyDays + 60);
+                            pat.Replace("{N}", n.ToString()) + " Curncy", lookback);
                     rungData[n] = l;
                 }
                 return l;
             }
             var boundSet = clustered.ToHashSet();
-            (double Value, string Source)? ValueAt(DateTime contract, DateTime then, int depth = 0)
+            (DateTime Date, double Value, string Source)? ValueAt(DateTime contract, DateTime then, int depth = 0)
             {
                 if (depth > 6) return null;
                 if (boundSet.Contains(then.Date)) then = then.Date.AddDays(-1);
-                int idx = Math.Max(1, clustered.Count(x => x > then.Date && x <= contract.Date));
-                if (idx > 13) return null;
+                int idx = clustered.Count(x => x > then.Date && x <= contract.Date);
+                // 0 boundaries between the day and the contract means the contract's own period
+                // has already started — there is no rung for it; publishing rung 1's rate there
+                // was the audit's Max(1,…) coercion (2026-08-26)
+                if (idx < 1 || idx > 13) return null;
                 var l = RungHist(idx);
                 for (int i = l.Count - 1; i >= 0; i--)
                     if (l[i].Date.Date <= then.Date)
@@ -201,28 +174,44 @@ namespace RateDesk.Weekly.Core.Daily
                         // before it (mixed-state decision-day closes — the stitcher's rule)
                         if (boundSet.Contains(l[i].Date.Date))
                             return ValueAt(contract, l[i].Date.Date.AddDays(-1), depth + 1);
-                        return (l[i].Value, l[i].Source);
+                        return (l[i].Date.Date, l[i].Value, l[i].Source);
                     }
                 return null;
             }
+            // a change anchor may walk back over a weekend/holiday but never so far that the
+            // label lies — same 10-day cap as the email's ChangeToBp (audit 2026-08-26)
+            double? Chg(double cur, (DateTime Date, double Value, string Source)? anchor, DateTime target)
+                => anchor is { } a && (target.Date - a.Date).TotalDays <= 10
+                    ? (cur - a.Value) * 100.0 : null;
+
+            // last N BUSINESS days strictly before asOf — the store excludes today by design,
+            // and the old calendar-day window shipped ~30% fewer rows than asked (audit 2026-08-26)
+            var days = new List<DateTime>();
+            for (var d = PrevBd(asOf.Date.AddDays(1)); days.Count < historyDays; d = PrevBd(d))
+                if (d < asOf.Date) days.Add(d);
+            days.Reverse();
 
             var outRows = new List<HistRow>();
-            var days = Enumerable.Range(0, historyDays)
-                .Select(i => asOf.Date.AddDays(-historyDays + i))
-                .Where(d => d.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday));
             foreach (var day in days)
                 for (int ri = 0; ri < run.Rows.Count; ri++)
                 {
                     var m = run.Rows[ri];
+                    // Y/E-turn periods never publish as policy history (the runs sheet labels
+                    // them; these tables must not launder the turn print — audit 2026-08-26)
+                    if (m.TurnPeriod) continue;
                     if (ValueAt(m.Date, day) is not { } cur) continue;
-                    var prev = ValueAt(m.Date, PrevBd(day));
+                    // a boundary day's own row is unanchorable for Δ1d (the walk-back resolves
+                    // both sides to the same pre-boundary close — publishing 0.0 there read as
+                    // "unchanged"; blank is the honest value)
+                    bool boundaryDay = boundSet.Contains(day);
+                    var prev = boundaryDay ? null : ValueAt(m.Date, PrevBd(day));
                     var week = ValueAt(m.Date, day.AddDays(-7));
                     var month = ValueAt(m.Date, WeeklyCurves.MonthAgo(day));
                     var hEnd = m.EndDate ?? (ri + 1 < run.Rows.Count ? run.Rows[ri + 1].Date : (DateTime?)null);
                     outRows.Add(new HistRow(day, m.Date, hEnd, cur.Value, cur.Source,
-                        prev is { } pv ? (cur.Value - pv.Value) * 100.0 : null,
-                        week is { } wv ? (cur.Value - wv.Value) * 100.0 : null,
-                        month is { } mv ? (cur.Value - mv.Value) * 100.0 : null));
+                        Chg(cur.Value, prev, PrevBd(day)),
+                        Chg(cur.Value, week, day.AddDays(-7)),
+                        Chg(cur.Value, month, WeeklyCurves.MonthAgo(day))));
                 }
             return outRows;
         }

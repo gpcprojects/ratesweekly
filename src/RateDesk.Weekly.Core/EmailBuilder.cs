@@ -78,11 +78,15 @@ namespace RateDesk.Weekly.Core
         /// store to serve lookbacks STORE-FIRST (desk 2026-08-25): Bloomberg is then touched
         /// only for the live snapshot, the 16:30 intraday snaps, and per-ticker gap-fills —
         /// same marks every run, minimal API load.</summary>
-        public static WeeklyReport Build(Action<string>? log = null, HistoryStore? store = null)
+        public static WeeklyReport Build(Action<string>? log = null, HistoryStore? store = null,
+            string? appDataDir = null)
         {
             var configs = ConfigStore.LoadDefault();
             var snap = new RatesSnapshot();
             var svc = new PricingService(configs, snap);
+            // saved per-run contributor overrides (source-selection trial, desk 2026-08-26) —
+            // BEFORE ticker collection so the chosen contributor's spellings get snapshotted
+            SourceStore.Apply(svc, appDataDir, log);
             using var refData = new RefDataClient();
             var sbh = store != null ? new StoreBackedHistory(store, refData, log) : null;
             svc.History = (RateDesk.Core.Market.IHistoryProvider?)sbh ?? refData;
@@ -109,14 +113,45 @@ namespace RateDesk.Weekly.Core
             }
             // same close discipline as the daily (desk 2026-08-25): meeting-board marks pin to
             // the 16:15 snap when pressed after it; pre-15:30 runs carry a PRE-CLOSE flag. The
-            // forward grid stays live-at-press — it is not a close product.
+            // forward grid stays live-at-press — it is not a close product. The INFLATION
+            // fixings pin too (audit 2026-08-26: the weekly's cards were live-at-press while
+            // the daily's were pinned — same cards, two different marks on the same day).
             var (_, snapNote) = SnapDiscipline.Apply(refData, snap,
-                svc.MeetingTickers().Concat(PricingService.WeeklyExtraTickers), log);
+                svc.MeetingTickers().Concat(PricingService.WeeklyExtraTickers)
+                    .Concat(Infl.InflHistory.Families.SelectMany(f =>
+                        Enumerable.Range(1, 12).Select(n => $"{f.Root}{n} Curncy"))), log);
+            if (store != null)
+            {
+                // the daily's own upkeep, mirrored (audit 2026-08-26): a desk running only
+                // WEEKLY still records maturities, tops up the fixing closes and maintains the
+                // unified history — otherwise its Δ columns never advance
+                int fx = 0;
+                foreach (var fam in Infl.InflHistory.Families)
+                    for (int n = 1; n <= 12; n++)
+                    {
+                        var tk = $"{fam.Root}{n} Curncy";
+                        try
+                        {
+                            if (snap.Get(tk)?.Maturity is { } mat)
+                                store.SetMaturity(tk, DateTime.Today, mat);
+                            if (sbh!.GetDaily(tk, 45).Count > 0) fx++;
+                        }
+                        catch { /* an unquoted fixing month is not an error */ }
+                    }
+                log?.Invoke($"email: topped up {fx} inflation fixing series");
+                try { Infl.InflHistory.Maintain(store, log); }
+                catch (Exception ex) { log?.Invoke("  ! infl maintain: " + ex.Message); }
+                // re-collect the marks AFTER the snap pin so the cards publish the close
+                try { Infl.InflHistory.LastLiveMarks = Infl.InflHistory.CollectLiveMarks(snap, store); }
+                catch { /* absent quotes just mean fewer rows */ }
+            }
             if (sbh == null)
                 try { refData.Prefetch(all, 220); } catch { /* singles fallback inside Core */ }
             var rep = svc.BuildWeekly();
             if (snapNote != null) rep.Notes.Add(snapNote);
             if (sbh != null) log?.Invoke("email " + sbh.Stats);
+            // active source + compounded fixing onto every run (trial, desk 2026-08-26)
+            CompoundedFixing.Stamp(rep, svc, configs, log);
             // exchange-settled futures cross-check (FuturesGuard) — a TRIGGERED line here is the
             // flag that the meeting rows disagree with instruments that share nothing with the
             // OIS machinery. Notes only: the investor-facing email body never carries diagnostics.
@@ -143,6 +178,7 @@ namespace RateDesk.Weekly.Core
             // desk instruction 2026-08-11. Do not re-add it; the WeeklyEmail hook stays unused.
 
             ReportStore.Save(rep, Path.Combine(outDir, ReportFile));
+            if (store != null) Infl.InflHistory.PersistMarks(outDir, rep.AsOf);
 
             string inflHtml = "", inflText = "";
             if (store != null)

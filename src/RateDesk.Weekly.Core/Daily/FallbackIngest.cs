@@ -95,7 +95,11 @@ namespace RateDesk.Weekly.Core.Daily
                         var start = AsDate(row.Cell(3));       // StartDate
                         var rate = row.Cell(5).TryGetValue(out double rv) ? rv : (double?)null;
                         if (d is null || start is null || rate is null) continue;
-                        if (rate is <= 0 or > 25) continue;    // sanity — a percent-scale policy rate
+                        // sanity — a percent-scale policy rate. NEGATIVE rates are real (JPY/SEK/
+                        // CHF/EUR all printed them; audit 2026-08-26), so only clearly-out-of-
+                        // scale values are dropped; EXACT zero stays out (a sheet placeholder is
+                        // indistinguishable from a true 0.000 and a wrong skip beats a wrong row)
+                        if (rate is < -2 or > 25 || Math.Abs(rate.Value) < 1e-9) continue;
                         if (d.Value >= DateTime.Today) continue;
                         if (minDate is { } md && d.Value < md.Date) continue;
                         // ingest window: outage gaps are recent by nature, and the engine-coverage

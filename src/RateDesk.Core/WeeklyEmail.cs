@@ -67,7 +67,25 @@ namespace RateDesk.Core
         public static readonly EmailParts All = new(true, true, true);
     }
 
+    /// <summary>Every rendering runs under the INVARIANT culture (audit 2026-08-26): the html
+    /// fragment must print "3.125" and "May 26" on every desk machine — a de-DE Windows was one
+    /// interpolation away from mailing "3,125"/"Mai" in the body while the attachments (already
+    /// invariant) said otherwise. Scoped-and-restored, not per-call-site, so no format can be
+    /// missed.</summary>
+    private static string UnderInvariantCulture(Func<string> render)
+    {
+        var was = System.Globalization.CultureInfo.CurrentCulture;
+        System.Threading.Thread.CurrentThread.CurrentCulture =
+            System.Globalization.CultureInfo.InvariantCulture;
+        try { return render(); }
+        finally { System.Threading.Thread.CurrentThread.CurrentCulture = was; }
+    }
+
     public static string Html(WeeklyReport rep, Func<string, string?>? ccyHref = null,
+        string? footerHtml = null, string? headerHtml = null, EmailParts? partsOpt = null) =>
+        UnderInvariantCulture(() => HtmlCore(rep, ccyHref, footerHtml, headerHtml, partsOpt));
+
+    private static string HtmlCore(WeeklyReport rep, Func<string, string?>? ccyHref = null,
         string? footerHtml = null, string? headerHtml = null, EmailParts? partsOpt = null)
     {
         var parts = partsOpt ?? EmailParts.All;   // null = everything; all-false = truly empty
@@ -102,7 +120,7 @@ namespace RateDesk.Core
             string sp = sep ? Sep() : "";
             if (v is not double d) return Td("&nbsp;", tl + sp + RowBg(rI));
             string bg = HeatHex(d) is string h ? $"background:{h};" : RowBg(rI) + $"color:{EmMut};";
-            return Td(d.ToString("+0.0;-0.0"), $"text-align:right;{bg}{tl}{sp}");
+            return Td(d.ToString("+0.0;-0.0;0.0"), $"text-align:right;{bg}{tl}{sp}");
         }
         string Inv(DateTime d) => d.ToString("dd-MMM-yy", System.Globalization.CultureInfo.InvariantCulture);
         // Word-safe vertical spacer: div/table margins get half-ignored by Outlook's renderer,
@@ -151,7 +169,7 @@ namespace RateDesk.Core
                           Td("&nbsp;", rb) + Td("&nbsp;", rb)
                         : Td($"<b>{f.MidPct:0.000}</b>", $"text-align:right;{rb}") +
                           Td(f.RefPct is double rp2 ? rp2.ToString("0.000") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
-                          Td(f.PricedBp is double p2 ? p2.ToString("+0.0;-0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
+                          Td(f.PricedBp is double p2 ? p2.ToString("+0.0;-0.0;0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
                           Td($"<b>{pct}</b>", $"text-align:right;{rb}")) +
                     "</tr>");
             }
@@ -181,8 +199,16 @@ namespace RateDesk.Core
                 // vertical gaps between currencies = the horizontal ones) — padding, because Word
                 // honours cell padding where it drops table margins
                 sb.Append("<td nowrap style=\"vertical-align:top;padding:0 0 26px 0;\">");
+                // compounded fixing (trial, desk 2026-08-26): realized compounding of the o/n
+                // fixing over the current period, next to the spot fixing — the window start is
+                // shown so the anchoring is never a mystery. Display-only: Step/Priced unchanged.
+                string cmpd = run.CompoundedPct is double cp
+                    ? $" · cmpd {cp:0.000}" + (run.CompoundedFrom is DateTime cf
+                        ? $" ({cf.ToString("dd-MMM", System.Globalization.CultureInfo.InvariantCulture).Replace("-", "‑")}→)"
+                        : "")
+                    : "";
                 sb.Append($"<div style=\"{EmFont}font-weight:bold;font-size:12.5px;color:{EmTxt};margin:0 0 3px 1px;\">{run.Title}" +
-                          (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">fixing {rp:0.000}</span>" : "")
+                          (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">fixing {rp:0.000}{cmpd}</span>" : "")
                           + "</div>");
                 sb.Append(TableOpen(new[] { 76, 56, 58, 52, 56, 60, 60 }, "0"));
                 // RATESWEEKLY DIVERGENCE (desk 2026-08-25): widths live ON every card cell —
@@ -205,7 +231,7 @@ namespace RateDesk.Core
                 {
                     if (v is not double d) return CTd("&nbsp;", c, RowBg(rI));
                     string bg = HeatHex(d) is string h ? $"background:{h};" : RowBg(rI) + $"color:{EmMut};";
-                    return CTd(NoBrk(d.ToString("+0.0;-0.0")), c, $"text-align:right;{bg}");
+                    return CTd(NoBrk(d.ToString("+0.0;-0.0;0.0")), c, $"text-align:right;{bg}");
                 }
                 sb.Append("<tr>" + MH("StartDate", 0, false) + MH("Mid", 1) + MH("Priced", 2) + MH("Step", 3)
                     + MH("1d Chg", 4) + MH("1w Chg", 5) + MH("1m Chg", 6) + "</tr>");
@@ -230,8 +256,8 @@ namespace RateDesk.Core
                     sb.Append("<tr>" +
                         CTd(Inv(m.Date), 0, rb) +
                         CTd($"<b>{m.MidPct:0.000}</b>", 1, $"text-align:right;{rb}") +
-                        CTd(m.PricedBp is double p ? NoBrk(p.ToString("+0.0;-0.0")) : "&nbsp;", 2, $"text-align:right;color:{EmMut};{rb}") +
-                        CTd(m.StepBp is double st ? NoBrk(st.ToString("+0.0;-0.0")) : "&nbsp;", 3, $"text-align:right;color:{EmMut};{rb}") +
+                        CTd(m.PricedBp is double p ? NoBrk(p.ToString("+0.0;-0.0;0.0")) : "&nbsp;", 2, $"text-align:right;color:{EmMut};{rb}") +
+                        CTd(m.StepBp is double st ? NoBrk(st.ToString("+0.0;-0.0;0.0")) : "&nbsp;", 3, $"text-align:right;color:{EmMut};{rb}") +
                         CChg(m.D1Bp, 4, mr - 1) +
                         CChg(m.W1Bp, 5, mr - 1) + CChg(m.M1Bp, 6, mr - 1) + "</tr>");
                 }
@@ -334,6 +360,10 @@ namespace RateDesk.Core
     }
 
     public static string PlainText(WeeklyReport rep, string? footerText = null, string? headerText = null,
+        EmailParts? partsOpt = null) =>
+        UnderInvariantCulture(() => PlainTextCore(rep, footerText, headerText, partsOpt));
+
+    private static string PlainTextCore(WeeklyReport rep, string? footerText = null, string? headerText = null,
         EmailParts? partsOpt = null)
     {
         var parts = partsOpt ?? EmailParts.All;
@@ -351,7 +381,7 @@ namespace RateDesk.Core
                     (f.TurnPeriod
                         ? $"Y/E Turn\t{(f.RefPct is double rt ? rt.ToString("0.000") : "")}\t"
                         : $"{f.MidPct:0.000}\t{(f.RefPct is double rr ? rr.ToString("0.000") : "")}\t" +
-                          $"{(f.PricedBp is double p ? p.ToString("+0.0;-0.0") : "")}"));
+                          $"{(f.PricedBp is double p ? p.ToString("+0.0;-0.0;0.0") : "")}"));
         }
         var truns = parts.Runs ? rep.Runs : new List<WeeklyRun>();
         if (truns.Count > 0)
@@ -362,14 +392,18 @@ namespace RateDesk.Core
         foreach (var run in truns)
         {
             sb.AppendLine();
-            sb.AppendLine(run.Title + (run.RefPct is double rp ? $"  fixing {rp:0.000}" : ""));
+            sb.AppendLine(run.Title + (run.RefPct is double rp ? $"  fixing {rp:0.000}" : "")
+                + (run.CompoundedPct is double cp
+                    ? $"  compounded {cp:0.000}" + (run.CompoundedFrom is DateTime cf
+                        ? $" (since {cf.ToString("dd-MMM-yy", inv)})" : "")
+                    : ""));
             sb.AppendLine("StartDate\tMid\tPriced\tStep\t1d Chg\t1w Chg\t1m Chg");
             foreach (var m in run.Rows)
                 sb.AppendLine(m.TurnPeriod
                     ? $"{m.Date.ToString("dd-MMM-yy", inv)}\tY/E Turn\t\t\t\t\t"
-                    : $"{m.Date.ToString("dd-MMM-yy", inv)}\t{m.MidPct:0.000}\t{m.PricedBp:+0.0;-0.0}\t{m.StepBp:+0.0;-0.0}\t" +
-                      $"{(m.D1Bp is double d1 ? d1.ToString("+0.0;-0.0") : "")}\t" +
-                      $"{(m.W1Bp is double w ? w.ToString("+0.0;-0.0") : "")}\t{(m.M1Bp is double m1 ? m1.ToString("+0.0;-0.0") : "")}");
+                    : $"{m.Date.ToString("dd-MMM-yy", inv)}\t{m.MidPct:0.000}\t{m.PricedBp:+0.0;-0.0;0.0}\t{m.StepBp:+0.0;-0.0;0.0}\t" +
+                      $"{(m.D1Bp is double d1 ? d1.ToString("+0.0;-0.0;0.0") : "")}\t" +
+                      $"{(m.W1Bp is double w ? w.ToString("+0.0;-0.0;0.0") : "")}\t{(m.M1Bp is double m1 ? m1.ToString("+0.0;-0.0;0.0") : "")}");
         }
 
         var tsecs = parts.Grid ? rep.Sections : new List<WeeklySection>();
@@ -391,9 +425,9 @@ namespace RateDesk.Core
                 {
                     var cell = c.Cells[rI];
                     if (cell.Mid is not double mid) { sb.Append("\t\t\t"); continue; }
-                    sb.Append('\t').Append(cell.IsSpread ? mid.ToString("+0.0;-0.0") : mid.ToString("0.000"));
-                    sb.Append('\t').Append(cell.W1Bp is double w ? w.ToString("+0.0;-0.0") : "");
-                    sb.Append('\t').Append(cell.M1Bp is double m ? m.ToString("+0.0;-0.0") : "");
+                    sb.Append('\t').Append(cell.IsSpread ? mid.ToString("+0.0;-0.0;0.0") : mid.ToString("0.000"));
+                    sb.Append('\t').Append(cell.W1Bp is double w ? w.ToString("+0.0;-0.0;0.0") : "");
+                    sb.Append('\t').Append(cell.M1Bp is double m ? m.ToString("+0.0;-0.0;0.0") : "");
                 }
                 sb.AppendLine();
             }

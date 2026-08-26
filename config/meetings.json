@@ -17,6 +17,8 @@
         "USSOFED{N}"
       ],
       "refTicker": "FEDL01 Index",
+      // EFFR annualizes ACT/360 — the compounded-fixing trial's day count (desk 2026-08-26)
+      "fixingDcc": 360,
       // USD tenor swaps and forwards are SOFR, but everything MEETING-DATED is Fed Funds - including
       // the USSOFED{N} tickers above and the FEDL01 reference. So a trade struck on FOMC dates must
       // price on the FedFunds strip, not on the SOFR curve the rest of USD uses.
@@ -80,6 +82,8 @@
       "name": "ECB",
       "ccy": "EUR",
       "header": "{EU} Indic ECB Run",
+      // €STR annualizes ACT/360 — the compounded-fixing trial's day count (desk 2026-08-26)
+      "fixingDcc": 360,
       "tickers": [
         "EESF{N}A"
       ],
@@ -363,6 +367,8 @@
       "name": "SNB",
       "ccy": "CHF",
       "header": "{SZ} Indic SNB Run",
+      // SARON annualizes ACT/360 — the compounded-fixing trial's day count (desk 2026-08-26)
+      "fixingDcc": 360,
       "tickers": [
         "SFSF{N}A"
       ],
@@ -461,6 +467,8 @@
       "name": "RIKSBANK",
       "ccy": "SEK",
       "header": "{SW} Indic Riksbank Run",
+      // SWESTR annualizes ACT/360 — the compounded-fixing trial's day count (desk 2026-08-26)
+      "fixingDcc": 360,
       "tickers": [
         "SKSF{N}A"
       ],
