@@ -40,7 +40,7 @@ namespace RateDesk.Weekly.Core.Infl
                 rows[fam.Key] = InflHistory.BuildDisplayRows(store, fam,
                     marks.TryGetValue(fam.Key, out var m) ? m : new List<InflHistory.Mark>(), asOf);
             var html = Html(rows, nextPrints);
-            var sheet = SheetEmail.InflHtml(rows, nextPrints);
+            var sheet = SheetEmail.InflHtml(rows, nextPrints, asOf);
             var text = PlainText(rows, nextPrints);
             Directory.CreateDirectory(outDir);
             File.WriteAllText(Path.Combine(outDir, daily ? DailyHtmlFile : WeeklyHtmlFile), html);

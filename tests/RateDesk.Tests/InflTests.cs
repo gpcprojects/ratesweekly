@@ -241,13 +241,14 @@ namespace RateDesk.Tests
             // (dates carry U+2011 non-breaking hyphens there); normalise to compare
             var html = InflEmail.WriteFragments(store, marks, nextPrints,
                 new DateTime(2026, 8, 20), _dir, daily: true).Replace('‑', '-');
-            Assert.Contains("Inflation Fixing Runs", html);
-            // Word breaks at spaces even under nowrap, so all multi-word cell text is &nbsp;-joined
-            Assert.Contains("Next&nbsp;Print:&nbsp;11-Sep-26", html);
-            // the Month column is the bold cell — Sep-26 also appears in the Next Print caption,
-            // so the drop is asserted on the month cell itself
-            Assert.Contains("<b>Aug-26</b>", html);
-            Assert.DoesNotContain("<b>Sep-26</b>", html);   // furthest fixing dropped
+            Assert.Contains("DRAX&nbsp;Fixing&nbsp;Runs&nbsp;20Aug26", html);   // the sheet's own title
+            // the facsimile puts "Next Print:" and its date in SEPARATE cells, exactly where the
+            // sheet does (cols D and E) — so they are asserted separately
+            Assert.Contains("Next&nbsp;Print:", html);
+            Assert.Contains(">11-Sep-26<", html);
+            // the month column carries the fixing month; the furthest fixing is dropped
+            Assert.Contains(">Aug-26<", html);
+            Assert.DoesNotContain(">Sep-26<", html);
             Assert.Contains("<td nowrap width=", html);     // widths live ON the cells (Word rule)
             Assert.True(File.Exists(Path.Combine(_dir, InflEmail.DailyHtmlFile)));
             Assert.True(File.Exists(Path.Combine(_dir, InflEmail.DailySheetHtmlFile)));

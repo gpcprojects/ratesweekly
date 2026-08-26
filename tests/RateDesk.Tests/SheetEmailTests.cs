@@ -75,20 +75,11 @@ namespace RateDesk.Tests
                     _ => cell.GetString(),
                 };
                 if (shown.Length == 0) continue;
-                // a header's UNITS drop to a quiet second line by design ("Priced" / "bp"), so
-                // those are checked as stem + unit; every other string must appear verbatim
-                // (allowing the &nbsp;-joined form Word requires)
-                if (shown.EndsWith(" (bp)", StringComparison.Ordinal))
-                {
-                    Assert.Contains(shown[..^5].Replace(" ", "&nbsp;"), html);
-                    Assert.Contains(">bp<", html);
-                }
-                else
-                {
-                    var needle = shown.Replace(" ", "&nbsp;");
-                    Assert.True(html.Contains(shown) || html.Contains(needle),
-                        $"xls cell {cell.Address} \"{shown}\" is missing from the email body");
-                }
+                // desk 2026-08-26: the email is a FACSIMILE — every displayed string appears
+                // verbatim (allowing the &nbsp;-joined form Word requires)
+                var needle = shown.Replace(" ", "&nbsp;");
+                Assert.True(html.Contains(shown) || html.Contains(needle),
+                    $"xls cell {cell.Address} \"{shown}\" is missing from the email body");
                 checkedCells++;
             }
             Assert.True(checkedCells > 40, $"fixture too thin to prove anything ({checkedCells} cells)");
@@ -102,11 +93,13 @@ namespace RateDesk.Tests
             // which phones scaled to about a third
             Assert.DoesNotContain("width:428px", html);
             Assert.DoesNotContain("width:1168px", html);
-            // every table holds the single 488px measure (or narrower)
+            // every table holds the SHEET's own measure: Excel's widths at 7px/char + padding
+            // (runs 12,12,10x6 chars = 628px), stacked in one column — nothing wider
             foreach (var m in System.Text.RegularExpressions.Regex.Matches(html, @"width:(\d+)px;max-width")
                          .Cast<System.Text.RegularExpressions.Match>())
-                Assert.True(int.Parse(m.Groups[1].Value) <= 500,
-                    $"a sheet table is {m.Groups[1].Value}px wide — too wide for a phone");
+                Assert.True(int.Parse(m.Groups[1].Value) <= 640,
+                    $"a sheet table is {m.Groups[1].Value}px wide — wider than the sheet itself");
+            Assert.Contains($"width:{RunsTable.PxForChars(12) * 2 + RunsTable.PxForChars(10) * 6}px", html);
         }
 
         [Fact]
@@ -130,13 +123,33 @@ namespace RateDesk.Tests
         public void SheetBody_CarriesTheResponsiveRules_AndDropsMaturityOnPhones()
         {
             var html = SheetEmail.Body(Fixture(), true, true);
-            Assert.Contains("@media only screen and (max-width:620px)", html);
-            Assert.Contains("@media only screen and (max-width:440px)", html);
+            Assert.Contains("@media only screen and (max-width:700px)", html);
+            Assert.Contains("@media only screen and (max-width:470px)", html);
             Assert.Contains(".rwm{display:none!important}", html);
             Assert.Contains("-webkit-text-size-adjust:100%", html);
             // the Maturity column (header + every data cell) is the one tagged for the drop
             int rwm = System.Text.RegularExpressions.Regex.Matches(html, "class=\"rw[ch] rwm\"|class=\"rwh rwm\"").Count;
             Assert.True(rwm >= 6, $"only {rwm} Maturity cells tagged rwm — the phone rule would tear the table");
+        }
+
+        [Fact]
+        public void SheetBody_LooksLikeTheSheet_BlueBandNoGridNoZebra()
+        {
+            var html = SheetEmail.Body(Fixture(), true, true);
+            // the DRAX-blue header band, sampled from the logo, on both surfaces
+            Assert.Contains($"background:{RunsTable.BrandBlue}", html);
+            // the two ONLY differences from the xls: no grid in the email...
+            Assert.DoesNotContain("border-bottom", html);
+            Assert.DoesNotContain("border-left", html);
+            Assert.DoesNotContain("border-right", html);
+            Assert.DoesNotContain("border-top", html);
+            // ...and no invented ink: no zebra striping, no muted greys, Excel's own black
+            Assert.DoesNotContain("#f7f9fb", html);
+            Assert.DoesNotContain(WeeklyEmail.EmMut, html);
+            Assert.Contains("color:#000000", html);
+            // one-line headers, exactly the sheet's labels
+            Assert.Contains("Priced&nbsp;(bp)", html);
+            Assert.Contains("Δ&nbsp;1m&nbsp;(bp)", html);
         }
 
         [Fact]
