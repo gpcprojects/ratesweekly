@@ -33,19 +33,22 @@ namespace RateDesk.Weekly.Core.Daily
         /// Historical_* tabs are ingested for outage days (FallbackIngest). Null = no ingest.</summary>
         public static string? LoadFallbackBook(string appDataDir) => LoadString(appDataDir, "fallbackBook");
 
-        /// <summary>publish.json {"historyDays": 250} — the workbook history sheets' window.</summary>
+        /// <summary>publish.json {"historyDays": 61} — the save-down books' history_ window in
+        /// BUSINESS days. Default 61 = the incumbent's own depth; the key was previously read
+        /// and dropped (audit 2026-08-26) — it now actually reaches the books.</summary>
         public static int LoadHistoryDays(string appDataDir)
         {
+            const int dflt = 61;
             var path = Path.Combine(appDataDir, "publish.json");
-            if (!File.Exists(path)) return DailyBook.HistoryDays;
+            if (!File.Exists(path)) return dflt;
             try
             {
                 using var doc = JsonDocument.Parse(File.ReadAllText(path));
                 return doc.RootElement.TryGetProperty("historyDays", out var v)
                        && v.ValueKind == JsonValueKind.Number && v.GetInt32() is > 0 and <= 2000
-                    ? v.GetInt32() : DailyBook.HistoryDays;
+                    ? v.GetInt32() : dflt;
             }
-            catch { return DailyBook.HistoryDays; }
+            catch { return dflt; }
         }
 
         /// <summary>Mirror every local OIS_Runs workbook the shared drive is missing (or holds
@@ -107,12 +110,15 @@ namespace RateDesk.Weekly.Core.Daily
                 FallbackIngest.Run(fb, store, log);
             log?.Invoke($"export: rebuilding workbooks from stored data as of " +
                         $"{rep.AsOf:dd-MMM-yy HH:mm} — no Bloomberg required");
+            // the RUN's frozen marks, never a stale-close downgrade of the emailed file
+            Infl.InflHistory.LoadPersistedMarks(outDir);
+            var marks = Infl.InflHistory.LastLiveMarks;
             var path = DailyBook.Write(rep, outDir, log);
-            Infl.InflRunsXlsx.Write(store, outDir, rep.AsOf, null, Infl.InflHistory.LastNextPrints, log);
+            Infl.InflRunsXlsx.Write(store, outDir, rep.AsOf, marks, Infl.InflHistory.LastNextPrints, log);
             try
             {
-                SaveDown.StoreBooks.WriteOis(rep, store, outDir, log);
-                SaveDown.StoreBooks.WriteInfl(store, outDir, rep.AsOf, null, log);
+                SaveDown.StoreBooks.WriteOis(rep, store, outDir, log, LoadHistoryDays(appDataDir));
+                SaveDown.StoreBooks.WriteInfl(store, outDir, rep.AsOf, marks, log);
                 if (SaveDown.SaveDownConfig.Load(appDataDir) is { } sd)
                 {
                     SaveDown.SaveDownConfig.Sync(outDir, "OIS_Runs_*.xlsm",
@@ -130,31 +136,33 @@ namespace RateDesk.Weekly.Core.Daily
         /// inflation workbook the unified fixings history validates and ingests).</summary>
         public static string? LoadPublishString(string appDataDir, string key) => LoadString(appDataDir, key);
 
-        /// <summary>Ingest manual rows from the NEWEST save-down workbook in a folder (the file
-        /// the desk would have edited during an outage). Only the newest — older files were
-        /// already ingested the day they were current, and a full-folder sweep would grow
-        /// unbounded. The ingest callback receives the file's own date (parsed from its name)
-        /// so it can restrict itself to desk-stored rows.</summary>
+        /// <summary>Ingest manual rows from EVERY recent save-down workbook in a folder (audit
+        /// 2026-08-26: newest-only lost the middle days of a multi-day outage — the desk stores
+        /// into a dated book each day, and only the last one was ever read). Bounded to files
+        /// dated within the trailing 45 days; each file's ingest is restricted to rows on/after
+        /// its own date, so re-reading old books is idempotent and cheap.</summary>
         private static void IngestNewestSaved(string dir, string pattern,
             Action<string, DateTime?> ingest, Action<string>? log)
         {
             try
             {
                 if (!Directory.Exists(dir)) return;
-                var newest = Directory.GetFiles(dir, pattern)
-                    .OrderByDescending(File.GetLastWriteTimeUtc).FirstOrDefault();
-                if (newest == null) return;
-                // OIS_Runs_25August26.xlsm / Inflation_Runs_25August26.xlsm → 25August26
-                var stem = Path.GetFileNameWithoutExtension(newest);
-                var tag = stem[(stem.LastIndexOf('_') + 1)..];
-                if (!DateTime.TryParseExact(tag, "dMMMMyy",
-                        System.Globalization.CultureInfo.InvariantCulture,
-                        System.Globalization.DateTimeStyles.None, out var fd))
+                var dated = new List<(string Path, DateTime Day)>();
+                foreach (var f in Directory.GetFiles(dir, pattern))
                 {
-                    log?.Invoke($"! daily: cannot date {Path.GetFileName(newest)} — ingest skipped");
-                    return;
+                    // OIS_Runs_25August26.xlsm / Inflation_Runs_25August26.xlsm → 25August26
+                    var stem = Path.GetFileNameWithoutExtension(f);
+                    var tag = stem[(stem.LastIndexOf('_') + 1)..];
+                    if (DateTime.TryParseExact(tag, "dMMMMyy",
+                            System.Globalization.CultureInfo.InvariantCulture,
+                            System.Globalization.DateTimeStyles.None, out var fd))
+                    {
+                        if (fd >= DateTime.Today.AddDays(-45)) dated.Add((f, fd));
+                    }
+                    else log?.Invoke($"! daily: cannot date {Path.GetFileName(f)} — ingest skipped");
                 }
-                ingest(newest, fd);
+                foreach (var (p, fd) in dated.OrderBy(x => x.Day))
+                    ingest(p, fd);
             }
             catch (Exception ex) { log?.Invoke($"! daily: saved-book ingest ({dir}): {ex.Message}"); }
         }
@@ -179,11 +187,15 @@ namespace RateDesk.Weekly.Core.Daily
         /// the workbook's history sheets stay current on daily cadence alone — a desk that skips
         /// WEEKLY RUN for weeks still gets full history sheets, at zero extra Bloomberg cost
         /// (the stitcher prefetched these series anyway; desk question 2026-08-20).</summary>
-        public static WeeklyReport Build(HistoryStore? store = null, Action<string>? log = null)
+        public static WeeklyReport Build(HistoryStore? store = null, Action<string>? log = null,
+            string? appDataDir = null)
         {
             var configs = RateDesk.Core.Config.ConfigStore.LoadDefault();
             var snap = new RatesSnapshot();
             var svc = new PricingService(configs, snap);
+            // saved per-run contributor overrides (source-selection trial, desk 2026-08-26) —
+            // BEFORE ticker collection so the chosen contributor's spellings get snapshotted
+            SourceStore.Apply(svc, appDataDir, log);
             using var refData = new RefDataClient();
             // STORE-FIRST HISTORY (desk 2026-08-25): lookbacks read the maintained store and
             // Bloomberg is only touched to gap-fill stale tickers — same marks every run,
@@ -210,6 +222,8 @@ namespace RateDesk.Weekly.Core.Daily
             var rep = svc.BuildWeekly(meetingsOnly: true);
             if (snapNote != null) rep.Notes.Add(snapNote);
             if (sbh != null) log?.Invoke("daily " + sbh.Stats);
+            // active source + compounded fixing onto every run (trial, desk 2026-08-26)
+            CompoundedFixing.Stamp(rep, svc, configs, log);
             rep.Notes.AddRange(FuturesGuard.Check(svc));
             // cross-sectional outlier flag (desk 2026-08-25, the BOJ +4.9-in-a-strip-of-+11
             // question): one row far off its run's median gets a CHECK note for a manual look
@@ -224,7 +238,9 @@ namespace RateDesk.Weekly.Core.Daily
                 {
                     var pat = sched.Tickers.FirstOrDefault(t => t.Contains("{N}"));
                     if (pat == null) continue;
-                    var srcSfx = string.IsNullOrEmpty(sched.Source) ? "" : " " + sched.Source;
+                    // the run's ACTIVE source (override-aware) — history must follow the mids
+                    var activeSrc = svc.MeetingSrc(sched);
+                    var srcSfx = activeSrc.Length == 0 ? "" : " " + activeSrc;
                     for (int n = 1; n <= 13; n++)
                     {
                         // BOTH spellings stay current on daily cadence: the contributor series
@@ -295,6 +311,9 @@ namespace RateDesk.Weekly.Core.Daily
                 log?.Invoke("daily: no fallbackBook in publish.json — manual-override ingest off");
 
             ReportStore.Save(rep, Path.Combine(outDir, ReportFile));
+            // freeze the run's live inflation marks + next prints next to the report — offline
+            // rebuilds re-serve THESE, never a stale-close downgrade under the same filename
+            Infl.InflHistory.PersistMarks(outDir, rep.AsOf);
 
             var blastPath = Path.Combine(outDir, BlastFile);
             File.WriteAllText(blastPath, DailyBlast.Render(rep));
@@ -331,7 +350,7 @@ namespace RateDesk.Weekly.Core.Daily
                         (p, fd) => Infl.InflHistory.Ingest(p, store, log,
                             onlyMissingOrChanged: true, minDate: fd), log);
                 }
-                SaveDown.StoreBooks.WriteOis(rep, store, outDir, log);
+                SaveDown.StoreBooks.WriteOis(rep, store, outDir, log, LoadHistoryDays(appDataDir));
                 SaveDown.StoreBooks.WriteInfl(store, outDir, rep.AsOf, Infl.InflHistory.LastLiveMarks, log);
                 if (sdCfg != null)
                 {

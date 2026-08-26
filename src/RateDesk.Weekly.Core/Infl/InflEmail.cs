@@ -46,6 +46,18 @@ namespace RateDesk.Weekly.Core.Infl
         public static string Html(Dictionary<string, List<InflHistory.DisplayRow>> rowsByFam,
             Dictionary<string, DateTime>? nextPrints)
         {
+            // INVARIANT culture for the whole rendering (audit 2026-08-26) — same rule as
+            // WeeklyEmail: the fragment must print "May 26"/"312.55" on every desk machine
+            var wasCulture = System.Globalization.CultureInfo.CurrentCulture;
+            System.Threading.Thread.CurrentThread.CurrentCulture =
+                System.Globalization.CultureInfo.InvariantCulture;
+            try { return HtmlCore(rowsByFam, nextPrints); }
+            finally { System.Threading.Thread.CurrentThread.CurrentCulture = wasCulture; }
+        }
+
+        private static string HtmlCore(Dictionary<string, List<InflHistory.DisplayRow>> rowsByFam,
+            Dictionary<string, DateTime>? nextPrints)
+        {
             // the weekly email's own helpers, replicated (they are internal to Core by design).
             // WIDTHS LIVE ON EVERY CELL (attribute + css): Outlook renders through Word, which
             // ignores colgroup widths and sizes columns from cells — without this the cards
@@ -94,10 +106,11 @@ namespace RateDesk.Weekly.Core.Infl
             int slot = 0;
             foreach (var (key, label, index) in Cards)
             {
-                if (slot++ > 0) sb.Append("<td style=\"font-size:1px;line-height:1px;\" width=\"8\">&nbsp;</td>");
-                sb.Append("<td valign=\"top\">");
                 var rows = rowsByFam.TryGetValue(key, out var r) ? r : new List<InflHistory.DisplayRow>();
                 var shown = rows.Take(Math.Max(0, rows.Count - 1)).ToList();   // drop the furthest fixing
+                if (shown.Count == 0) continue;   // no ghost header-only card (audit 2026-08-26)
+                if (slot++ > 0) sb.Append("<td style=\"font-size:1px;line-height:1px;\" width=\"8\">&nbsp;</td>");
+                sb.Append("<td valign=\"top\">");
                 string np = nextPrints != null && nextPrints.TryGetValue(key, out var d)
                     ? $"Next&nbsp;Print:&nbsp;{d:dd-MMM-yy}" : "";
                 sb.Append("<table cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"border-collapse:collapse;" +

@@ -127,6 +127,11 @@ namespace RateDesk.Core
         /// fields (SKSF5A+). Rows still need a real price to publish — this never invents
         /// a quote, only lets a verified date carry one.</summary>
         public bool TrustConfigDates { get; set; }
+        /// <summary>Day-count denominator of the run's overnight FIXING index, for the
+        /// compounded-fixing trial (desk 2026-08-26): 360 for EFFR/ESTR/SWESTR/SARON,
+        /// 365 (the default) for SONIA/CORRA/AONIA/NZ OCR/TONAR/NOWA. Validated against the
+        /// desk pricer's own compounded values 2026-08-26 (RBNZ reproduced to the tick).</summary>
+        public int FixingDcc { get; set; } = 365;
         public string? RefTicker { get; set; }
         /// <summary>Ladder name whose strip is the POLICY curve for this central bank, when that is a
         /// different index from the currency's default OIS curve. USD is the case: tenor swaps and forwards
@@ -508,7 +513,17 @@ namespace RateDesk.Core
                     // explicit securities (the FRA-run IMM strips) carry no {N} — once is enough
                     if (!pat.Contains("{N}")) { yield return MeetingTick(sched, pat, 0); continue; }
                     for (int n = 0; n <= maxN; n++)
+                    {
                         yield return MeetingTick(sched, pat, n);
+                        // the COMPOSITE spelling rides along when a contributor source is active:
+                        // Resolve() merges prices from the contributor with dates from whichever
+                        // spelling carries the fields — a fallback that can only work if the plain
+                        // spelling was actually snapshotted (audit 2026-08-26: it never was in the
+                        // email/daily builds, so contributor pages without SW_EFF_DT silently
+                        // shortened the run)
+                        if (MeetingSrc(sched).Length > 0)
+                            yield return pat.Replace("{N}", n.ToString()) + " Curncy";
+                    }
                 }
                 if (!string.IsNullOrEmpty(sched.RefTicker)) yield return sched.RefTicker;
                 if (!string.IsNullOrEmpty(sched.FuturesPattern))
@@ -594,7 +609,13 @@ namespace RateDesk.Core
                             priced ??= plain.Mid.HasValue ? plain : null;
                             dated ??= plain.Maturity.HasValue ? plain : null;
                         }
+                        // a later PATTERN is a different family (BOJ's retired JYOMPM root, kept
+                        // for rungs past where JYSOMPM quotes) — never merge ITS stale mid under
+                        // THIS family's date (audit 2026-08-26): fall through only when this
+                        // pattern produced nothing at all on either spelling
+                        if (q != null || plain != null) break;
                     }
+                    else if (q != null) break;
                     if (priced != null && dated != null) break;
                 }
                 if (priced == null && dated == null) return null;
@@ -624,7 +645,7 @@ namespace RateDesk.Core
                 quotes[n] = q;
                 if (q?.Maturity is DateTime m)
                 {
-                    if (m > lastMat) { meetDates[n + 1] = m; tickerDated.Add(n + 1); lastMat = m; }
+                    if (m > lastMat) { meetDates[n + 1] = m.Date; tickerDated.Add(n + 1); lastMat = m; }
                     else { quotes[n] = null; break; }
                 }
             }
@@ -777,18 +798,18 @@ namespace RateDesk.Core
                 // re-pointed, the new front pairs only with the NEXT (unannounced) decision, so
                 // the gate self-disarms and nothing double-rolls.
                 var nowLdn = Dates.DecisionClock.LondonNow();
+                int gateShift = 0;
                 {
-                    int roll = 0;
-                    while (meetDates.TryGetValue(roll + 1, out var f)
+                    while (meetDates.TryGetValue(gateShift + 1, out var f)
                            && Dates.DecisionClock.DecisionFor(sched.DecisionDates, f) is { } fd
                            && Dates.DecisionClock.Announced(fd, sched.DecisionTimeLondon, nowLdn))
-                        roll++;
-                    if (roll > 0)
+                        gateShift++;
+                    if (gateShift > 0)
                     {
-                        quotes = quotes.Skip(roll).ToArray();
-                        meetDates = meetDates.Where(kv => kv.Key > roll)
-                            .ToDictionary(kv => kv.Key - roll, kv => kv.Value);
-                        tickerDated = tickerDated.Where(i => i > roll).Select(i => i - roll).ToHashSet();
+                        quotes = quotes.Skip(gateShift).ToArray();
+                        meetDates = meetDates.Where(kv => kv.Key > gateShift)
+                            .ToDictionary(kv => kv.Key - gateShift, kv => kv.Value);
+                        tickerDated = tickerDated.Where(i => i > gateShift).Select(i => i - gateShift).ToHashSet();
                         if (meetDates.Count == 0)
                         {
                             res.Warning = "every resolved meeting is already decided — top up config\\meetings.json";
@@ -836,6 +857,14 @@ namespace RateDesk.Core
                                 int span = (int)(today - dec).TotalDays + 15;
                                 foreach (var pt in History.GetDaily(MeetingTick(sched, pat, 1), span))
                                     if (pt.Date.Date < dec) pending = pt.Value;
+                                // composite closes as the fallback — the same rule as FamilyHist
+                                // (audit 2026-08-26: a contributor page with no history left the
+                                // re-base silently undone, overstating Priced by the delivered
+                                // step for the whole decision→start week)
+                                if (pending is null && MeetingSrc(sched).Length > 0)
+                                    foreach (var pt in History.GetDaily(
+                                        pat.Replace("{N}", "1") + " Curncy", span))
+                                        if (pt.Date.Date < dec) pending = pt.Value;
                             }
                             if (pending is { } pv) res.RefPct = pv;
                         }
@@ -849,10 +878,16 @@ namespace RateDesk.Core
                     cal = curves.Cal;
                 }
 
-                // a decision settled since the previous close ⇒ every numbered ticker re-pointed:
-                // N's own PrevClose belongs to the meeting N used to be, and yesterday's N is
-                // today's N+1 — difference against THAT close instead
-                bool rolled = RolledSincePrevClose(sched.Dates.Concat(sched.PastDates), cal);
+                // the feed re-pointed since the previous close ⇒ N's own PrevClose belongs to
+                // the meeting N used to be, and yesterday's N is today's N+1 — difference
+                // against THAT close instead. REDESIGNED 2026-08-26 (audit): the correction is
+                // due only on the day the family actually RENUMBERS — the ANNOUNCEMENT for
+                // decision-renumbering families (every family but SKSF; the old period-start
+                // keying fired six days late on ECB and spuriously on its period start), the
+                // period START for rollsAtPeriodStart — and NEVER while the announced-gate
+                // shift above is active (the feed has not re-pointed yet, so the shifted
+                // pairing makes the naive CoD correct; correcting on top double-shifts).
+                bool rolled = RollCorrectionDue(sched, nowLdn, gateShift);
 
                 // Thin meeting OIS families misprint with a straight face: SKSF4A published a live
                 // two-sided 1.387 between 1.848/2.086 neighbours (2026-08-03) — an impossible
@@ -864,10 +899,21 @@ namespace RateDesk.Core
                 // meeting is the one that gaps for real.
                 var tickMid = new double?[quotes.Length];
                 for (int k = 0; k < quotes.Length; k++) tickMid[k] = quotes[k]?.Mid;
+                // Y/E-turn flags per rung, computed up front: a turn row is a LEGITIMATE far-off
+                // print, so the misprint guard must neither judge it nor use it as a neighbour
+                // (audit 2026-08-26: SKSF4A — the guard's own motivating misprint — is
+                // turn-ADJACENT, and a turn neighbour disabled the guard exactly there)
+                bool TurnAt(int k) =>
+                    sched.MarkTurnPeriods && meetDates.TryGetValue(k, out var td)
+                    && (meetDates.TryGetValue(k + 1, out var te) ? td.Year != te.Year : td.Month == 12);
                 (double v, bool rej) GuardedMid(int k)
                 {
                     double m0 = tickMid[k]!.Value;
-                    if (k - 1 >= 1 && tickMid[k - 1] is double a && k + 1 < tickMid.Length && tickMid[k + 1] is double b
+                    int lo = k - 1, hi = k + 1;
+                    if (lo >= 1 && TurnAt(lo)) lo--;                       // skip a turn neighbour
+                    if (hi < tickMid.Length && TurnAt(hi)) hi++;
+                    if (lo >= 1 && lo >= k - 2 && tickMid[lo] is double a
+                        && hi < tickMid.Length && hi <= k + 2 && tickMid[hi] is double b
                         && Math.Abs(a - b) * 100.0 < 25.0)
                     {
                         double mExp = (a + b) / 2.0;
@@ -891,7 +937,10 @@ namespace RateDesk.Core
                     // the renderers label it instead of publishing it.
                     bool haveEnd = meetDates.TryGetValue(n + 1, out var nx0);
                     var dEnd0 = haveEnd ? nx0 : d0.AddDays(42);
-                    bool turn0 = sched.MarkTurnPeriods && d0.Year != dEnd0.Year;
+                    // unresolved end: only a DECEMBER start provably spans the year-end — the old
+                    // 42-day guess could mask a real, publishable print (audit 2026-08-26)
+                    bool turn0 = sched.MarkTurnPeriods
+                        && (haveEnd ? d0.Year != dEnd0.Year : d0.Month == 12);
                     var q = quotes[n];
                     double mid;
                     string midSrc;
@@ -956,16 +1005,34 @@ namespace RateDesk.Core
         public static string SignedBp(double? v) =>
             v.HasValue ? (v.Value >= 0 ? "+" : "-") + Math.Abs(v.Value).ToString("0.0") : "";
 
-        /// <summary>True when a numbered/generic family re-pointed since the previous close — i.e. a
-        /// roll boundary (meeting settlement / IMM expiry) fell AFTER the previous business day.
-        /// On that day ticker N's own PX_CLOSE_1D belongs to the instrument N pointed at YESTERDAY,
-        /// so a naive CoD differences two different meetings: the first session after the Jul-31 BOJ,
-        /// JYSOMPM1 (now SEP) printed 1.104 vs a 0.980 close that was the JUL period — +12.4bp of
-        /// phantom CoD on every row. The families roll intraday ON the boundary date (JYSOMPM1's
-        /// maturity had already moved by the Monday open), so: rolled iff lastBoundary &gt; prev
-        /// business day, boundary ≤ today. The day after, PrevClose is post-roll and the naive CoD
-        /// is right again — FOMC (rolled the previous Wednesday) must NOT trigger this on Monday.</summary>
-        private static bool RolledSincePrevClose(IEnumerable<DateTime> boundaries, Calendar? cal)
+        /// <summary>True when the roll-day CoD correction (mid(N) − PrevClose(N+1)) is due: the
+        /// family renumbered intraday TODAY, so ticker N's own PX_CLOSE_1D belongs to the
+        /// instrument N pointed at yesterday (the first session after the Jul-31 BOJ, JYSOMPM1
+        /// — now SEP — printed 1.104 vs a 0.980 close that was the JUL period: +12.4bp of
+        /// phantom CoD on every row). Renumbering happens at the ANNOUNCEMENT for every family
+        /// but SKSF (store-close verified: EESF jumped between the 24-Jul and 27-Jul closes
+        /// around the 23-Jul ECB decision, six days before the period start) and at the period
+        /// START for rollsAtPeriodStart families (SKSF probed 2026-08-25). Never while the
+        /// announced-gate shift is active: an un-re-pointed feed under the shifted pairing
+        /// makes the naive CoD correct, and correcting on top would double-shift (audit
+        /// 2026-08-26). The day after any roll, PrevClose is post-roll and naive is right.</summary>
+        private static bool RollCorrectionDue(MeetingScheduleDef sched, DateTime nowLdn, int gateShift)
+        {
+            if (gateShift > 0) return false;
+            if (sched.RollsAtPeriodStart)
+                return sched.Dates.Any(d => d.Date == nowLdn.Date);
+            foreach (var dec in MeetingCalendar.AnnouncementDates(sched))
+                if (dec.Date == nowLdn.Date
+                    && Dates.DecisionClock.Announced(dec.Date, sched.DecisionTimeLondon, nowLdn))
+                    return true;
+            return false;
+        }
+
+        /// <summary>The calendar-boundary flavour, kept for the IMM FRA strips: those generics
+        /// DO re-point intraday on the boundary date itself (contract expiry needs no
+        /// announcement), so "a boundary fell after the previous business day" is exactly
+        /// right there — it was only the meeting families it mis-served.</summary>
+        private static bool BoundarySincePrevClose(IEnumerable<DateTime> boundaries, Calendar? cal)
         {
             DateTime last = DateTime.MinValue;
             foreach (var b in boundaries)
@@ -1074,7 +1141,7 @@ namespace RateDesk.Core
                 var pastImms = new List<DateTime>();
                 for (var pq0 = DateTime.Today.AddMonths(-4); pq0 <= DateTime.Today; pq0 = pq0.AddDays(1))
                     if (pq0.Month % 3 == 0 && pq0 == Imm(pq0.Year, pq0.Month)) pastImms.Add(pq0);
-                bool rolled = strip.Count > 0 && RolledSincePrevClose(pastImms, cal);
+                bool rolled = strip.Count > 0 && BoundarySincePrevClose(pastImms, cal);
 
                 res.NextDecision = null;
                 double? prevPriced = null;
@@ -1369,12 +1436,15 @@ namespace RateDesk.Core
                         cand = Hist(tkr, full: true);
                     }
                     if (cand.Count == 0) continue;
+                    // the CUTOVER DAY itself is a 16:15 day — SnapDiscipline pinned its published
+                    // marks at 16:15, so history must anchor it there too (audit 2026-08-26: the
+                    // old &gt;/&lt;= split left every Δ1d spanning 25-Aug carrying 15 minutes of tape)
                     var snaps = new List<HistPoint>();
-                    if (DateTime.Today.AddDays(-snapDays) <= snapCutover)
+                    if (DateTime.Today.AddDays(-snapDays) < snapCutover)
                         snaps.AddRange((History?.GetLondonSnaps(tkr, snapDays, snapAtOld)
-                            ?? Array.Empty<HistPoint>()).Where(sp => sp.Date.Date <= snapCutover));
+                            ?? Array.Empty<HistPoint>()).Where(sp => sp.Date.Date < snapCutover));
                     snaps.AddRange((History?.GetLondonSnaps(tkr, snapDays, snapAtNew)
-                        ?? Array.Empty<HistPoint>()).Where(sp => sp.Date.Date > snapCutover));
+                        ?? Array.Empty<HistPoint>()).Where(sp => sp.Date.Date >= snapCutover));
                     if (snaps.Count == 0) { result = (cand, new HashSet<DateTime>()); break; }
                     var merged = cand.ToDictionary(p => p.Date, p => p.Value);
                     var snapped = new HashSet<DateTime>();

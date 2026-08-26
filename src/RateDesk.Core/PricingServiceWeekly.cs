@@ -56,6 +56,18 @@ namespace RateDesk.Core
         public string Title { get; init; } = "";   // "FOMC · USD" — no terminal flag tokens
         public string RefName { get; init; } = "";
         public double? RefPct { get; init; }
+        /// <summary>The pricing contributor this run was actually built on ("" = composite) —
+        /// set post-build so history surfaces read the SAME source as the mids (RATESWEEKLY,
+        /// source-selection trial 2026-08-26).</summary>
+        public string? Source { get; set; }
+        /// <summary>COMPOUNDED FIXING (trial, desk 2026-08-26): the overnight fixing compounded
+        /// over the CURRENT meeting period (period start → asOf), calendar-day weighted on the
+        /// index's own day count — the realized leg of the front run-down swap, the desk
+        /// pricer's front-step anchor. Display-only for now: Step/Priced still anchor the spot
+        /// fixing. Null when the fixing history is missing or stale (never guessed).</summary>
+        public double? CompoundedPct { get; set; }
+        /// <summary>Start of the compounding window (the current period's effective date).</summary>
+        public DateTime? CompoundedFrom { get; set; }
         public List<WeeklyMeeting> Rows { get; } = new();
     }
 

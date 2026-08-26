@@ -57,8 +57,7 @@ namespace RateDesk.Weekly.Core.SaveDown
             {
                 var sched = MeetingsStore.Schedules.FirstOrDefault(s =>
                     string.IsNullOrEmpty(s.Kind) && s.Name.Equals(runName, StringComparison.OrdinalIgnoreCase));
-                var run = rep.Runs.FirstOrDefault(x =>
-                    x.Title.Split('·')[0].Trim().Equals(runName, StringComparison.OrdinalIgnoreCase));
+                var run = DailyBlast.Find(rep, runName);
                 var pat = sched?.Tickers.FirstOrDefault(t => t.Contains("{N}"));
                 if (sched == null || run == null || pat == null || run.Rows.Count == 0) continue;
 
@@ -88,7 +87,11 @@ namespace RateDesk.Weekly.Core.SaveDown
                     double? priced = refVal is { } rv ? (h.Rate - rv) * 100.0 : null;
                     histRows.Add(new object?[]
                     {
-                        h.Day, h.Start.ToString("MMM"), h.Start, h.End, h.Rate,
+                        // ENGLISH month label always — the app's own re-ingest and the incumbent
+                        // VBA both match English names (audit 2026-08-26: a non-English machine
+                        // wrote "Mai" and silently dropped every row on re-ingest)
+                        h.Day, h.Start.ToString("MMM", System.Globalization.CultureInfo.InvariantCulture),
+                        h.Start, h.End, h.Rate,
                         step, priced, priced / 25.0, h.D1, h.W1, h.M1,
                     });
                     prevRate = h.Rate;
@@ -126,8 +129,9 @@ namespace RateDesk.Weekly.Core.SaveDown
                 var prints = InflHistory.PrintsOf(store, fam);
                 var hsheet = wb.Worksheet(fam.Key + "_History");
                 var oldLast = hsheet.LastRowUsed()?.RowNumber() ?? 1;
-                if (oldLast > 1)
-                    hsheet.Range(2, 1, oldLast, 6).Clear(XLClearOptions.Contents);
+                var oldWide = hsheet.LastColumnUsed()?.ColumnNumber() ?? 6;
+                if (oldLast > 1)   // full used width — template leftovers beyond col 6 must not survive
+                    hsheet.Range(2, 1, oldLast, Math.Max(6, oldWide)).Clear(XLClearOptions.Contents);
 
                 // group by observation date so %mom chains mid-over-previous-mid within each
                 // day's block, the front row anchored on the last published print — exactly
@@ -143,16 +147,13 @@ namespace RateDesk.Weekly.Core.SaveDown
                     {
                         var fixMonth = DateTime.ParseExact(x.Fix + "-01", "yyyy-MM-dd",
                             System.Globalization.CultureInfo.InvariantCulture);
-                        double? baseV = prints.TryGetValue((fixMonth.Month, fixMonth.Year - 1), out var b) ? b : null;
-                        double? mid, yoy;
-                        if (fam.IsIndexUnit) { mid = x.Value; yoy = baseV is { } b2 ? (x.Value / b2 - 1) * 100.0 : null; }
-                        else { yoy = x.Value / 100.0; mid = baseV is { } b3 ? b3 * (1 + x.Value / 10000.0) : null; }
-                        double? anchor = prevMid ?? (prints.TryGetValue(
-                            (fixMonth.AddMonths(-1).Month, fixMonth.AddMonths(-1).Year), out var pa) ? pa : null);
-                        double? mom = mid is { } m0 && anchor is { } a0 ? (m0 / a0 - 1) * 100.0 : null;
+                        // ONE derivation, shared with BuildDisplayRows (audit 2026-08-26)
+                        var (baseV, mid, yoy, mom) = InflHistory.DeriveRow(fam, prints, fixMonth, x.Value, prevMid);
                         hsheet.Cell(hr, 1).Value = x.Date;
                         hsheet.Cell(hr, 1).Style.DateFormat.Format = "dd-mmm-yy";
-                        hsheet.Cell(hr, 2).Value = fixMonth.ToString("MMM");
+                        // English month label — re-ingest matches English names (audit 2026-08-26)
+                        hsheet.Cell(hr, 2).Value = fixMonth.ToString("MMM",
+                            System.Globalization.CultureInfo.InvariantCulture);
                         SetNum(hsheet.Cell(hr, 3), baseV, "0.000");
                         SetNum(hsheet.Cell(hr, 4), mid, "0.000");
                         SetNum(hsheet.Cell(hr, 5), yoy, "0.000");

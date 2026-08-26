@@ -23,8 +23,12 @@ namespace RateDesk.Weekly.Core.Infl
             {
                 var hist = store.GetFixingHistory(fam.Key);
                 var hs = wb.Worksheets.Add("Hist_" + fam.Key);
+                // headers STATE the semantics (audit 2026-08-26): this is the RAW store in the
+                // market's native unit with walk-back anchors — deliberately NOT the display
+                // cards' exact-date index-point changes; the label must not let them be confused
                 string unit = fam.IsIndexUnit ? "index" : "y/y bp";
-                string[] hh = { "Date", "Fixing", $"Value ({unit})", "Δ 1d", "Δ 1w", "Δ 1m", "Source" };
+                string[] hh = { "Date", "Fixing", $"Value ({unit})", $"Δ 1d ({unit})",
+                                $"Δ 1w ({unit})", $"Δ 1m ({unit})", "Source" };
                 for (int c = 0; c < hh.Length; c++)
                 {
                     hs.Cell(1, c + 1).Value = hh[c];

@@ -249,6 +249,142 @@ namespace RateDesk.Weekly
                 "RatesWeekly — manual check required", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
+        /// <summary>The CHECK gate, moved BEFORE anything is written or mirrored (audit
+        /// 2026-08-26: the popup used to fire after the blast, workbooks and shared-drive
+        /// copies were already published everywhere except the email body). Returns true to
+        /// proceed; false aborts the render with nothing on disk changed.</summary>
+        private bool ConfirmChecks(IEnumerable<string> notes, string what)
+        {
+            var checks = notes.Where(n => n.StartsWith(OutlierGuard.Prefix + ":")).ToList();
+            if (checks.Count == 0) return true;
+            var r = MessageBox.Show(this,
+                "Outlier check — verify these before distributing:\n\n" + string.Join("\n", checks) +
+                $"\n\nContinue and write/publish the {what}?  (No = nothing is written)",
+                "RatesWeekly — manual check required", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            return r == MessageBoxResult.Yes;
+        }
+
+        /// <summary>SOURCES (trial, desk 2026-08-26): dodgeball's per-run contributor picker as
+        /// a dialog — one combo per bank (comp = composite plus the contributor catalog; opening
+        /// a list probes which contributors actually price that family, '*>1h' marking a feed
+        /// quiet for over an hour). Saved app-side (sources.json) and applied on every run;
+        /// mids AND change anchors follow the choice (v0.10.4 made anchors source-coherent).
+        /// Picking the config default removes the override.</summary>
+        private void Sources_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var overrides = SourceStore.Load(AppDataDir);
+                var scheds = MeetingsStore.Schedules
+                    .Where(s => string.IsNullOrEmpty(s.Kind) && s.Tickers.Any(t => t.Contains("{N}")))
+                    .ToList();
+                var dlg = new Window
+                {
+                    Title = "Pricing sources — per-run contributor (trial)",
+                    Owner = this, Width = 420, SizeToContent = SizeToContent.Height,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    ResizeMode = ResizeMode.NoResize,
+                };
+                var stack = new System.Windows.Controls.StackPanel { Margin = new Thickness(14) };
+                stack.Children.Add(new System.Windows.Controls.TextBlock
+                {
+                    Text = "Contributor per run — comp = Bloomberg composite. Applies from the " +
+                           "NEXT daily/weekly run; mids and change anchors follow together. " +
+                           "Open a list to probe who prices that family ('*>1h' = quiet feed).",
+                    TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 10), FontSize = 11.5,
+                });
+                RateDesk.Bloomberg.RefDataClient? probe = null;
+                RateDesk.Bloomberg.RefDataClient? Probe()
+                {
+                    try { return probe ??= new RateDesk.Bloomberg.RefDataClient(); }
+                    catch { return null; }   // no terminal — static candidate list still works
+                }
+                var picks = new Dictionary<MeetingScheduleDef, System.Windows.Controls.ComboBox>();
+                foreach (var sched in scheds)
+                {
+                    var dflt = sched.Source ?? "";
+                    var cur = overrides.TryGetValue(sched.Name, out var o) ? o : dflt;
+                    var row = new System.Windows.Controls.DockPanel { Margin = new Thickness(0, 2, 0, 2) };
+                    var cmb = new System.Windows.Controls.ComboBox { Width = 120, FontSize = 11 };
+                    bool filling = false;
+                    void Fill(List<(string Src, double? AgeMinutes)>? probed)
+                    {
+                        filling = true;
+                        var sel = Sel(cmb) ?? cur;
+                        cmb.Items.Clear();
+                        var opts = probed != null
+                            ? probed.Select(p => (p.Src, Label: (p.Src.Length == 0 ? "comp" : p.Src)
+                                                               + (p.AgeMinutes is > 60 ? " *>1h" : ""))).ToList()
+                            : new[] { "" }.Concat(SourceCatalog.Candidates.Where(c => c.Length > 0))
+                                .Distinct(StringComparer.OrdinalIgnoreCase)
+                                .Select(s => (Src: s, Label: s.Length == 0 ? "comp" : s)).ToList();
+                        if (!opts.Any(x => x.Src.Equals(sel, StringComparison.OrdinalIgnoreCase)))
+                            opts.Insert(0, (sel, sel.Length == 0 ? "comp" : sel));
+                        foreach (var op in opts) cmb.Items.Add(op.Label);
+                        cmb.SelectedItem = opts.First(x => x.Src.Equals(sel, StringComparison.OrdinalIgnoreCase)).Label;
+                        filling = false;
+                    }
+                    Fill(null);
+                    cmb.DropDownOpened += async (_, _) =>
+                    {
+                        if (filling || Probe() is not { } rd) return;
+                        var root = sched.Tickers.First(t => t.Contains("{N}")).Replace("{N}", "1");
+                        try
+                        {
+                            var probed = await Task.Run(() =>
+                                rd.DiscoverSourcesWithAge(root, SourceCatalog.Candidates));
+                            if (probed.Count > 0) Fill(probed);
+                        }
+                        catch { /* probe is best-effort */ }
+                    };
+                    System.Windows.Controls.DockPanel.SetDock(cmb, System.Windows.Controls.Dock.Right);
+                    row.Children.Add(cmb);
+                    row.Children.Add(new System.Windows.Controls.TextBlock
+                    {
+                        Text = $"{sched.Name}   (default {(dflt.Length == 0 ? "comp" : dflt)})",
+                        VerticalAlignment = VerticalAlignment.Center, FontSize = 12,
+                    });
+                    stack.Children.Add(row);
+                    picks[sched] = cmb;
+                }
+                var buttons = new System.Windows.Controls.StackPanel
+                {
+                    Orientation = System.Windows.Controls.Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 12, 0, 0),
+                };
+                var save = new System.Windows.Controls.Button { Content = "Save", Width = 84, Height = 28, IsDefault = true };
+                var cancel = new System.Windows.Controls.Button
+                    { Content = "Cancel", Width = 84, Height = 28, Margin = new Thickness(8, 0, 0, 0), IsCancel = true };
+                save.Click += (_, _) =>
+                {
+                    var next = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var (sched, cmb) in picks)
+                    {
+                        var src = Sel(cmb) ?? "";
+                        if (!src.Equals(sched.Source ?? "", StringComparison.OrdinalIgnoreCase))
+                            next[sched.Name] = src;   // default picks store nothing (= default)
+                    }
+                    SourceStore.Save(AppDataDir, next);
+                    StatusText.Text = next.Count == 0
+                        ? "sources saved — all runs on their config defaults."
+                        : "sources saved — " + string.Join(", ", next.Select(kv =>
+                              $"{kv.Key}→{(kv.Value.Length == 0 ? "comp" : kv.Value)}"))
+                          + ". Applies from the next run.";
+                    dlg.DialogResult = true;
+                };
+                buttons.Children.Add(save);
+                buttons.Children.Add(cancel);
+                stack.Children.Add(buttons);
+                dlg.Content = stack;
+                dlg.Closed += (_, _) => { try { probe?.Dispose(); } catch { } };
+                dlg.ShowDialog();
+
+                static string? Sel(System.Windows.Controls.ComboBox c) =>
+                    c.SelectedItem is string s ? (s.Split(' ')[0] == "comp" ? "" : s.Split(' ')[0]) : null;
+            }
+            catch (Exception ex) { StatusText.Text = "sources: " + ex.Message; }
+        }
+
         /// <summary>The output buttons unlock only when what they SERVE was rebuilt by this
         /// session (desk 2026-08-20): the email buttons need a built email, OPEN OUTPUT needs
         /// rendered pages. A failed leg keeps its buttons dark rather than serving stale files.</summary>
@@ -269,9 +405,9 @@ namespace RateDesk.Weekly
             StatusText.Text = "running weekly...";
             try
             {
-                var (result, pages, emailErr, emailNotes) = await Task.Run(() =>
+                using var store = new HistoryStore(Path.Combine(AppDataDir, "history.db"));
+                var (result, pages, weeklyRep, emailErr0) = await Task.Run(() =>
                 {
-                    using var store = new HistoryStore(Path.Combine(AppDataDir, "history.db"));
                     var r = UpdateEngine.Run(store, new RatesSnapshot(), Log);
                     // Pulling the data and not redrawing the pages would leave the desk reading
                     // last week's dashboards, so the two are one action.
@@ -279,17 +415,38 @@ namespace RateDesk.Weekly
                     // The email is the same click (DESIGN.md §9), persisted to out\ so COPY EMAIL
                     // is instant and restart-safe. It builds AFTER the engine has released its
                     // session, on its own — a failure leaves the dashboards standing.
+                    WeeklyReport? rep0 = null;
                     string? eErr = null;
-                    var eNotes = new List<string>();
-                    try
-                    {
-                        var rep = EmailBuilder.Build(Log, store);
-                        eNotes = rep.Notes.ToList();
-                        EmailBuilder.Render(rep, OutDir, EmailBuilder.LoadSiteBase(AppDataDir), Log, store);
-                    }
+                    try { rep0 = EmailBuilder.Build(Log, store, AppDataDir); }
                     catch (Exception ex) { eErr = ex.Message; Log("! email build failed: " + ex.Message); }
-                    return (r, n, eErr, eNotes);
+                    return (r, n, rep0, eErr);
                 });
+                var emailErr = emailErr0;
+                var emailNotes = weeklyRep?.Notes.ToList() ?? new List<string>();
+                if (weeklyRep != null)
+                {
+                    // GATE BEFORE PUBLISH (audit 2026-08-26): flagged numbers get eyes before
+                    // the email fragments exist on disk
+                    if (!ConfirmChecks(weeklyRep.Notes, "weekly email fragments"))
+                    {
+                        emailErr = "cancelled at the outlier check";
+                        Log("WEEKLY EMAIL CANCELLED — CHECK notes declined; fragments not written.");
+                    }
+                    else
+                        await Task.Run(() =>
+                        {
+                            try
+                            {
+                                EmailBuilder.Render(weeklyRep, OutDir,
+                                    EmailBuilder.LoadSiteBase(AppDataDir), Log, store);
+                            }
+                            catch (Exception ex)
+                            {
+                                emailErr = ex.Message;
+                                Log("! email render failed: " + ex.Message);
+                            }
+                        });
+                }
                 StatusText.Text = $"updated {DateTime.Now:HH:mm:ss} — {result.Tickers} tickers, " +
                                   $"{result.RowsWritten} rows written, {pages} pages rendered, " +
                                   (emailErr == null ? "email ready " : "EMAIL FAILED — see log ") +
@@ -303,7 +460,7 @@ namespace RateDesk.Weekly
                         ? "WEEKLY PARTIAL — dashboards rebuilt (OPEN OUTPUT unlocked) but the email " +
                           "FAILED, so the email buttons stay locked. Fix and run WEEKLY again."
                         : "WEEKLY PARTIAL — nothing rendered; buttons stay locked. See the log.");
-                ShowCheckNotes(emailNotes);
+                // CHECK notes were gated BEFORE the render (audit 2026-08-26) — no second popup
             }
             catch (Exception ex)
             {
@@ -404,7 +561,12 @@ namespace RateDesk.Weekly
                     ?? throw new InvalidOperationException("Outlook is not installed on this machine");
                 dynamic outlook = Activator.CreateInstance(t)!;
                 dynamic mail = outlook.CreateItem(0); // olMailItem
-                mail.Subject = $"DRAX Swaps — Rates Weekly — {DateTime.Today:dd MMM yyyy}";
+                // subject dated from the REPORT the body was composed from, invariant culture
+                // (audit 2026-08-26: a post-midnight send stamped tomorrow over today's numbers)
+                var wkAsOf = ReportStore.Load(Path.Combine(OutDir, EmailBuilder.ReportFile))?.AsOf
+                             ?? DateTime.Today;
+                mail.Subject = "DRAX Swaps — Rates Weekly — " + wkAsOf.ToString("dd MMM yyyy",
+                    System.Globalization.CultureInfo.InvariantCulture);
                 mail.HTMLBody = "<html><body style=\"margin:14px;background:#ffffff;\">"
                     + body + "</body></html>";
                 var pack = Path.Combine(OutDir, SiteFile.FileName);
@@ -457,19 +619,23 @@ namespace RateDesk.Weekly
             StatusText.Text = "building daily OIS run...";
             try
             {
-                var (output, notes) = await Task.Run(() =>
+                using var store = new HistoryStore(Path.Combine(AppDataDir, "history.db"));
+                var rep = await Task.Run(() => Core.Daily.DailyBuilder.Build(store, Log, AppDataDir));
+                // GATE BEFORE PUBLISH (audit 2026-08-26): flagged numbers must be seen before
+                // the blast/workbooks/shared-drive copies exist, not after
+                if (!ConfirmChecks(rep.Notes, "daily outputs"))
                 {
-                    using var store = new HistoryStore(Path.Combine(AppDataDir, "history.db"));
-                    var rep = Core.Daily.DailyBuilder.Build(store, Log);
-                    var o = Core.Daily.DailyBuilder.Render(rep, store, OutDir, AppDataDir, Log);
-                    return (o, rep.Notes.ToList());
-                });
+                    StatusText.Text = "daily CANCELLED at the outlier check — nothing written.";
+                    Log("DAILY CANCELLED — CHECK notes declined; no blast/workbook/email was written.");
+                    return;
+                }
+                var output = await Task.Run(() =>
+                    Core.Daily.DailyBuilder.Render(rep, store, OutDir, AppDataDir, Log));
                 CopyBlastBtn.IsEnabled = true;
                 DailyEmailBtn.IsEnabled = true;
                 StatusText.Text = $"daily built {DateTime.Now:HH:mm:ss} — blast + workbook" +
                                   (output.DailyDirCopy != null ? " (+ shared drive)" : "") + " + email ready";
                 Log("DAILY COMPLETE — blast, workbook and email rebuilt; COPY BLAST / DAILY EMAIL unlocked.");
-                ShowCheckNotes(notes);
             }
             catch (Exception ex)
             {
@@ -509,7 +675,8 @@ namespace RateDesk.Weekly
         private void DailyEmail_Click(object sender, RoutedEventArgs e)
         {
             string? body = null;
-            if (ReportStore.Load(Path.Combine(OutDir, Core.Daily.DailyBuilder.ReportFile)) is { } rep)
+            var rep = ReportStore.Load(Path.Combine(OutDir, Core.Daily.DailyBuilder.ReportFile));
+            if (rep != null)
                 body = WeeklyEmail.Html(rep, partsOpt: DailyParts())
                        + InflFragment(RateDesk.Weekly.Core.Infl.InflEmail.DailyHtmlFile,
                            _emailSettings.DailyInflRuns);
@@ -529,7 +696,10 @@ namespace RateDesk.Weekly
                     ?? throw new InvalidOperationException("Outlook is not installed on this machine");
                 dynamic outlook = Activator.CreateInstance(t)!;
                 dynamic mail = outlook.CreateItem(0); // olMailItem
-                mail.Subject = $"DRAX Swaps Closing Runs - {DateTime.Today:dd MMM yyyy}";
+                // subject dated from the REPORT the body carries, invariant culture (audit
+                // 2026-08-26: a post-midnight send stamped tomorrow over today's numbers)
+                mail.Subject = "DRAX Swaps Closing Runs - " + (rep?.AsOf ?? DateTime.Today)
+                    .ToString("dd MMM yyyy", System.Globalization.CultureInfo.InvariantCulture);
                 // JBDH banner at the top — small and unintrusive (desk 2026-08-25). Embedded
                 // as a hidden CID attachment: base64 images don't render in Outlook desktop.
                 string bannerImg = "";
@@ -548,10 +718,27 @@ namespace RateDesk.Weekly
                 // recipients: ALWAYS BCC, never To/Cc — a client list must not leak to clients
                 var bcc = Recipients.Bcc(AppDataDir);
                 if (bcc.Length > 0) mail.BCC = bcc;
+                // attach the workbook the BODY's report wrote — by its exact dated name, never
+                // "the newest file matching a glob" (audit 2026-08-26: an out-of-band write
+                // could attach a different as-of under today's subject). Glob fallback only for
+                // pre-report-persistence runs, and the status line then says which file went.
                 string? Newest(string pattern) => Directory.EnumerateFiles(OutDir, pattern)
                     .OrderByDescending(File.GetLastWriteTime).FirstOrDefault();
-                var book = _emailSettings.DailyXlsAttachment ? Newest("DRAX OIS Runs *.xlsx") : null;
-                var infl = _emailSettings.DailyInflXlsAttachment ? Newest("DRAX Fixing Runs *.xlsx") : null;
+                string? Exact(string name, string pattern)
+                {
+                    var p = Path.Combine(OutDir, name);
+                    return File.Exists(p) ? p : Newest(pattern);
+                }
+                var book = _emailSettings.DailyXlsAttachment
+                    ? (rep != null
+                        ? Exact(Core.Daily.DailyBook.FileName(rep.AsOf), "DRAX OIS Runs *.xlsx")
+                        : Newest("DRAX OIS Runs *.xlsx"))
+                    : null;
+                var infl = _emailSettings.DailyInflXlsAttachment
+                    ? (rep != null
+                        ? Exact(RateDesk.Weekly.Core.Infl.InflRunsXlsx.FileName(rep.AsOf), "DRAX Fixing Runs *.xlsx")
+                        : Newest("DRAX Fixing Runs *.xlsx"))
+                    : null;
                 if (book != null) mail.Attachments.Add(book);
                 if (infl != null) mail.Attachments.Add(infl);
                 mail.Display();

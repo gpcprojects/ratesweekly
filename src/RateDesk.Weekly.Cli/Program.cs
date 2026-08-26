@@ -145,7 +145,7 @@ switch (cmd)
             var appData = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly");
             using var store = new HistoryStore(dbPath);
-            var rep = EmailBuilder.Build(Console.WriteLine, store);
+            var rep = EmailBuilder.Build(Console.WriteLine, store, appData);
             var o = EmailBuilder.Render(rep, outDir, EmailBuilder.LoadSiteBase(appData), Console.WriteLine, store);
             Console.WriteLine($"as of {rep.AsOf:yyyy-MM-dd HH:mm:ss} — " +
                               $"{rep.Sections.Sum(s => s.Ccys.Count)} currencies, " +
@@ -173,7 +173,7 @@ switch (cmd)
             var appData = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly");
             using var store = new HistoryStore(dbPath);
-            var rep = RateDesk.Weekly.Core.Daily.DailyBuilder.Build(store, Console.WriteLine);
+            var rep = RateDesk.Weekly.Core.Daily.DailyBuilder.Build(store, Console.WriteLine, appData);
             var o = RateDesk.Weekly.Core.Daily.DailyBuilder.Render(rep, store, outDir, appData, Console.WriteLine);
             Console.WriteLine($"as of {rep.AsOf:yyyy-MM-dd HH:mm:ss} — {rep.Runs.Count} CB runs, " +
                               $"{rep.Fronts.Count} front rows");
@@ -205,10 +205,15 @@ switch (cmd)
                 Path.Combine(outDir, RateDesk.Weekly.Core.Daily.DailyBuilder.ReportFile))
             ?? throw new InvalidOperationException("no stored daily report — run DAILY RUN once first");
         using var store = new HistoryStore(dbPath);
+        // the RUN's frozen marks + next prints (audit 2026-08-26): an offline regen must never
+        // downgrade the emailed files to stale closes under the same names
+        RateDesk.Weekly.Core.Infl.InflHistory.LoadPersistedMarks(outDir);
+        var marks = RateDesk.Weekly.Core.Infl.InflHistory.LastLiveMarks;
+        var nextPrints = RateDesk.Weekly.Core.Infl.InflHistory.LastNextPrints;
         var p1 = RateDesk.Weekly.Core.SaveDown.StoreBooks.WriteOis(rep, store, outDir, Console.WriteLine);
-        var p2 = RateDesk.Weekly.Core.SaveDown.StoreBooks.WriteInfl(store, outDir, rep.AsOf, null, Console.WriteLine);
-        RateDesk.Weekly.Core.Infl.InflRunsXlsx.Write(store, outDir, rep.AsOf, null, null, Console.WriteLine);
-        RateDesk.Weekly.Core.Infl.InflEmail.WriteFragments(store, null, null, rep.AsOf, outDir, daily: true);
+        var p2 = RateDesk.Weekly.Core.SaveDown.StoreBooks.WriteInfl(store, outDir, rep.AsOf, marks, Console.WriteLine);
+        RateDesk.Weekly.Core.Infl.InflRunsXlsx.Write(store, outDir, rep.AsOf, marks, nextPrints, Console.WriteLine);
+        RateDesk.Weekly.Core.Infl.InflEmail.WriteFragments(store, marks, nextPrints, rep.AsOf, outDir, daily: true);
         File.WriteAllText(Path.Combine(outDir, RateDesk.Weekly.Core.Daily.DailyBuilder.BlastFile),
             RateDesk.Weekly.Core.Daily.DailyBlast.Render(rep));
         File.WriteAllText(Path.Combine(outDir, RateDesk.Weekly.Core.Daily.DailyBuilder.BlastHtmlFile),
