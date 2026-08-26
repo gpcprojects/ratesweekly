@@ -96,14 +96,21 @@ namespace RateDesk.Tests
             // columns are content-tight (desk 2026-08-26): 488px for the runs table, stacked
             foreach (var m in System.Text.RegularExpressions.Regex.Matches(html, @"width:(\d+)px;max-width")
                          .Cast<System.Text.RegularExpressions.Match>())
-                Assert.True(int.Parse(m.Groups[1].Value) <= 500,
-                    $"a sheet table is {m.Groups[1].Value}px wide — the columns have gone slack again");
-            Assert.Contains("width:488px", html);
-            // ...and EVERY body element is 11px: no smaller type anywhere in the fragment
+                Assert.True(int.Parse(m.Groups[1].Value) <= 640,
+                    $"a sheet table is {m.Groups[1].Value}px wide — wider than the sheet's own measure");
+            Assert.Contains("width:624px", html);          // 8 uniform 78px columns
+            // EVERY body element is Calibri 11 POINT — the sheet's own size. 11px renders at
+            // 8.25pt, which is what the desk was reading before (desk 2026-08-26).
             var body = html[html.IndexOf("</style>", StringComparison.Ordinal)..];
-            Assert.DoesNotContain("font-size:10px", body);
-            Assert.DoesNotContain("font-size:9.5px", body);
-            Assert.DoesNotContain("font-size:12", body);
+            Assert.Contains("font-size:11pt", body);
+            foreach (var wrong in new[] { "font-size:11px", "font-size:10px", "font-size:9.5px",
+                                          "font-size:12px", "font-size:13px", "font-size:14px" })
+                Assert.DoesNotContain(wrong, body);
+            // uniform columns: every data/header cell carries the SAME width
+            var widths = System.Text.RegularExpressions.Regex.Matches(body, @"<td[^>]*width=""(\d+)""")
+                .Cast<System.Text.RegularExpressions.Match>()
+                .Select(m => int.Parse(m.Groups[1].Value)).Distinct().OrderBy(x => x).ToList();
+            Assert.True(widths.Count <= 2, "sheet columns are no longer uniform: " + string.Join(",", widths));
         }
 
         [Fact]
@@ -127,8 +134,8 @@ namespace RateDesk.Tests
         public void SheetBody_CarriesTheResponsiveRules_AndDropsMaturityOnPhones()
         {
             var html = SheetEmail.Body(Fixture(), true, true);
-            Assert.Contains("@media only screen and (max-width:560px)", html);
-            Assert.Contains("@media only screen and (max-width:430px)", html);
+            Assert.Contains("@media only screen and (max-width:700px)", html);
+            Assert.Contains("@media only screen and (max-width:520px)", html);
             Assert.Contains(".rwm{display:none!important}", html);
             Assert.Contains("-webkit-text-size-adjust:100%", html);
             // the Maturity column (header + every data cell) is the one tagged for the drop
