@@ -18,6 +18,10 @@ namespace RateDesk.Weekly.Core.Infl
         public const string DailyTextFile = "daily_infl.txt";
         public const string WeeklyHtmlFile = "weekly_infl.html";
         public const string WeeklyTextFile = "weekly_infl.txt";
+        // the SHEET-STYLE flavour (desk 2026-08-26, now the default) — frozen at run time
+        // alongside the card flavour, so click-time composition only picks a file
+        public const string DailySheetHtmlFile = "daily_infl_sheet.html";
+        public const string WeeklySheetHtmlFile = "weekly_infl_sheet.html";
 
         private static readonly (string Key, string Label, string Index)[] Cards =
         {
@@ -36,11 +40,13 @@ namespace RateDesk.Weekly.Core.Infl
                 rows[fam.Key] = InflHistory.BuildDisplayRows(store, fam,
                     marks.TryGetValue(fam.Key, out var m) ? m : new List<InflHistory.Mark>(), asOf);
             var html = Html(rows, nextPrints);
+            var sheet = SheetEmail.InflHtml(rows, nextPrints);
             var text = PlainText(rows, nextPrints);
             Directory.CreateDirectory(outDir);
             File.WriteAllText(Path.Combine(outDir, daily ? DailyHtmlFile : WeeklyHtmlFile), html);
+            File.WriteAllText(Path.Combine(outDir, daily ? DailySheetHtmlFile : WeeklySheetHtmlFile), sheet);
             File.WriteAllText(Path.Combine(outDir, daily ? DailyTextFile : WeeklyTextFile), text);
-            return html;
+            return sheet;   // the DEFAULT flavour is what the run's own fragment carries
         }
 
         public static string Html(Dictionary<string, List<InflHistory.DisplayRow>> rowsByFam,

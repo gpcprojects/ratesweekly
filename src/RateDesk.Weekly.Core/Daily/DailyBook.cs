@@ -36,52 +36,46 @@ namespace RateDesk.Weekly.Core.Daily
         /// macro-enabled save-down workbook (one rendering, two containers).</summary>
         public static void WriteRunsSheet(IXLWorksheet ws, WeeklyReport rep)
         {
-            var inv = System.Globalization.CultureInfo.InvariantCulture;
             int r = 1;
-            ws.Cell(r, 1).Value = $"DRAX OIS Runs {rep.AsOf.ToString("dMMMyy", inv)}";
+            ws.Cell(r, 1).Value = RunsTable.Title(rep.AsOf);
             ws.Cell(r, 1).Style.Font.SetBold();
             r += 2;
 
-            foreach (var (runName, _, fixing) in DailyBlast.Blocks)
+            // ONE builder for the blocks/rows/formats — the emails' sheet-style tables read the
+            // same RunsTable, so the attachment and the inline content cannot drift apart
+            // (desk 2026-08-26). This sheet's own layout is unchanged.
+            foreach (var b in RunsTable.Build(rep))
             {
-                var run = DailyBlast.Find(rep, runName);
-                if (run == null || run.Rows.Count == 0) continue;
-
-                ws.Cell(r, 1).Value = $"{runName} closing run";
+                ws.Cell(r, 1).Value = $"{b.Bank} closing run";
                 ws.Cell(r, 1).Style.Font.SetBold();
                 r++;
-                ws.Cell(r, 1).Value = $"{fixing} fixing" + (run.RefRebased ? " (rebased)" : "");
-                if (run.RefPct is { } rp) ws.Cell(r, 2).Value = rp;
-                ws.Cell(r, 2).Style.NumberFormat.Format = "0.000";
+                ws.Cell(r, 1).Value = $"{b.FixingLabel} fixing" + (b.Rebased ? " (rebased)" : "");
+                if (b.FixingPct is { } rp) ws.Cell(r, 2).Value = rp;
+                ws.Cell(r, 2).Style.NumberFormat.Format = RunsTable.RateFmt;
                 r++;
-                // Mid | Priced | Step — the SAME order as the email cards, on every surface
-                // (desk 2026-08-26: "mid/priced/step everywhere *everywhere*")
-                string[] hdr = { "StartDate", "Maturity", "Mid", "Priced (bp)", "Step (bp)", "Δ 1d (bp)", "Δ 1w (bp)", "Δ 1m (bp)" };
-                for (int c = 0; c < hdr.Length; c++)
+                for (int c = 0; c < RunsTable.Headers.Length; c++)
                 {
-                    ws.Cell(r, c + 1).Value = hdr[c];
+                    ws.Cell(r, c + 1).Value = RunsTable.Headers[c];
                     ws.Cell(r, c + 1).Style.Font.SetBold();
                     ws.Cell(r, c + 1).Style.Fill.SetBackgroundColor(XLColor.FromArgb(217, 217, 217));
                 }
                 r++;
-                for (int i = 0; i < run.Rows.Count; i++)
+                foreach (var m in b.Rows)
                 {
-                    var m = run.Rows[i];
-                    ws.Cell(r, 1).Value = m.Date; ws.Cell(r, 1).Style.DateFormat.Format = "dd-mmm-yy";
-                    var end0 = m.EndDate ?? (i + 1 < run.Rows.Count ? run.Rows[i + 1].Date : (DateTime?)null);
-                    if (end0 is { } e0)
+                    ws.Cell(r, 1).Value = m.Start; ws.Cell(r, 1).Style.DateFormat.Format = "dd-mmm-yy";
+                    if (m.End is { } e0)
                     {
                         ws.Cell(r, 2).Value = e0;
                         ws.Cell(r, 2).Style.DateFormat.Format = "dd-mmm-yy";
                     }
-                    if (m.TurnPeriod)
+                    if (m.Turn)
                     {
-                        ws.Cell(r, 3).Value = "Y/E Turn";
+                        ws.Cell(r, 3).Value = RunsTable.TurnLabel;
                         ws.Cell(r, 3).Style.Font.SetItalic();
                     }
                     else
                     {
-                        ws.Cell(r, 3).Value = m.MidPct; ws.Cell(r, 3).Style.NumberFormat.Format = "0.000";
+                        ws.Cell(r, 3).Value = m.Mid; ws.Cell(r, 3).Style.NumberFormat.Format = RunsTable.RateFmt;
                         SetBp(ws.Cell(r, 4), m.PricedBp);
                         SetBp(ws.Cell(r, 5), m.StepBp);
                         SetBp(ws.Cell(r, 6), m.D1Bp);
@@ -199,7 +193,7 @@ namespace RateDesk.Weekly.Core.Daily
         {
             if (v is not { } x) return;
             cell.Value = x;
-            cell.Style.NumberFormat.Format = "+0.0;-0.0;0.0";
+            cell.Style.NumberFormat.Format = RunsTable.BpFmt;
         }
 
         private static DateTime PrevBd(DateTime d)

@@ -212,7 +212,14 @@ namespace RateDesk.Weekly.Core
             var frag = Path.Combine(outDir, FragmentFile);
             var txt = Path.Combine(outDir, PlainTextFile);
             var prev = Path.Combine(outDir, PreviewFile);
-            File.WriteAllText(frag, WeeklyEmail.Html(rep, href) + inflHtml);
+            // the persisted fragment carries the DEFAULT body style (sheet — desk 2026-08-26):
+            // the front table and the meeting runs as the attachment's own tables, then the
+            // forward grid in the weekly's own rendering (it has no sheet counterpart), then
+            // the inflation sheet fragment
+            File.WriteAllText(frag,
+                SheetEmail.Body(rep, front: true, runs: true)
+                + WeeklyEmail.Html(rep, href, partsOpt: new WeeklyEmail.EmailParts(false, false, true))
+                + inflHtml);
             File.WriteAllText(txt, WeeklyEmail.PlainText(rep) + inflText);
             // full-document wrapper only for the PREVIEW; the clipboard fragment stays bare
             File.WriteAllText(prev,

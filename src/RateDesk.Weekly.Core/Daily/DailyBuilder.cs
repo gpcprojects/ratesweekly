@@ -389,8 +389,11 @@ namespace RateDesk.Weekly.Core.Daily
             }
             catch (Exception ex) { log?.Invoke("! daily: inflation email section failed: " + ex.Message); }
 
+            // the persisted fragment carries the DEFAULT body style (sheet — desk 2026-08-26),
+            // so the preview shows what a send looks like; click-time composition re-renders
+            // from the frozen report under whatever is ticked then
             var frag = Path.Combine(outDir, FragmentFile);
-            File.WriteAllText(frag, WeeklyEmail.Html(rep) + inflHtml);
+            File.WriteAllText(frag, SheetEmail.Body(rep, front: true, runs: true) + inflHtml);
             File.WriteAllText(Path.Combine(outDir, PlainTextFile), WeeklyEmail.PlainText(rep) + inflText);
             File.WriteAllText(Path.Combine(outDir, PreviewFile),
                 "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><title>Daily OIS preview</title></head>" +

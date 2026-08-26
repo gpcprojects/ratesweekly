@@ -104,6 +104,8 @@
                     <CheckBox x:Name="CbDailyFront" Content="CB Front Meeting Table (in email)" Checked="Settings_Changed" Unchecked="Settings_Changed"/>
                     <CheckBox x:Name="CbDailyRuns" Content="OIS Runs (in email)" Checked="Settings_Changed" Unchecked="Settings_Changed"/>
                     <CheckBox x:Name="CbDailyInfl" Content="Inflation Fixing Runs (in email)" Checked="Settings_Changed" Unchecked="Settings_Changed"/>
+                    <CheckBox x:Name="CbDailySheet" Content="Sheet tables — as attached (default)" Checked="Settings_Changed" Unchecked="Settings_Changed"/>
+                    <CheckBox x:Name="CbDailyCards" Content="Card grid (legacy layout)" Checked="Settings_Changed" Unchecked="Settings_Changed"/>
                     <CheckBox x:Name="CbDailyXls" Content="OIS Sheet (XLS attachment)" Checked="Settings_Changed" Unchecked="Settings_Changed"/>
                     <CheckBox x:Name="CbDailyInflXls" Content="Inflation Sheet (XLS attachment)" Checked="Settings_Changed" Unchecked="Settings_Changed"/>
                 </StackPanel>
@@ -115,6 +117,8 @@
                     <CheckBox x:Name="CbWeeklyRuns" Content="OIS Runs Table (in email)" Checked="Settings_Changed" Unchecked="Settings_Changed"/>
                     <CheckBox x:Name="CbWeeklyGrid" Content="Forward Rates Summary (in email)" Checked="Settings_Changed" Unchecked="Settings_Changed"/>
                     <CheckBox x:Name="CbWeeklyInfl" Content="Inflation Fixing Runs (in email)" Checked="Settings_Changed" Unchecked="Settings_Changed"/>
+                    <CheckBox x:Name="CbWeeklySheet" Content="Sheet tables — as attached (default)" Checked="Settings_Changed" Unchecked="Settings_Changed"/>
+                    <CheckBox x:Name="CbWeeklyCards" Content="Card grid (legacy layout)" Checked="Settings_Changed" Unchecked="Settings_Changed"/>
                     <CheckBox x:Name="CbWeeklyDash" Content="Dashboards (HTML attachment)" Checked="Settings_Changed" Unchecked="Settings_Changed"/>
                 </StackPanel>
             </Border>
