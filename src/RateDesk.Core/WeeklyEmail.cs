@@ -138,7 +138,7 @@ namespace RateDesk.Core
         // ---- 1. CB Front Meeting Market Pricing ----
         if (parts.Front && rep.Fronts.Count > 0)
         {
-            bool anyStartOnly = false;
+            bool anyStartOnly = false, anyRebasedFront = false;
             sb.Append(H2("CB Front Meeting Market Pricing"));
             sb.Append(TableOpen(new[] { 136, 108, 104, 82, 86, 90, 64 }));
             string FH(string s, bool right = false) =>
@@ -147,6 +147,9 @@ namespace RateDesk.Core
             sb.Append("<tr>" + FH("Central Bank") + FH("Decision Date") + FH("Start Date")
                 + FH("OIS Mid", true) + FH("Fixing", true) + FH("Priced (bp)", true)
                 + FH("% 25bp", true) + "</tr>");
+            // † marks a fixing cell that is NOT the printed fixing (auto re-based onto the
+            // just-decided period's OIS until the new rate prints, or manually overridden)
+            string Reb(bool r) { if (r) anyRebasedFront = true; return r ? "†" : ""; }
             int fr = 0;
             foreach (var f in rep.Fronts)
             {
@@ -165,10 +168,10 @@ namespace RateDesk.Core
                     // label it rather than publish a number that reads as a cut (desk 2026-08-20)
                     (f.TurnPeriod
                         ? Td($"<i>Y/E Turn</i>", $"text-align:right;color:{EmMut};{rb}") +
-                          Td(f.RefPct is double rp3 ? rp3.ToString("0.000") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
+                          Td(f.RefPct is double rp3 ? rp3.ToString("0.000") + Reb(f.RefRebased) : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
                           Td("&nbsp;", rb) + Td("&nbsp;", rb)
                         : Td($"<b>{f.MidPct:0.000}</b>", $"text-align:right;{rb}") +
-                          Td(f.RefPct is double rp2 ? rp2.ToString("0.000") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
+                          Td(f.RefPct is double rp2 ? rp2.ToString("0.000") + Reb(f.RefRebased) : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
                           Td(f.PricedBp is double p2 ? p2.ToString("+0.0;-0.0;0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
                           Td($"<b>{pct}</b>", $"text-align:right;{rb}")) +
                     "</tr>");
@@ -177,6 +180,9 @@ namespace RateDesk.Core
             if (anyStartOnly)
                 sb.Append($"<div style=\"{EmFont}font-size:10px;color:{EmMut};margin:-10px 0 14px 2px;\">" +
                           "* swap-period start shown (no decision calendar for this bank)</div>");
+            if (anyRebasedFront)
+                sb.Append($"<div style=\"{EmFont}font-size:10px;color:{EmMut};margin:{(anyStartOnly ? "0" : "-10px")} 0 14px 2px;\">" +
+                          "† fixing re-based onto the just-decided period's OIS — the new rate has not printed yet</div>");
         }
 
         // ---- 2. Central Bank OIS Meetings (3 cards per row) ----
@@ -207,8 +213,10 @@ namespace RateDesk.Core
                         ? $" ({cf.ToString("dd-MMM", System.Globalization.CultureInfo.InvariantCulture).Replace("-", "‑")}→)"
                         : "")
                     : "";
+                // † = not the printed fixing (re-based onto the just-decided period's OIS)
+                string rebMark = run.RefRebased ? "†&nbsp;(rebased)" : "";
                 sb.Append($"<div style=\"{EmFont}font-weight:bold;font-size:12.5px;color:{EmTxt};margin:0 0 3px 1px;\">{run.Title}" +
-                          (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">fixing {rp:0.000}{cmpd}</span>" : "")
+                          (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">fixing {rp:0.000}{rebMark}{cmpd}</span>" : "")
                           + "</div>");
                 sb.Append(TableOpen(new[] { 76, 56, 58, 52, 56, 60, 60 }, "0"));
                 // RATESWEEKLY DIVERGENCE (desk 2026-08-25): widths live ON every card cell —
@@ -252,10 +260,13 @@ namespace RateDesk.Core
                         continue;
                     }
                     // Priced stays plain muted text — the heat experiment was reverted on the
-                    // desk's read (2026-08-11); heat belongs to the CHANGE columns only
+                    // desk's read (2026-08-11); heat belongs to the CHANGE columns only.
+                    // A guard-synthesized mid (neighbour midpoint) carries † — never bare
+                    // (fresh-eyes review 2026-08-26); the CHECK note names the rejection.
+                    string synth = m.MidSource.StartsWith("interp", StringComparison.OrdinalIgnoreCase) ? "†" : "";
                     sb.Append("<tr>" +
                         CTd(Inv(m.Date), 0, rb) +
-                        CTd($"<b>{m.MidPct:0.000}</b>", 1, $"text-align:right;{rb}") +
+                        CTd($"<b>{m.MidPct:0.000}{synth}</b>", 1, $"text-align:right;{rb}") +
                         CTd(m.PricedBp is double p ? NoBrk(p.ToString("+0.0;-0.0;0.0")) : "&nbsp;", 2, $"text-align:right;color:{EmMut};{rb}") +
                         CTd(m.StepBp is double st ? NoBrk(st.ToString("+0.0;-0.0;0.0")) : "&nbsp;", 3, $"text-align:right;color:{EmMut};{rb}") +
                         CChg(m.D1Bp, 4, mr - 1) +
@@ -392,7 +403,8 @@ namespace RateDesk.Core
         foreach (var run in truns)
         {
             sb.AppendLine();
-            sb.AppendLine(run.Title + (run.RefPct is double rp ? $"  fixing {rp:0.000}" : "")
+            sb.AppendLine(run.Title
+                + (run.RefPct is double rp ? $"  fixing {rp:0.000}{(run.RefRebased ? " (rebased)" : "")}" : "")
                 + (run.CompoundedPct is double cp
                     ? $"  compounded {cp:0.000}" + (run.CompoundedFrom is DateTime cf
                         ? $" (since {cf.ToString("dd-MMM-yy", inv)})" : "")

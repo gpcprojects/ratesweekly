@@ -106,12 +106,15 @@ namespace RateDesk.Weekly.Core.Daily
             var rep = ReportStore.Load(Path.Combine(outDir, ReportFile))
                 ?? throw new InvalidOperationException(
                     "no stored daily report yet — run DAILY RUN once (with a terminal) first");
+            string? ExSrcOf(string runName) => rep.Runs.FirstOrDefault(r =>
+                r.Title.Split('·')[0].Trim().Equals(runName, StringComparison.OrdinalIgnoreCase))?.Source;
             if (LoadFallbackBook(appDataDir) is { } fb)
-                FallbackIngest.Run(fb, store, log);
+                FallbackIngest.Run(fb, store, log, sourceOf: ExSrcOf);
             log?.Invoke($"export: rebuilding workbooks from stored data as of " +
                         $"{rep.AsOf:dd-MMM-yy HH:mm} — no Bloomberg required");
-            // the RUN's frozen marks, never a stale-close downgrade of the emailed file
-            Infl.InflHistory.LoadPersistedMarks(outDir);
+            // the RUN's frozen marks, never a stale-close downgrade of the emailed file —
+            // and only marks persisted on the SAME day as this report
+            Infl.InflHistory.LoadPersistedMarks(outDir, rep.AsOf);
             var marks = Infl.InflHistory.LastLiveMarks;
             var path = DailyBook.Write(rep, outDir, log);
             Infl.InflRunsXlsx.Write(store, outDir, rep.AsOf, marks, Infl.InflHistory.LastNextPrints, log);
@@ -305,8 +308,11 @@ namespace RateDesk.Weekly.Core.Daily
             // FAILSAFE ROUND-TRIP (desk 2026-08-20): pull any outage days the desk stored
             // manually in the fallback workbook into the store BEFORE the history sheets render,
             // so history is continuous across an app/API outage and manual rows appear marked.
+            // Manual rows land under each run's ACTIVE source spelling (SOURCES trial).
+            string? SrcOf(string runName) => rep.Runs.FirstOrDefault(r =>
+                r.Title.Split('·')[0].Trim().Equals(runName, StringComparison.OrdinalIgnoreCase))?.Source;
             if (LoadFallbackBook(appDataDir) is { } fb)
-                FallbackIngest.Run(fb, store, log);
+                FallbackIngest.Run(fb, store, log, sourceOf: SrcOf);
             else
                 log?.Invoke("daily: no fallbackBook in publish.json — manual-override ingest off");
 
@@ -344,7 +350,7 @@ namespace RateDesk.Weekly.Core.Daily
                     // never re-enter raw ticker history
                     IngestNewestSaved(Path.Combine(sdCfg.Root, SaveDown.SaveDownConfig.OisFolder),
                         "OIS_Runs_*.xlsm",
-                        (p, fd) => FallbackIngest.Run(p, store, log, minDate: fd), log);
+                        (p, fd) => FallbackIngest.Run(p, store, log, minDate: fd, sourceOf: SrcOf), log);
                     IngestNewestSaved(Path.Combine(sdCfg.Root, SaveDown.SaveDownConfig.InflFolder),
                         "Inflation_Runs_*.xlsm",
                         (p, fd) => Infl.InflHistory.Ingest(p, store, log,

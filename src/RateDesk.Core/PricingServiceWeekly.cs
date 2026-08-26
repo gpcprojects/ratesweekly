@@ -49,6 +49,11 @@ namespace RateDesk.Core
         /// <summary>Render "Y/E Turn" instead of the numbers — the period spans a year-end and
         /// its average carries the turn dislocation (SEK/SWESTR; desk 2026-08-20).</summary>
         public bool TurnPeriod { get; init; }
+        /// <summary>Where the mid came from — "ticker"/"future", or the misprint guard's
+        /// "interp (…)" label. Propagated so the renderers can MARK a synthesized mid
+        /// (fresh-eyes review 2026-08-26: the label used to die here and the email printed
+        /// a neighbour-midpoint in bold as if it were a print).</summary>
+        public string MidSource { get; set; } = "";
     }
 
     public sealed class WeeklyRun
@@ -68,6 +73,11 @@ namespace RateDesk.Core
         public double? CompoundedPct { get; set; }
         /// <summary>Start of the compounding window (the current period's effective date).</summary>
         public DateTime? CompoundedFrom { get; set; }
+        /// <summary>RefPct is not the printed fixing: it was re-based onto the just-decided
+        /// period's own OIS (the decision→start window) or manually overridden — the renderers
+        /// mark it (fresh-eyes review 2026-08-26: a swap mid used to print under "fixing"
+        /// unlabelled for up to a week after every ECB/BOJ decision).</summary>
+        public bool RefRebased { get; set; }
         public List<WeeklyMeeting> Rows { get; } = new();
     }
 
@@ -83,6 +93,8 @@ namespace RateDesk.Core
         public double MidPct { get; init; }
         /// <summary>The run's reference (policy/fixing) rate — the "Base Rate" column.</summary>
         public double? RefPct { get; init; }
+        /// <summary>RefPct is a re-based stand-in, not the printed fixing (see WeeklyRun).</summary>
+        public bool RefRebased { get; init; }
         public double? PricedBp { get; init; }
         /// <summary>The front period spans a year-end (marked run): the front line shows
         /// "Y/E Turn" for its market-pricing cells.</summary>
@@ -191,6 +203,7 @@ namespace RateDesk.Core
                     {
                         Title = $"{sched.Name} · {run.Ccy}",
                         RefName = run.RefName, RefPct = run.RefPct,
+                        RefRebased = run.RefRebased || run.RefOverridden,
                     };
                     // front-meeting summary line: the run's first row IS the next decision's period
                     if (run.Rows.Count > 0)
@@ -211,6 +224,7 @@ namespace RateDesk.Core
                             Decision = dec, StartDate = front.Date,
                             MidPct = front.MidPct, RefPct = run.RefPct, PricedBp = front.PricedBp,
                             TurnPeriod = front.TurnPeriod,
+                            RefRebased = run.RefRebased || run.RefOverridden,
                         });
                     }
                     var series = MeetingSeriesBuilder(sched, run.Rows.Select(r => r.Date));
@@ -220,7 +234,13 @@ namespace RateDesk.Core
                         {
                             Date = row.Date, EndDate = row.EndDate, MidPct = row.MidPct,
                             PricedBp = row.PricedBp, StepBp = row.StepBp, TurnPeriod = row.TurnPeriod,
+                            MidSource = row.MidSource,
                         };
+                        // a synthesized (guard-rejected) mid is published FLAGGED, never bare —
+                        // the note gates distribution, the renderers mark the cell
+                        if (row.MidSource.StartsWith("interp", StringComparison.OrdinalIgnoreCase))
+                            rep.Notes.Add($"CHECK: {sched.Name} {row.Date:dd-MMM-yy} mid is the " +
+                                          $"neighbour midpoint — {row.MidSource} — verify before distribution");
                         if (row.TurnPeriod) { wr.Rows.Add(wm); continue; }   // no changes for a label row
                         try
                         {

@@ -37,8 +37,13 @@ namespace RateDesk.Weekly.Core.Daily
         /// roll-corrected walk-back values (older than the file), while rows the DESK stored
         /// via the macro are stamped the day they pressed Store (the file date or later) —
         /// only those are genuine manual marks that belong in raw ticker history.</summary>
+        /// <summary><paramref name="sourceOf"/>: run name → the ACTIVE pricing contributor
+        /// ("" = composite) — the SOURCES trial can reroute a run, and manual rows must land
+        /// under the spelling the stitcher/history sheets will actually read (fresh-eyes review
+        /// 2026-08-26: an override plus an outage used to strand the manual days under the
+        /// config-default spelling, invisible to every reader). Null = config default.</summary>
         public static Result Run(string workbookPath, HistoryStore store, Action<string>? log = null,
-            DateTime? minDate = null)
+            DateTime? minDate = null, Func<string, string?>? sourceOf = null)
         {
             var notes = new List<string>();
             var dates = new SortedSet<DateTime>();
@@ -72,7 +77,8 @@ namespace RateDesk.Weekly.Core.Daily
 
                     // engine coverage per rung — across BOTH spellings (contributor + composite):
                     // only ingest dates the engine has NOTHING for on either
-                    var srcSuffix = string.IsNullOrEmpty(sched.Source) ? "" : " " + sched.Source;
+                    var activeSrc = sourceOf?.Invoke(runName) ?? sched.Source ?? "";
+                    var srcSuffix = activeSrc.Length == 0 ? "" : " " + activeSrc;
                     var have = new Dictionary<int, HashSet<DateTime>>();
                     HashSet<DateTime> Have(int rung)
                     {
@@ -107,6 +113,17 @@ namespace RateDesk.Weekly.Core.Daily
                         // would ingest unchecked (and its rung mapping is unreliable that far out)
                         if (d.Value < DateTime.Today.AddDays(-370)) continue;
 
+                        // a manual row dated ON a roll boundary is mixed-state by the system's
+                        // own rule (the stitcher excludes decision-day closes; renumbering is
+                        // intraday and announcement-time-dependent) — refuse it rather than file
+                        // it under a guessed rung (fresh-eyes review 2026-08-26)
+                        if (bounds.Contains(d.Value))
+                        {
+                            notes.Add($"fallback ingest: {runName} {d.Value:dd-MMM-yy} is a roll-" +
+                                      "boundary day (mixed-state) — row skipped; the engine's own " +
+                                      "pull supersedes");
+                            continue;
+                        }
                         int rung = bounds.Count(b => b > d.Value && b <= start.Value);
                         if (rung < 1 || rung > 13) continue;
                         if (Have(rung).Contains(d.Value)) continue;   // engine data exists — never touch

@@ -276,8 +276,11 @@ namespace RateDesk.Weekly.Core.Infl
         }
 
         /// <summary>Reload persisted marks into the statics when this session has none —
-        /// the offline rebuild's first stop before any LatestMarks fallback.</summary>
-        public static void LoadPersistedMarks(string outDir)
+        /// the offline rebuild's first stop before any LatestMarks fallback. When
+        /// <paramref name="expectAsOf"/> is given, marks persisted on a DIFFERENT day are
+        /// refused (fresh-eyes review 2026-08-26: the daily and weekly share this file, and an
+        /// offline rebuild of one must not wear the other's marks).</summary>
+        public static void LoadPersistedMarks(string outDir, DateTime? expectAsOf = null)
         {
             if (LastLiveMarks != null) return;
             try
@@ -286,6 +289,7 @@ namespace RateDesk.Weekly.Core.Infl
                 if (!File.Exists(p)) return;
                 var s = System.Text.Json.JsonSerializer.Deserialize<MarksShape>(File.ReadAllText(p));
                 if (s == null) return;
+                if (expectAsOf is { } ea && s.AsOf.Date != ea.Date) return;
                 LastLiveMarks = s.Marks;
                 LastNextPrints ??= s.NextPrints.Count > 0 ? s.NextPrints : null;
             }

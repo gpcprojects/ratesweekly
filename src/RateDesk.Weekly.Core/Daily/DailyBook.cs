@@ -50,7 +50,7 @@ namespace RateDesk.Weekly.Core.Daily
                 ws.Cell(r, 1).Value = $"{runName} closing run";
                 ws.Cell(r, 1).Style.Font.SetBold();
                 r++;
-                ws.Cell(r, 1).Value = $"{fixing} fixing";
+                ws.Cell(r, 1).Value = $"{fixing} fixing" + (run.RefRebased ? " (rebased)" : "");
                 if (run.RefPct is { } rp) ws.Cell(r, 2).Value = rp;
                 ws.Cell(r, 2).Style.NumberFormat.Format = "0.000";
                 // compounded fixing (trial, desk 2026-08-26) — same row, window shown

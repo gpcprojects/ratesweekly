@@ -207,7 +207,7 @@ switch (cmd)
         using var store = new HistoryStore(dbPath);
         // the RUN's frozen marks + next prints (audit 2026-08-26): an offline regen must never
         // downgrade the emailed files to stale closes under the same names
-        RateDesk.Weekly.Core.Infl.InflHistory.LoadPersistedMarks(outDir);
+        RateDesk.Weekly.Core.Infl.InflHistory.LoadPersistedMarks(outDir, rep.AsOf);
         var marks = RateDesk.Weekly.Core.Infl.InflHistory.LastLiveMarks;
         var nextPrints = RateDesk.Weekly.Core.Infl.InflHistory.LastNextPrints;
         var p1 = RateDesk.Weekly.Core.SaveDown.StoreBooks.WriteOis(rep, store, outDir, Console.WriteLine);
