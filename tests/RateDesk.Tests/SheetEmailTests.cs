@@ -93,13 +93,17 @@ namespace RateDesk.Tests
             // which phones scaled to about a third
             Assert.DoesNotContain("width:428px", html);
             Assert.DoesNotContain("width:1168px", html);
-            // every table holds the SHEET's own measure: Excel's widths at 7px/char + padding
-            // (runs 12,12,10x6 chars = 628px), stacked in one column — nothing wider
+            // columns are content-tight (desk 2026-08-26): 488px for the runs table, stacked
             foreach (var m in System.Text.RegularExpressions.Regex.Matches(html, @"width:(\d+)px;max-width")
                          .Cast<System.Text.RegularExpressions.Match>())
-                Assert.True(int.Parse(m.Groups[1].Value) <= 640,
-                    $"a sheet table is {m.Groups[1].Value}px wide — wider than the sheet itself");
-            Assert.Contains($"width:{RunsTable.PxForChars(12) * 2 + RunsTable.PxForChars(10) * 6}px", html);
+                Assert.True(int.Parse(m.Groups[1].Value) <= 500,
+                    $"a sheet table is {m.Groups[1].Value}px wide — the columns have gone slack again");
+            Assert.Contains("width:488px", html);
+            // ...and EVERY body element is 11px: no smaller type anywhere in the fragment
+            var body = html[html.IndexOf("</style>", StringComparison.Ordinal)..];
+            Assert.DoesNotContain("font-size:10px", body);
+            Assert.DoesNotContain("font-size:9.5px", body);
+            Assert.DoesNotContain("font-size:12", body);
         }
 
         [Fact]
@@ -123,8 +127,8 @@ namespace RateDesk.Tests
         public void SheetBody_CarriesTheResponsiveRules_AndDropsMaturityOnPhones()
         {
             var html = SheetEmail.Body(Fixture(), true, true);
-            Assert.Contains("@media only screen and (max-width:700px)", html);
-            Assert.Contains("@media only screen and (max-width:470px)", html);
+            Assert.Contains("@media only screen and (max-width:560px)", html);
+            Assert.Contains("@media only screen and (max-width:430px)", html);
             Assert.Contains(".rwm{display:none!important}", html);
             Assert.Contains("-webkit-text-size-adjust:100%", html);
             // the Maturity column (header + every data cell) is the one tagged for the drop
