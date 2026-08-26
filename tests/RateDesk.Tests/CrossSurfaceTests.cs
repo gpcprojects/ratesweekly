@@ -173,6 +173,39 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void StoreBackup_SnapshotRoundTrips_AndNeverReplacesAnExistingStore()
+        {
+            var dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
+                "rw-bk-" + Guid.NewGuid().ToString("N"));
+            System.IO.Directory.CreateDirectory(dir);
+            try
+            {
+                var dbPath = System.IO.Path.Combine(dir, "history.db");
+                var bkPath = System.IO.Path.Combine(dir, "history_backup.db");
+                using (var store = new HistoryStore(dbPath))
+                {
+                    store.UpsertDaily("TEST1A Curncy", new[] { new HistPoint(new(2026, 8, 20), 1.234) },
+                        excludeToday: false, source: "xls");
+                    store.BackupTo(bkPath);   // consistent snapshot off a LIVE connection
+                }
+                using (var back = new HistoryStore(bkPath))
+                {
+                    var rows = back.GetDailyWithSource("TEST1A Curncy", 400);
+                    Assert.Single(rows);
+                    Assert.Equal(1.234, rows[0].Value, 6);
+                    Assert.Equal("xls", rows[0].Source);   // the irreplaceable provenance travels
+                }
+                // restore NEVER overwrites an existing local store
+                Assert.False(RateDesk.Weekly.Core.SaveDown.StoreBackup.Restore(bkPath, dbPath));
+                // ...and restores cleanly onto an empty machine
+                var fresh = System.IO.Path.Combine(dir, "fresh", "history.db");
+                Assert.True(RateDesk.Weekly.Core.SaveDown.StoreBackup.Restore(bkPath, fresh));
+                Assert.True(System.IO.File.Exists(fresh));
+            }
+            finally { try { System.IO.Directory.Delete(dir, true); } catch { } }
+        }
+
+        [Fact]
         public void VariableLagFamilies_DeriveNoAnnouncements()
         {
             // BOJ's decision→start lag runs 1-6 days (Tokyo settlement) — a median-derived

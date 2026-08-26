@@ -86,6 +86,21 @@ namespace RateDesk.Weekly.Core
                 """);
         }
 
+        /// <summary>Consistent point-in-time snapshot of the WHOLE store into a single file
+        /// (VACUUM INTO — safe on a live connection, no locks held on writers). The store is
+        /// partly IRREPLACEABLE (desk 2026-08-26): 'xls' rows from the incumbent sheets, manual
+        /// outage marks, and the maturity records are point-in-time observations Bloomberg
+        /// cannot re-serve — so the snapshot, not the live .db file, is what travels to the
+        /// shared drive. Never copy a live WAL database by file copy.</summary>
+        public void BackupTo(string path)
+        {
+            lock (_gate)
+            {
+                if (File.Exists(path)) File.Delete(path);
+                Exec($"VACUUM INTO '{path.Replace("'", "''")}';");
+            }
+        }
+
         /// <summary>Upsert unified inflation-fixing marks. Merge rule (desk 2026-08-25): a
         /// VALIDATED external-sheet row always wins ('xls' overwrites anything — where the
         /// existing data is good, keep it); a Bloomberg row fills gaps and refreshes only rows
