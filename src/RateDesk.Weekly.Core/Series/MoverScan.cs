@@ -174,10 +174,10 @@ namespace RateDesk.Weekly.Core.Series
             for (int s = 0; s + 1 < cuts.Count; s++)
             {
                 // index constant inside a stretch: boundaries strictly after its start, up to the
-                // contract, are exactly the rolls between then and now (RollingStrip.RolledValue)
-                int crossed = cl.Count(b => b > cuts[s] && b <= contract.Date);
-                int idx = Math.Max(1, crossed);
-                if (idx > maxIndexProbe) continue;
+                // contract, are exactly the rolls between then and now (RollingStrip.RolledValue).
+                // Zero = the contract's period had already started: no rung, skip (never rung 1)
+                int idx = cl.Count(b => b > cuts[s] && b <= contract.Date);
+                if (idx < 1 || idx > maxIndexProbe) continue;
                 foreach (var p in store.GetDaily(ticker(idx), windowDays + 10))
                 {
                     if (p.Date.Date < cuts[s] || p.Date.Date >= cuts[s + 1]) continue;
@@ -204,7 +204,8 @@ namespace RateDesk.Weekly.Core.Series
         }
 
         public static MoversResult Scan(
-            ConfigStore configs, Func<string, string> srcFor, HistoryStore store, DateTime asOf)
+            ConfigStore configs, Func<string, string> srcFor, HistoryStore store, DateTime asOf,
+            Func<MeetingScheduleDef, string>? meetingSource = null)
         {
             var cands = new List<Mover>();
             int excluded = 0;
@@ -297,16 +298,19 @@ namespace RateDesk.Weekly.Core.Series
                 var pat = sched.Tickers.FirstOrDefault(t => t.Contains("{N}"));
                 if (pat == null) continue;
 
-                var strip = RollingStrip.ForMeetings(sched, store, asOf);
-                // decision dates first — the tickers re-point at the DECISION (see RollingStrip)
-                var bounds = sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates).ToList();
+                // the run's ACTIVE source — the same feed as the email/boards (desk 2026-08-26)
+                var activeSrc = meetingSource?.Invoke(sched) ?? sched.Source ?? "";
+                var strip = RollingStrip.ForMeetings(sched, store, asOf, source: activeSrc);
+                // ONE boundary derivation for every consumer — MeetingRungMap (this scan
+                // previously ignored the SKSF start rule and settled announcements)
+                var bounds = new MeetingRungMap(sched).Boundaries.ToList();
+                var tick = RollingStrip.SourceAwareTicker(store, pat, activeSrc);
                 foreach (var row in strip.Rows)
                 {
                     if (row.Label.EndsWith("*", StringComparison.Ordinal)) { excluded++; continue; }
                     // a year-end-turn period's "move" is the turn breathing, not policy repricing
                     if (row.Turn) { excluded++; continue; }
-                    var series = MeetingSeries(store, bounds,
-                        n => pat.Replace("{N}", n.ToString()) + " Curncy",
+                    var series = MeetingSeries(store, bounds, tick,
                         row.Contract, asOf, SparkDays + 40);
                     Add(series, 100.0, ccy, group, "meeting",
                         $"{sched.Name} {row.Contract:dd-MMM-yy}", RateText);

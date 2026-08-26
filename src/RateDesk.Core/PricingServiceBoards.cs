@@ -68,6 +68,11 @@ namespace RateDesk.Core
         public DateTime? NextDecision { get; set; }
         public string DecisionTimeLondon { get; set; } = "";
         public List<MeetingRow> Rows { get; } = new();
+        /// <summary>Published rungs whose quote had not ticked in over an hour at snapshot time
+        /// (desk 2026-08-26: "install a warning for stale feeds") — surfaced as non-blocking
+        /// STALE warnings, one line per run. A quiet far rung can be legitimate; the desk sees
+        /// it and judges.</summary>
+        public List<string> StaleNotes { get; } = new();
         public string? Warning { get; set; }
         /// <summary>"tickers" (market meeting-dated OIS) / "curve" (our OIS fwd between ticker dates) / "schedule" (json dates).</summary>
         public string DatesSource { get; set; } = "";
@@ -927,6 +932,7 @@ namespace RateDesk.Core
                 }
 
                 double? prevPriced = null;
+                var staleRungs = new List<(DateTime Row, double Age)>();
                 for (int n = 1; n <= maxRows; n++)
                 {
                     if (!meetDates.TryGetValue(n, out var d0)) break;
@@ -951,6 +957,10 @@ namespace RateDesk.Core
                     double? cod = null;
                     if (q?.Mid is double qm)
                     {
+                        // feed-staleness watch (desk 2026-08-26): a published rung whose quote
+                        // has not moved in >1h gets a warning — the same signal the SOURCES
+                        // dialog shows at pick time, now at RUN time
+                        if (q.AgeMinutes is double age0 && age0 > 60) staleRungs.Add((d0, age0));
                         var (gm, rej) = turn0 ? (qm, false) : GuardedMid(n);
                         mid = gm;
                         midSrc = rej ? $"interp (ticker {SignedBp((qm - gm) * 100.0)}bp off — rejected)" : "ticker";
@@ -992,6 +1002,18 @@ namespace RateDesk.Core
                         CoDBp = cod, MidSource = midSrc, TurnPeriod = turn,
                     });
                     if (!turn) prevPriced = priced;
+                }
+
+                if (staleRungs.Count > 0)
+                {
+                    var worst = staleRungs.OrderByDescending(x => x.Age).First();
+                    var frontStale = res.Rows.Count > 0
+                                     && staleRungs.Any(x => x.Row == res.Rows[0].Date);
+                    res.StaleNotes.Add(
+                        $"STALE: {sched.Name} — {staleRungs.Count} published rung(s) off a feed " +
+                        $"quiet >1h ({(frontStale ? "INCLUDING THE FRONT, " : "")}worst " +
+                        $"{worst.Row.ToString("dd-MMM-yy", System.Globalization.CultureInfo.InvariantCulture)} " +
+                        $"at {worst.Age:0}m) — consider another contributor (SOURCES)");
                 }
 
                 res.DatesSource = tickerDates ? "tickers" : "schedule";
@@ -1381,35 +1403,14 @@ namespace RateDesk.Core
                     Enumerable.Range(1, 13).Select(i => p.Replace("{N}", i.ToString()) + " Curncy")), 1825);
             }
             catch { /* per-ticker fallback */ }
-            // cluster within 6 days: ticker maturities and config dates describe the SAME meeting
-            // with day-level differences — double-counting would shift every stitch index by one
-            var allMeet = new List<DateTime>();
-            // 14-day clustering, NOT 6: config grids drift from ticker-derived truth by more than a
-            // week (BOJ's 2027 entries sat 8-11 days late), and every unclustered duplicate inflates
-            // the historical index by one — BOJ's far rows then stitched the retired JYOMPM family's
-            // stale ~0.98 prints and published +68bp "1w changes". No two real CB meetings are within
-            // 14 days of each other, so the wider window is safe by construction.
-            foreach (var d in sched.PastDates.Concat(runDates)
-                         .Concat(sched.Dates).Distinct().OrderBy(x => x))
-                if (allMeet.Count == 0 || (d - allMeet[^1]).TotalDays > 14)
-                    allMeet.Add(d);
-            // roll boundaries are DECISION closes, not period starts: where an announcement date is
-            // recorded separately from the swap grid (ECB decides Thursday, the period starts the
-            // following Wednesday; BOJ Friday -> Thursday), the generics re-point after the DECISION,
-            // so snap the clustered entry back to it or up to ~4 business days of closes stitch to
-            // the wrong index after every such meeting. EXCEPT families that renumber at the period
-            // START (SKSF): their boundary IS the start date, and the snap would mis-rung every
-            // lookback inside the decision→start week (desk 2026-08-25, the Feb-27 Δ1d fault).
-            // The snap reads MeetingCalendar.AnnouncementDates, NOT sched.DecisionDates alone
-            // (fresh-eyes review 2026-08-26): the config's decision list is FUTURE-only, so the
-            // just-settled announcement (ECB 23-Jul-26) was never a boundary and up to a week of
-            // closes after every recent decision stitched to the wrong contract — including the
-            // Δ1m anchors in that window. Derived dates come only from stable-lag families.
-            if (!sched.RollsAtPeriodStart)
-                foreach (var dd in MeetingCalendar.AnnouncementDates(sched)
-                             .Select(d => d.Date).Distinct().OrderBy(d => d))
-                    for (int i = 0; i < allMeet.Count; i++)
-                        if (dd < allMeet[i] && (allMeet[i] - dd).TotalDays <= 6) { allMeet[i] = dd; break; }
+            // ONE boundary derivation for every consumer — MeetingRungMap (fresh-eyes review
+            // 2026-08-26): the period grid + settled history + this run's own ticker-derived
+            // dates, announcements folded in for decision-renumbering families (the config's
+            // decision list is FUTURE-only, so the just-settled ECB 23-Jul-26 announcement was
+            // previously never a boundary and up to a week of closes after every recent decision
+            // stitched to the wrong contract — including the Δ1m anchors in that window),
+            // starts kept for SKSF, 14-day cluster keeping the earliest.
+            var allMeet = new MeetingRungMap(sched, runDates).Boundaries.ToList();
             // DESK CONVENTION (2026-08-06): history values are the daily 4:30pm-LONDON snaps, not
             // closes — the desk's incumbent sheet snaps then, and the changes must reconcile. The
             // snaps are also STRUCTURALLY cleaner at roll boundaries: at 16:30 on a decision day

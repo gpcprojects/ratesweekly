@@ -113,8 +113,8 @@ namespace RateDesk.Weekly.Core.Daily
             log?.Invoke($"export: rebuilding workbooks from stored data as of " +
                         $"{rep.AsOf:dd-MMM-yy HH:mm} — no Bloomberg required");
             // the RUN's frozen marks, never a stale-close downgrade of the emailed file —
-            // and only marks persisted on the SAME day as this report
-            Infl.InflHistory.LoadPersistedMarks(outDir, rep.AsOf);
+            // and only the DAILY cadence's marks, persisted on the SAME day as this report
+            Infl.InflHistory.LoadPersistedMarks(outDir, rep.AsOf, prefix: "daily_");
             var marks = Infl.InflHistory.LastLiveMarks;
             var path = DailyBook.Write(rep, outDir, log);
             Infl.InflRunsXlsx.Write(store, outDir, rep.AsOf, marks, Infl.InflHistory.LastNextPrints, log);
@@ -319,7 +319,7 @@ namespace RateDesk.Weekly.Core.Daily
             ReportStore.Save(rep, Path.Combine(outDir, ReportFile));
             // freeze the run's live inflation marks + next prints next to the report — offline
             // rebuilds re-serve THESE, never a stale-close downgrade under the same filename
-            Infl.InflHistory.PersistMarks(outDir, rep.AsOf);
+            Infl.InflHistory.PersistMarks(outDir, rep.AsOf, prefix: "daily_");
 
             var blastPath = Path.Combine(outDir, BlastFile);
             File.WriteAllText(blastPath, DailyBlast.Render(rep));

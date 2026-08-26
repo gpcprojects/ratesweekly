@@ -51,11 +51,10 @@ namespace RateDesk.Weekly.Core.Daily
                 sb.Append($"{flag} {runName} Run");
                 if (run.RefPct is { } rp)
                     sb.Append($"   ({fixing} {rp.ToString("0.000", inv)}{(run.RefRebased ? " rebased" : "")})");
-                if (run.CompoundedPct is { } cp) sb.Append($"   (cmpd {cp.ToString("0.000", inv)})");
                 sb.AppendLine();
                 // same table as the workbook's Runs sheet, minus Maturity (IB window widths —
-                // desk 2026-08-25); fixed-width columns so a chat paste reads as a table
-                sb.AppendLine($"{"StartDate",-10} {"Mid",7} {"Step",6} {"Priced",7} {"Δ1d",6} {"Δ1w",6} {"Δ1m",6}");
+                // desk 2026-08-25); Mid | Priced | Step everywhere (desk 2026-08-26)
+                sb.AppendLine($"{"StartDate",-10} {"Mid",7} {"Priced",7} {"Step",6} {"Δ1d",6} {"Δ1w",6} {"Δ1m",6}");
 
                 for (int i = 0; i < run.Rows.Count; i++)
                 {
@@ -68,7 +67,7 @@ namespace RateDesk.Weekly.Core.Daily
                     }
                     sb.AppendLine(
                         $"{start,-10} {m.MidPct.ToString("0.000", inv),7} " +
-                        $"{Bp(m.StepBp),6} {Bp(m.PricedBp),7} {Bp(m.D1Bp),6} {Bp(m.W1Bp),6} {Bp(m.M1Bp),6}");
+                        $"{Bp(m.PricedBp),7} {Bp(m.StepBp),6} {Bp(m.D1Bp),6} {Bp(m.W1Bp),6} {Bp(m.M1Bp),6}");
                 }
             }
             return sb.ToString();
@@ -110,13 +109,10 @@ namespace RateDesk.Weekly.Core.Daily
                 sb.Append("<tr>" + Wide($"<b>{runName} closing run</b>") + "</tr>");
                 sb.Append("<tr>" + Td($"{fixing} fixing" + (run.RefRebased ? " (rebased)" : ""))
                     + Td(run.RefPct is { } rp ? rp.ToString("0.000", inv) : "&nbsp;", "text-align:right;")
-                    + (run.CompoundedPct is { } cp
-                        ? Td("compounded") + Td(cp.ToString("0.000", inv), "text-align:right;")
-                        : Td("&nbsp;") + Td("&nbsp;"))
-                    + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + "</tr>");
+                    + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + "</tr>");
                 sb.Append("<tr>");
                 foreach (var h in new[]
-                         { "StartDate", "Mid", "Step (bp)", "Priced (bp)", "Δ 1d (bp)", "Δ 1w (bp)", "Δ 1m (bp)" })
+                         { "StartDate", "Mid", "Priced (bp)", "Step (bp)", "Δ 1d (bp)", "Δ 1w (bp)", "Δ 1m (bp)" })
                     sb.Append(Td($"<b>{h}</b>", "background:#d9d9d9;" + (h == "StartDate" ? "" : "text-align:right;")));
                 sb.Append("</tr>");
                 for (int i = 0; i < run.Rows.Count; i++)
@@ -131,7 +127,7 @@ namespace RateDesk.Weekly.Core.Daily
                     }
                     sb.Append("<tr>" + Td(start)
                         + Td(m.MidPct.ToString("0.000", inv), "text-align:right;")
-                        + Num(m.StepBp) + Num(m.PricedBp) + Num(m.D1Bp) + Num(m.W1Bp) + Num(m.M1Bp) + "</tr>");
+                        + Num(m.PricedBp) + Num(m.StepBp) + Num(m.D1Bp) + Num(m.W1Bp) + Num(m.M1Bp) + "</tr>");
                 }
                 sb.Append(Blank());
             }

@@ -17,7 +17,8 @@ namespace RateDesk.Weekly.Core.Render
 
         public static string Build(
             ConfigStore configs, Func<string, string> srcFor, HistoryStore store,
-            DateTime asOf, MoversResult movers)
+            DateTime asOf, MoversResult movers,
+            Func<RateDesk.Core.MeetingScheduleDef, string>? meetingSource = null)
         {
             var body = new StringBuilder();
             body.Append("<section class=\"rw-page\" id=\"pg-movers\"><div class=\"rw-panels\">")
@@ -29,7 +30,7 @@ namespace RateDesk.Weekly.Core.Render
                 if (cfg.Ois == null && cfg.Irs == null && cfg.Ladders.Count == 0) continue;
                 string id = cfg.Ccy.ToLowerInvariant();
                 body.Append($"<section class=\"rw-page\" id=\"pg-{id}\" hidden><div class=\"rw-panels\">")
-                    .Append(CurrencyPage.Body(cfg, srcFor(cfg.Ccy), store, asOf))
+                    .Append(CurrencyPage.Body(cfg, srcFor(cfg.Ccy), store, asOf, meetingSource))
                     .Append("</div></section>");
             }
             body.Append(RouterJs);

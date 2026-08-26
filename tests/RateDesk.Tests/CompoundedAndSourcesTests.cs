@@ -169,8 +169,10 @@ namespace RateDesk.Tests
         // ---- surfaces carry the trial values ----
 
         [Fact]
-        public void CompoundedValue_ReachesEmailCard_Blast_AndWorkbook()
+        public void CompoundedValue_StaysInTheReport_AndOffEverySurface()
         {
+            // desk 2026-08-26: the MECHANICS exist (computed, frozen into the report for the
+            // eventual install) but compounded rates are mentioned NOWHERE in the app's output
             var rep = new WeeklyReport();
             var run = new WeeklyRun { Title = "MPC · GBP", RefName = "SONIO/N Index", RefPct = 3.731 };
             run.CompoundedPct = 3.736;
@@ -178,23 +180,23 @@ namespace RateDesk.Tests
             run.Rows.Add(new WeeklyMeeting { Date = new(2026, 9, 17), MidPct = 3.775, PricedBp = 3.9 });
             rep.Runs.Add(run);
 
+            Assert.Equal(3.736, run.CompoundedPct!.Value, 6);   // the mechanics carry the value
+
             var html = WeeklyEmail.Html(rep);
-            Assert.Contains("cmpd 3.736", html);
-            Assert.Contains("30‑Jul", html);   // U+2011 in the window label — Word must not break it
-
             var text = WeeklyEmail.PlainText(rep);
-            Assert.Contains("compounded 3.736 (since 30-Jul-26)", text);
-
             var blastHtml = RateDesk.Weekly.Core.Daily.DailyBlast.Html(rep);
-            Assert.Contains("compounded", blastHtml);
-            Assert.Contains("3.736", blastHtml);
-
+            var blastText = RateDesk.Weekly.Core.Daily.DailyBlast.Render(rep);
             using var wb = new ClosedXML.Excel.XLWorkbook();
             var ws = wb.Worksheets.Add("Runs");
             RateDesk.Weekly.Core.Daily.DailyBook.WriteRunsSheet(ws, rep);
-            var vals = ws.CellsUsed().Select(c => c.GetString()).ToList();
-            Assert.Contains("compounded", vals);
-            Assert.Contains("since 30-Jul-26", vals);
+            var xlsText = string.Join("\n", ws.CellsUsed().Select(c => c.GetString()));
+
+            foreach (var surface in new[] { html, text, blastHtml, blastText, xlsText })
+            {
+                Assert.DoesNotContain("cmpd", surface, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("compounded", surface, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("3.736", surface);
+            }
         }
 
         [Fact]

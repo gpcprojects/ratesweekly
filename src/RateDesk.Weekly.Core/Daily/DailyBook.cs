@@ -53,17 +53,10 @@ namespace RateDesk.Weekly.Core.Daily
                 ws.Cell(r, 1).Value = $"{fixing} fixing" + (run.RefRebased ? " (rebased)" : "");
                 if (run.RefPct is { } rp) ws.Cell(r, 2).Value = rp;
                 ws.Cell(r, 2).Style.NumberFormat.Format = "0.000";
-                // compounded fixing (trial, desk 2026-08-26) — same row, window shown
-                if (run.CompoundedPct is { } cmp)
-                {
-                    ws.Cell(r, 3).Value = "compounded";
-                    ws.Cell(r, 4).Value = cmp;
-                    ws.Cell(r, 4).Style.NumberFormat.Format = "0.000";
-                    if (run.CompoundedFrom is { } cf)
-                        ws.Cell(r, 5).Value = "since " + cf.ToString("dd-MMM-yy", inv);
-                }
                 r++;
-                string[] hdr = { "StartDate", "Maturity", "Mid", "Step (bp)", "Priced (bp)", "Δ 1d (bp)", "Δ 1w (bp)", "Δ 1m (bp)" };
+                // Mid | Priced | Step — the SAME order as the email cards, on every surface
+                // (desk 2026-08-26: "mid/priced/step everywhere *everywhere*")
+                string[] hdr = { "StartDate", "Maturity", "Mid", "Priced (bp)", "Step (bp)", "Δ 1d (bp)", "Δ 1w (bp)", "Δ 1m (bp)" };
                 for (int c = 0; c < hdr.Length; c++)
                 {
                     ws.Cell(r, c + 1).Value = hdr[c];
@@ -89,8 +82,8 @@ namespace RateDesk.Weekly.Core.Daily
                     else
                     {
                         ws.Cell(r, 3).Value = m.MidPct; ws.Cell(r, 3).Style.NumberFormat.Format = "0.000";
-                        SetBp(ws.Cell(r, 4), m.StepBp);
-                        SetBp(ws.Cell(r, 5), m.PricedBp);
+                        SetBp(ws.Cell(r, 4), m.PricedBp);
+                        SetBp(ws.Cell(r, 5), m.StepBp);
                         SetBp(ws.Cell(r, 6), m.D1Bp);
                         SetBp(ws.Cell(r, 7), m.W1Bp);
                         SetBp(ws.Cell(r, 8), m.M1Bp);
@@ -121,21 +114,11 @@ namespace RateDesk.Weekly.Core.Daily
             // pages read the same source the mids were built on; config default otherwise
             var activeSrc = run.Source ?? sched.Source ?? "";
             string srcSuffix = activeSrc.Length == 0 ? "" : " " + activeSrc;
-            // start-renumbering families (SKSF) keep boundaries ON the start dates — including
-            // the decisions would cluster each boundary back onto the decision and mis-rung the
-            // decision→start week (the same rule as the stitcher, desk 2026-08-25). The RUN'S
-            // OWN dates (ticker-derived truth) are unioned in like the stitcher does (audit
-            // 2026-08-26: a config grid drifting late — BOJ 2027 sat 8-11 days off — otherwise
-            // drops the true boundary and mis-rungs every row of that period).
-            var boundSrc = (sched.RollsAtPeriodStart
-                    ? sched.Dates.Concat(sched.PastDates)
-                    : sched.DecisionDates.Concat(sched.Dates).Concat(sched.PastDates))
-                .Concat(run.Rows.Select(r => r.Date))
-                .Concat(run.Rows.Where(r => r.EndDate is { }).Select(r => r.EndDate!.Value));
-            var bounds = boundSrc.Select(d => d.Date).OrderBy(d => d).Distinct().ToList();
-            var clustered = new List<DateTime>();
-            foreach (var d in bounds)
-                if (clustered.Count == 0 || (d - clustered[^1]).TotalDays > 14) clustered.Add(d);
+            // ONE boundary derivation for every consumer — MeetingRungMap (fresh-eyes review
+            // 2026-08-26): starts for SKSF, announcements (recorded + stable-lag-derived) for
+            // the rest, the run's own ticker-derived dates unioned in, 14-day cluster.
+            var map = new MeetingRungMap(sched, run.Rows.Select(r => r.Date)
+                .Concat(run.Rows.Where(r => r.EndDate is { }).Select(r => r.EndDate!.Value)));
 
             // one store read per rung, then everything from memory — full-depth sheets
             // would take minutes with a store round-trip per (day x meeting x horizon).
@@ -156,23 +139,18 @@ namespace RateDesk.Weekly.Core.Daily
                 }
                 return l;
             }
-            var boundSet = clustered.ToHashSet();
             (DateTime Date, double Value, string Source)? ValueAt(DateTime contract, DateTime then, int depth = 0)
             {
                 if (depth > 6) return null;
-                if (boundSet.Contains(then.Date)) then = then.Date.AddDays(-1);
-                int idx = clustered.Count(x => x > then.Date && x <= contract.Date);
-                // 0 boundaries between the day and the contract means the contract's own period
-                // has already started — there is no rung for it; publishing rung 1's rate there
-                // was the audit's Max(1,…) coercion (2026-08-26)
-                if (idx < 1 || idx > 13) return null;
+                if (map.IsBoundary(then)) then = then.Date.AddDays(-1);
+                if (map.RungFor(contract, then) is not { } idx) return null;
                 var l = RungHist(idx);
                 for (int i = l.Count - 1; i >= 0; i--)
                     if (l[i].Date.Date <= then.Date)
                     {
                         // a walk-back RESOLVING to a boundary close recomputes from the day
                         // before it (mixed-state decision-day closes — the stitcher's rule)
-                        if (boundSet.Contains(l[i].Date.Date))
+                        if (map.IsBoundary(l[i].Date.Date))
                             return ValueAt(contract, l[i].Date.Date.AddDays(-1), depth + 1);
                         return (l[i].Date.Date, l[i].Value, l[i].Source);
                     }
@@ -203,7 +181,7 @@ namespace RateDesk.Weekly.Core.Daily
                     // a boundary day's own row is unanchorable for Δ1d (the walk-back resolves
                     // both sides to the same pre-boundary close — publishing 0.0 there read as
                     // "unchanged"; blank is the honest value)
-                    bool boundaryDay = boundSet.Contains(day);
+                    bool boundaryDay = map.IsBoundary(day);
                     var prev = boundaryDay ? null : ValueAt(m.Date, PrevBd(day));
                     var week = ValueAt(m.Date, day.AddDays(-7));
                     var month = ValueAt(m.Date, WeeklyCurves.MonthAgo(day));

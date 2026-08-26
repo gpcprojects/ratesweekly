@@ -17,14 +17,18 @@ namespace RateDesk.Weekly.Core.Render
         private static readonly HashSet<string> NoFraPanel =
             new(StringComparer.OrdinalIgnoreCase) { "EUR" };
 
-        public static string Build(CurrencyConfig cfg, string src, HistoryStore store, DateTime asOf)
+        public static string Build(CurrencyConfig cfg, string src, HistoryStore store, DateTime asOf,
+            Func<MeetingScheduleDef, string>? meetingSource = null)
             => Page.Shell(
                 $"DRAX Swaps — Weekly Rates Analysis — {cfg.Ccy}", cfg.Ccy,
-                $"DRAX Swaps - Weekly Rates Analysis - {cfg.Ccy}", Body(cfg, src, store, asOf));
+                $"DRAX Swaps - Weekly Rates Analysis - {cfg.Ccy}", Body(cfg, src, store, asOf, meetingSource));
 
         /// <summary>The page's panels without the shell — the single-file edition hosts one of
-        /// these per currency inside a single document.</summary>
-        public static string Body(CurrencyConfig cfg, string src, HistoryStore store, DateTime asOf)
+        /// these per currency inside a single document. <paramref name="meetingSource"/>: the
+        /// ACTIVE per-run contributor (SOURCES selection) — the dashboards price meetings off
+        /// the same feed as the email (desk 2026-08-26).</summary>
+        public static string Body(CurrencyConfig cfg, string src, HistoryStore store, DateTime asOf,
+            Func<MeetingScheduleDef, string>? meetingSource = null)
         {
             var body = new StringBuilder();
             var par = WeeklyCurves.ParCurve(cfg, src, store, asOf);
@@ -41,7 +45,8 @@ namespace RateDesk.Weekly.Core.Render
             {
                 if (!sched.Ccy.Equals(cfg.Ccy, StringComparison.OrdinalIgnoreCase)) continue;
                 if (sched.Kind.Equals("fra", StringComparison.OrdinalIgnoreCase)) continue;
-                var rows = Panels.From(RollingStrip.ForMeetings(sched, store, asOf));
+                var rows = Panels.From(RollingStrip.ForMeetings(sched, store, asOf,
+                    source: meetingSource?.Invoke(sched)));
                 if (rows.Count == 0) continue;
                 body.Append(Panels.Linked($"mtg-{sched.Name.ToLowerInvariant()}",
                     $"{sched.Name} meeting-dated OIS", rows));

@@ -276,6 +276,20 @@ namespace RateDesk.Weekly
             return r == MessageBoxResult.Yes;
         }
 
+        /// <summary>Non-blocking stale-feed warning (desk 2026-08-26): rungs published off a
+        /// feed quiet >1h. Informational — quiet far rungs at London close can be legitimate
+        /// (Sydney is asleep at 16:15 London) — so this never gates, it informs.</summary>
+        private void ShowStaleNotes(IEnumerable<string> notes)
+        {
+            var stale = notes.Where(n => n.StartsWith("STALE:")).ToList();
+            if (stale.Count == 0) return;
+            MessageBox.Show(this,
+                "Stale feeds under published rungs (>1h without an update):\n\n" +
+                string.Join("\n", stale) +
+                "\n\nInformational — the numbers are published. Switch a contributor via SOURCES if needed.",
+                "RatesWeekly — stale feed warning", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
         /// <summary>SOURCES (trial, desk 2026-08-26): dodgeball's per-run contributor picker as
         /// a dialog — one combo per bank (comp = composite plus the contributor catalog; opening
         /// a list probes which contributors actually price that family, '*>1h' marking a feed
@@ -510,6 +524,7 @@ namespace RateDesk.Weekly
                           "FAILED, so the email buttons stay locked. Fix and run WEEKLY again."
                         : "WEEKLY PARTIAL — nothing rendered; buttons stay locked. See the log.");
                 // CHECK notes were gated BEFORE the render (audit 2026-08-26) — no second popup
+                if (weeklyRep != null) ShowStaleNotes(weeklyRep.Notes);
             }
             catch (Exception ex)
             {
@@ -537,6 +552,11 @@ namespace RateDesk.Weekly
             Directory.CreateDirectory(OutDir);
             var configs = RateDesk.Core.Config.ConfigStore.LoadDefault();
             var svc = new PricingService(configs, new RatesSnapshot());
+            // the SOURCES selection carries through to EVERY surface (desk 2026-08-26):
+            // dashboards and movers price meetings off the same feed as the email
+            var srcOverrides = SourceStore.Load(AppDataDir);
+            string MeetingSrcOf(MeetingScheduleDef s) =>
+                srcOverrides.TryGetValue(s.Name, out var o) ? o : s.Source ?? "";
             int n = 0;
             foreach (var cfg in configs.Enabled)
             {
@@ -545,7 +565,7 @@ namespace RateDesk.Weekly
                 {
                     File.WriteAllText(
                         Path.Combine(OutDir, cfg.Ccy.ToLowerInvariant() + ".html"),
-                        CurrencyPage.Build(cfg, svc.SourceFor(cfg.Ccy), store, asOf));
+                        CurrencyPage.Build(cfg, svc.SourceFor(cfg.Ccy), store, asOf, MeetingSrcOf));
                     n++;
                 }
                 catch (Exception ex) { log($"! {cfg.Ccy}: {ex.Message}"); }
@@ -554,13 +574,13 @@ namespace RateDesk.Weekly
             // then the whole site again as ONE self-contained file, the email's attachment
             try
             {
-                var mv = MoverScan.Scan(configs, svc.SourceFor, store, asOf);
+                var mv = MoverScan.Scan(configs, svc.SourceFor, store, asOf, MeetingSrcOf);
                 File.WriteAllText(Path.Combine(OutDir, "index.html"), MoversPage.Build(mv));
                 File.WriteAllText(Path.Combine(OutDir, "movers.json"), MoverScan.ToJson(mv));
                 n++;
                 log($"movers hub: {mv.DmRanked.Count} DM / {mv.EmRanked.Count} EM instruments ranked");
                 var pack = Path.Combine(OutDir, SiteFile.FileName);
-                File.WriteAllText(pack, SiteFile.Build(configs, svc.SourceFor, store, asOf, mv));
+                File.WriteAllText(pack, SiteFile.Build(configs, svc.SourceFor, store, asOf, mv, MeetingSrcOf));
                 log($"single-file pack: {SiteFile.FileName} ({new FileInfo(pack).Length / 1024.0 / 1024.0:F2} MB)");
             }
             catch (Exception ex) { log("! movers/pack failed: " + ex.Message); }
@@ -689,6 +709,7 @@ namespace RateDesk.Weekly
                 StatusText.Text = $"daily built {DateTime.Now:HH:mm:ss} — blast + workbook" +
                                   (output.DailyDirCopy != null ? " (+ shared drive)" : "") + " + email ready";
                 Log("DAILY COMPLETE — blast, workbook and email rebuilt; COPY BLAST / DAILY EMAIL unlocked.");
+                ShowStaleNotes(rep.Notes);
             }
             catch (Exception ex)
             {
@@ -730,7 +751,15 @@ namespace RateDesk.Weekly
         private void DailyEmail_Click(object sender, RoutedEventArgs e)
         {
             string? body = null;
-            var rep = ReportStore.Load(Path.Combine(OutDir, Core.Daily.DailyBuilder.ReportFile));
+            var repPath = Path.Combine(OutDir, Core.Daily.DailyBuilder.ReportFile);
+            var rep = ReportStore.Load(repPath);
+            if (rep == null && File.Exists(repPath))
+            {
+                // the report EXISTS but cannot be read — never quietly fall back to a stale
+                // fragment with newest-glob attachments (fresh-eyes review 2026-08-26)
+                StatusText.Text = "daily_report.json is unreadable — run DAILY RUN again before emailing.";
+                return;
+            }
             if (rep != null)
                 body = WeeklyEmail.Html(rep, partsOpt: DailyParts())
                        + InflFragment(RateDesk.Weekly.Core.Infl.InflEmail.DailyHtmlFile,

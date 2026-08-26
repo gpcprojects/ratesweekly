@@ -92,6 +92,11 @@ switch (cmd)
         }
         var configs = RateDesk.Core.Config.ConfigStore.LoadDefault();
         var svc = new PricingService(configs, new RatesSnapshot());
+        // the SOURCES selection carries through to EVERY surface (desk 2026-08-26)
+        var cliSrcOverrides = RateDesk.Weekly.Core.SourceStore.Load(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly"));
+        string cliMeetingSrc(RateDesk.Core.MeetingScheduleDef sc) =>
+            cliSrcOverrides.TryGetValue(sc.Name, out var so) ? so : sc.Source ?? "";
         int n = 0;
         foreach (var cfg in configs.Enabled)
         {
@@ -100,7 +105,7 @@ switch (cmd)
             try
             {
                 var html = RateDesk.Weekly.Core.Render.CurrencyPage.Build(
-                    cfg, svc.SourceFor(cfg.Ccy), store, asOf);
+                    cfg, svc.SourceFor(cfg.Ccy), store, asOf, cliMeetingSrc);
                 var path = Path.Combine(outDir, cfg.Ccy.ToLowerInvariant() + ".html");
                 File.WriteAllText(path, html);
                 Console.WriteLine($"  {cfg.Ccy}  {new FileInfo(path).Length / 1024.0,6:F0} KB  {path}");
@@ -112,7 +117,7 @@ switch (cmd)
         {
             try
             {
-                var mv = RateDesk.Weekly.Core.Series.MoverScan.Scan(configs, svc.SourceFor, store, asOf);
+                var mv = RateDesk.Weekly.Core.Series.MoverScan.Scan(configs, svc.SourceFor, store, asOf, cliMeetingSrc);
                 var idx = Path.Combine(outDir, "index.html");
                 File.WriteAllText(idx, RateDesk.Weekly.Core.Render.MoversPage.Build(mv));
                 File.WriteAllText(Path.Combine(outDir, "movers.json"),
@@ -125,7 +130,7 @@ switch (cmd)
                 n++;
                 var pack = Path.Combine(outDir, RateDesk.Weekly.Core.Render.SiteFile.FileName);
                 File.WriteAllText(pack,
-                    RateDesk.Weekly.Core.Render.SiteFile.Build(configs, svc.SourceFor, store, asOf, mv));
+                    RateDesk.Weekly.Core.Render.SiteFile.Build(configs, svc.SourceFor, store, asOf, mv, cliMeetingSrc));
                 Console.WriteLine($"  PACK   {new FileInfo(pack).Length / 1024.0,5:F0} KB  {pack}");
             }
             catch (Exception ex) { Console.Error.WriteLine("  ! movers/pack: " + ex.Message); }
@@ -207,7 +212,7 @@ switch (cmd)
         using var store = new HistoryStore(dbPath);
         // the RUN's frozen marks + next prints (audit 2026-08-26): an offline regen must never
         // downgrade the emailed files to stale closes under the same names
-        RateDesk.Weekly.Core.Infl.InflHistory.LoadPersistedMarks(outDir, rep.AsOf);
+        RateDesk.Weekly.Core.Infl.InflHistory.LoadPersistedMarks(outDir, rep.AsOf, prefix: "daily_");
         var marks = RateDesk.Weekly.Core.Infl.InflHistory.LastLiveMarks;
         var nextPrints = RateDesk.Weekly.Core.Infl.InflHistory.LastNextPrints;
         var p1 = RateDesk.Weekly.Core.SaveDown.StoreBooks.WriteOis(rep, store, outDir, Console.WriteLine);

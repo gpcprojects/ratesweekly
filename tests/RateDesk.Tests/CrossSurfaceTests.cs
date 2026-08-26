@@ -130,6 +130,49 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void ColumnOrder_IsMidPricedStep_OnEverySurface()
+        {
+            // desk 2026-08-26: "mid/priced/step everywhere *everywhere*"
+            var rep = Fixture();
+            var email = WeeklyEmail.Html(rep);
+            Assert.True(email.IndexOf(">Priced<", StringComparison.Ordinal)
+                        < email.IndexOf(">Step<", StringComparison.Ordinal));
+            var blast = RateDesk.Weekly.Core.Daily.DailyBlast.Html(rep);
+            Assert.True(blast.IndexOf("Priced (bp)", StringComparison.Ordinal)
+                        < blast.IndexOf("Step (bp)", StringComparison.Ordinal));
+            var text = RateDesk.Weekly.Core.Daily.DailyBlast.Render(rep);
+            var hdr = text.Split('\n').First(l => l.Contains("StartDate"));
+            Assert.True(hdr.IndexOf("Priced", StringComparison.Ordinal)
+                        < hdr.IndexOf("Step", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void RungMap_DerivesSettledAnnouncements_AndKeepsSksfOnStarts()
+        {
+            // the live wrong number (fresh-eyes review 2026-08-26): ECB's settled 23-Jul-26
+            // announcement must be a boundary — the config's decision list is future-only
+            var ecb = MeetingsStore.Schedules.First(s => s.Name == "ECB");
+            var ecbMap = new MeetingRungMap(ecb);
+            Assert.Contains(new DateTime(2026, 7, 23), ecbMap.Boundaries);
+            Assert.DoesNotContain(new DateTime(2026, 7, 29), ecbMap.Boundaries); // clustered into the announcement
+            // on 27-Jul (post-announcement) the 16-Sep meeting was already rung 1
+            Assert.Equal(1, ecbMap.RungFor(new(2026, 9, 16), new(2026, 7, 27)));
+            // on 22-Jul (pre-announcement) it was still rung 2
+            Assert.Equal(2, ecbMap.RungFor(new(2026, 9, 16), new(2026, 7, 22)));
+
+            // SKSF keeps boundaries ON the period starts — no announcement snap
+            var sek = MeetingsStore.Schedules.First(s => s.Name == "RIKSBANK");
+            var sekMap = new MeetingRungMap(sek);
+            Assert.Contains(new DateTime(2026, 8, 26), sekMap.Boundaries);
+            Assert.DoesNotContain(new DateTime(2026, 8, 20), sekMap.Boundaries); // the decision is NOT a boundary
+            // inside the decision→start window the 30-Sep meeting was still rung 2 (the
+            // +65.7bp phantom's regression, now on the shared map)
+            Assert.Equal(2, sekMap.RungFor(new(2026, 9, 30), new(2026, 8, 24)));
+            // a day inside the contract's own period has NO rung — never rung 1
+            Assert.Null(sekMap.RungFor(new(2026, 8, 26), new(2026, 8, 27)));
+        }
+
+        [Fact]
         public void VariableLagFamilies_DeriveNoAnnouncements()
         {
             // BOJ's decision→start lag runs 1-6 days (Tokyo settlement) — a median-derived

@@ -208,15 +208,12 @@ namespace RateDesk.Core
                 // compounded fixing (trial, desk 2026-08-26): realized compounding of the o/n
                 // fixing over the current period, next to the spot fixing — the window start is
                 // shown so the anchoring is never a mystery. Display-only: Step/Priced unchanged.
-                string cmpd = run.CompoundedPct is double cp
-                    ? $" · cmpd {cp:0.000}" + (run.CompoundedFrom is DateTime cf
-                        ? $" ({cf.ToString("dd-MMM", System.Globalization.CultureInfo.InvariantCulture).Replace("-", "‑")}→)"
-                        : "")
-                    : "";
+                // the compounded value stays IN the report (mechanics for a later install) but
+                // renders NOWHERE — desk 2026-08-26: "no mention of compounded rates anywhere"
                 // † = not the printed fixing (re-based onto the just-decided period's OIS)
                 string rebMark = run.RefRebased ? "†&nbsp;(rebased)" : "";
                 sb.Append($"<div style=\"{EmFont}font-weight:bold;font-size:12.5px;color:{EmTxt};margin:0 0 3px 1px;\">{run.Title}" +
-                          (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">fixing {rp:0.000}{rebMark}{cmpd}</span>" : "")
+                          (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">fixing {rp:0.000}{rebMark}</span>" : "")
                           + "</div>");
                 sb.Append(TableOpen(new[] { 76, 56, 58, 52, 56, 60, 60 }, "0"));
                 // RATESWEEKLY DIVERGENCE (desk 2026-08-25): widths live ON every card cell —
@@ -404,11 +401,7 @@ namespace RateDesk.Core
         {
             sb.AppendLine();
             sb.AppendLine(run.Title
-                + (run.RefPct is double rp ? $"  fixing {rp:0.000}{(run.RefRebased ? " (rebased)" : "")}" : "")
-                + (run.CompoundedPct is double cp
-                    ? $"  compounded {cp:0.000}" + (run.CompoundedFrom is DateTime cf
-                        ? $" (since {cf.ToString("dd-MMM-yy", inv)})" : "")
-                    : ""));
+                + (run.RefPct is double rp ? $"  fixing {rp:0.000}{(run.RefRebased ? " (rebased)" : "")}" : ""));
             sb.AppendLine("StartDate\tMid\tPriced\tStep\t1d Chg\t1w Chg\t1m Chg");
             foreach (var m in run.Rows)
                 sb.AppendLine(m.TurnPeriod
