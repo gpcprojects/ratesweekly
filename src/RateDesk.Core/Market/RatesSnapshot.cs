@@ -96,6 +96,24 @@ namespace RateDesk.Core.Market
 
         public QuoteData? Get(string ticker) => _quotes.TryGetValue(ticker, out var q) ? q : null;
 
+        /// <summary>The AGE BASELINE for this snapshot: the 10th percentile of recorded quote
+        /// ages. Raw ages are (machine clock − terminal-basis stamp) and carry one systematic
+        /// offset per machine (desk 2026-08-26: a GTB/UTC+3 Windows clock beside a London
+        /// terminal read every liquid front as "120m quiet") — in a 1000+-ticker snapshot the
+        /// freshest cohort ticked seconds before the request, so the low percentile IS the
+        /// offset. A PERCENTILE, not the minimum: one instrument with a malformed or
+        /// future-dated stamp must not poison the floor. Staleness is always judged as
+        /// (age − baseline), never against the raw number.</summary>
+        public double? BaselineAgeMinutes()
+        {
+            var ages = new List<double>();
+            foreach (var q in _quotes.Values)
+                if (q.AgeMinutes is double a) ages.Add(a);
+            if (ages.Count == 0) return null;
+            ages.Sort();
+            return ages[Math.Min(ages.Count - 1, ages.Count / 10)];
+        }
+
         public IReadOnlyDictionary<string, QuoteData> All => _quotes;
     }
 }

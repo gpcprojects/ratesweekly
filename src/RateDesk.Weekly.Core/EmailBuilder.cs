@@ -122,6 +122,25 @@ namespace RateDesk.Weekly.Core
                         Enumerable.Range(1, 12).Select(n => $"{f.Root}{n} Curncy"))), log);
             if (store != null)
             {
+                // rung-by-date documentation on the weekly too (desk 2026-08-26): every meeting
+                // rung's own SW_EFF_DT/MATURITY recorded for the day, both spellings
+                foreach (var sched in MeetingsStore.Schedules.Where(s => string.IsNullOrEmpty(s.Kind)))
+                {
+                    var pat0 = sched.Tickers.FirstOrDefault(t => t.Contains("{N}"));
+                    if (pat0 == null) continue;
+                    var src0 = svc.MeetingSrc(sched);
+                    for (int n = 1; n <= 13; n++)
+                        foreach (var sp in src0.Length > 0 ? new[] { " " + src0, "" } : new[] { "" })
+                        {
+                            var tk = pat0.Replace("{N}", n.ToString()) + sp + " Curncy";
+                            try
+                            {
+                                if (snap.Get(tk) is { Maturity: { } mm } q0)
+                                    store.SetMaturity(tk, DateTime.Today, mm, q0.Effective);
+                            }
+                            catch { /* a dead far rung is not an error */ }
+                        }
+                }
                 // the daily's own upkeep, mirrored (audit 2026-08-26): a desk running only
                 // WEEKLY still records maturities, tops up the fixing closes and maintains the
                 // unified history — otherwise its Δ columns never advance

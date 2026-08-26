@@ -31,6 +31,7 @@ namespace RateDesk.Core
 
         public IReadOnlyList<DateTime> Boundaries { get; }
         private readonly HashSet<DateTime> _set;
+        private readonly HashSet<DateTime> _mixed;
 
         public MeetingRungMap(MeetingScheduleDef sched, IEnumerable<DateTime>? tickerDates = null)
         {
@@ -45,9 +46,34 @@ namespace RateDesk.Core
                     clustered.Add(d);
             Boundaries = clustered;
             _set = clustered.ToHashSet();
+
+            // MIXED-STATE WINDOW (desk 2026-08-26, the ECB +24.3bp Δ1m): renumbering is not
+            // instantaneous at the announcement — the EESF composite re-pointed between the
+            // 24-Jul and 27-Jul CLOSES (announcement 23-Jul, start 29-Jul), and the GPSF probe
+            // on the 30-Jul MPC found rungs 2+ still old-numbered at the close. So every day
+            // STRICTLY BETWEEN a boundary (the announcement) and its period start is
+            // per-rung-ambiguous: no close or snap from those days may source a stitched value
+            // or an anchor — the walk-back steps to the last clean pre-announcement day.
+            // Start-renumbering families (SKSF) renumber wholly at the start (probed
+            // 2026-08-25) and have no such window.
+            _mixed = new HashSet<DateTime>();
+            if (!sched.RollsAtPeriodStart)
+                foreach (var b in clustered)
+                {
+                    var start = sched.Dates.Select(d => d.Date)
+                        .Where(s => s > b && (s - b).TotalDays <= ClusterDays)
+                        .OrderBy(s => s).Cast<DateTime?>().FirstOrDefault();
+                    if (start is not { } s) continue;
+                    for (var d = b.AddDays(1); d < s; d = d.AddDays(1)) _mixed.Add(d);
+                }
         }
 
         public bool IsBoundary(DateTime day) => _set.Contains(day.Date);
+
+        /// <summary>True on a day between an announcement and its period start — the family's
+        /// rungs renumber non-uniformly across those days, so nothing dated then may source a
+        /// stitched value or an anchor.</summary>
+        public bool IsMixedState(DateTime day) => _mixed.Contains(day.Date);
 
         /// <summary>1-based generic index that carried <paramref name="contract"/> on
         /// <paramref name="onDay"/>; null when the day sits inside the contract's own period

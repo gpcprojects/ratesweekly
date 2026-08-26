@@ -933,6 +933,10 @@ namespace RateDesk.Core
 
                 double? prevPriced = null;
                 var staleRungs = new List<(DateTime Row, double Age)>();
+                // ages are OFFSET-CALIBRATED against this snapshot's own baseline (10th
+                // percentile) — raw ages carry one systematic clock offset per machine
+                // (desk 2026-08-26: nine liquid fronts all read "~120m" at 13:03 London)
+                double ageBase = Snapshot.BaselineAgeMinutes() ?? 0;
                 for (int n = 1; n <= maxRows; n++)
                 {
                     if (!meetDates.TryGetValue(n, out var d0)) break;
@@ -958,9 +962,10 @@ namespace RateDesk.Core
                     if (q?.Mid is double qm)
                     {
                         // feed-staleness watch (desk 2026-08-26): a published rung whose quote
-                        // has not moved in >1h gets a warning — the same signal the SOURCES
-                        // dialog shows at pick time, now at RUN time
-                        if (q.AgeMinutes is double age0 && age0 > 60) staleRungs.Add((d0, age0));
+                        // has not moved in >1h — measured against the snapshot's own freshest
+                        // feed, so the terminal's timezone offset cancels
+                        if (q.AgeMinutes is double age0 && age0 - ageBase > 60)
+                            staleRungs.Add((d0, age0 - ageBase));
                         var (gm, rej) = turn0 ? (qm, false) : GuardedMid(n);
                         mid = gm;
                         midSrc = rej ? $"interp (ticker {SignedBp((qm - gm) * 100.0)}bp off — rejected)" : "ticker";
@@ -1410,7 +1415,8 @@ namespace RateDesk.Core
             // previously never a boundary and up to a week of closes after every recent decision
             // stitched to the wrong contract — including the Δ1m anchors in that window),
             // starts kept for SKSF, 14-day cluster keeping the earliest.
-            var allMeet = new MeetingRungMap(sched, runDates).Boundaries.ToList();
+            var rungMap = new MeetingRungMap(sched, runDates);
+            var allMeet = rungMap.Boundaries.ToList();
             // DESK CONVENTION (2026-08-06): history values are the daily 4:30pm-LONDON snaps, not
             // closes — the desk's incumbent sheet snaps then, and the changes must reconcile. The
             // snaps are also STRUCTURALLY cleaner at roll boundaries: at 16:30 on a decision day
@@ -1487,7 +1493,10 @@ namespace RateDesk.Core
                     // numbered (only #1 re-points intraday, and this mapping starts at #2), so snapped
                     // boundary days are included — post-decision prices under the old index, exactly
                     // the desk sheet's baseline.
-                    var win = h.Where(p => p.Date > lo && (p.Date < hi || (p.Date == hi && snapped.Contains(p.Date)))).ToList();
+                    // mixed-state days (announcement→start, per-rung renumber in flight) source
+                    // NOTHING — closes or snaps (desk 2026-08-26, the ECB +24.3bp Δ1m)
+                    var win = h.Where(p => p.Date > lo && !rungMap.IsMixedState(p.Date)
+                        && (p.Date < hi || (p.Date == hi && snapped.Contains(p.Date)))).ToList();
                     if (win.Count == 0) continue;
                     // same neighbour guard as the live rows: a thin family's misprint (SKSF4A's 1.387
                     // between 1.85/2.09 neighbours) poisons HISTORY too — judge each point against the

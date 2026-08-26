@@ -390,9 +390,14 @@ namespace RateDesk.Weekly
                     void Annotate(List<(string Src, double? AgeMinutes)> probed)
                     {
                         filling = true;
+                        // ages are offset-calibrated against the freshest probed contributor —
+                        // the terminal's LAST_UPDATE timezone basis shifts every raw age
+                        double ageBase = probed.Where(p => p.AgeMinutes.HasValue)
+                            .Select(p => p.AgeMinutes!.Value).DefaultIfEmpty(0).Min();
                         var byRoot = probed.ToDictionary(
                             p => p.Src.Length == 0 ? "comp" : p.Src,
-                            p => (p.Src.Length == 0 ? "comp" : p.Src) + (p.AgeMinutes is > 60 ? " *>1h" : ""),
+                            p => (p.Src.Length == 0 ? "comp" : p.Src)
+                                 + (p.AgeMinutes is double a && a - ageBase > 60 ? " *>1h" : ""),
                             StringComparer.OrdinalIgnoreCase);
                         int selIdx = cmb.SelectedIndex;
                         for (int ii = 0; ii < cmb.Items.Count; ii++)

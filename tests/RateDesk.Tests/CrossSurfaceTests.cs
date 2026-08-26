@@ -206,6 +206,73 @@ namespace RateDesk.Tests
         }
 
         [Fact]
+        public void MixedStateDays_NeverSourceAnAnchor()
+        {
+            // the ECB +24.3bp Δ1m (desk 2026-08-26): EESF re-pointed BETWEEN the 24-Jul and
+            // 27-Jul closes (announcement 23-Jul, start 29-Jul) — every day strictly between
+            // announcement and start is per-rung ambiguous and must source nothing
+            var ecb = MeetingsStore.Schedules.First(s => s.Name == "ECB");
+            var map = new MeetingRungMap(ecb);
+            Assert.False(map.IsMixedState(new(2026, 7, 23)));   // the announcement (a boundary)
+            Assert.True(map.IsMixedState(new(2026, 7, 24)));    // the trap day
+            Assert.True(map.IsMixedState(new(2026, 7, 27)));
+            Assert.True(map.IsMixedState(new(2026, 7, 28)));
+            Assert.False(map.IsMixedState(new(2026, 7, 29)));   // the period start
+            // SKSF renumbers wholly at the start — its decision→start window is CLEAN by probe
+            var sek = MeetingsStore.Schedules.First(s => s.Name == "RIKSBANK");
+            var sekMap = new MeetingRungMap(sek);
+            Assert.False(sekMap.IsMixedState(new(2026, 8, 24)));
+
+            // end to end through the history walk: a poisoned old-numbering close on the trap
+            // day must be SKIPPED, the anchor walking back to the last clean pre-announcement day
+            var dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(),
+                "rw-mixed-" + Guid.NewGuid().ToString("N"));
+            System.IO.Directory.CreateDirectory(dir);
+            try
+            {
+                using var store = new HistoryStore(System.IO.Path.Combine(dir, "s.db"));
+                store.UpsertDaily("EESF2A Curncy", new[]
+                {
+                    new HistPoint(new(2026, 7, 21), 2.400),
+                    new HistPoint(new(2026, 7, 22), 2.405),   // last clean pre-announcement close
+                }, excludeToday: false);
+                store.UpsertDaily("EESF1A Curncy", new[]
+                {
+                    new HistPoint(new(2026, 7, 24), 2.190),   // OLD July period — the +24.3 trap
+                }, excludeToday: false);
+                var run = new WeeklyRun { Title = "ECB · EUR" };
+                run.Rows.Add(new WeeklyMeeting
+                    { Date = new(2026, 9, 16), MidPct = 2.43, EndDate = new(2026, 11, 4) });
+                var rows = RateDesk.Weekly.Core.Daily.DailyBook.BankHistoryRows(
+                    store, ecb, run, "EESF{N}A", new DateTime(2026, 7, 29), 4);
+                Assert.NotEmpty(rows);
+                Assert.All(rows.Where(r => r.Start == new DateTime(2026, 9, 16)),
+                    r => Assert.Equal(2.405, r.Rate, 6));     // never 2.190
+            }
+            finally { try { System.IO.Directory.Delete(dir, true); } catch { } }
+        }
+
+        [Fact]
+        public void FrontRow_IsExemptFromTheCrossSectionalGuard_ButNotTheAbsoluteBars()
+        {
+            // the RBNZ -1.0-vs--20.3 false flag (desk 2026-08-26): a front converging on the
+            // fixing legitimately decouples from the strip
+            var rep = new WeeklyReport();
+            var run = new WeeklyRun { Title = "RBNZ · NZD" };
+            double?[] d1m = { -1.0, -20.3, -21.0, -19.5, -22.1 };
+            for (int i = 0; i < d1m.Length; i++)
+                run.Rows.Add(new WeeklyMeeting
+                    { Date = new DateTime(2026, 9, 3).AddDays(i * 42), MidPct = 2.7 + i * 0.1, M1Bp = d1m[i] });
+            rep.Runs.Add(run);
+            var notes = OutlierGuard.Check(rep);
+            Assert.DoesNotContain(notes, n => n.Contains("03-Sep-26"));      // front not flagged
+            // ...but the ABSOLUTE bar still covers the front
+            run.Rows[0].M1Bp = -60.0;
+            notes = OutlierGuard.Check(rep);
+            Assert.Contains(notes, n => n.Contains("03-Sep-26") && n.Contains("sanity bar"));
+        }
+
+        [Fact]
         public void VariableLagFamilies_DeriveNoAnnouncements()
         {
             // BOJ's decision→start lag runs 1-6 days (Tokyo settlement) — a median-derived

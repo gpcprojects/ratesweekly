@@ -69,6 +69,11 @@ namespace RateDesk.Weekly.Core
                     PRIMARY KEY(ticker, date)
                 ) WITHOUT ROWID;
                 """);
+            // rung-by-date DOCUMENTATION (desk 2026-08-26): the ticker's own SW_EFF_DT that day.
+            // Recorded for every meeting rung on every run so rung mapping becomes Bloomberg's
+            // own fields, not calendar inference. Tolerant migration: may already exist.
+            try { Exec("ALTER TABLE maturity ADD COLUMN effective TEXT;"); }
+            catch { /* already migrated */ }
             // UNIFIED INFLATION FIXINGS HISTORY (2026-08-25): daily marks keyed by FIXING
             // IDENTITY (family + reference month), not by rolling ticker — the ticker re-points
             // a year forward when its month prints, so ticker-keyed history would splice two
@@ -187,17 +192,40 @@ namespace RateDesk.Weekly.Core
         /// and the maturity is the only field that says which contract a ticker means TODAY.
         /// Storing it daily lets a later run detect that a roll happened inside a lookback window,
         /// which is the difference between a real change and a year's worth of nonsense.</summary>
-        public void SetMaturity(string ticker, DateTime asOf, DateTime maturity)
+        public void SetMaturity(string ticker, DateTime asOf, DateTime maturity,
+            DateTime? effective = null)
         {
             lock (_gate)
             {
                 using var cmd = _db.CreateCommand();
-                cmd.CommandText = "INSERT INTO maturity(ticker,date,maturity) VALUES(@t,@d,@m) " +
-                                  "ON CONFLICT(ticker,date) DO UPDATE SET maturity=excluded.maturity;";
+                cmd.CommandText = "INSERT INTO maturity(ticker,date,maturity,effective) " +
+                                  "VALUES(@t,@d,@m,@e) ON CONFLICT(ticker,date) DO UPDATE SET " +
+                                  "maturity=excluded.maturity, " +
+                                  "effective=COALESCE(excluded.effective, maturity.effective);";
                 cmd.Parameters.AddWithValue("@t", ticker);
                 cmd.Parameters.AddWithValue("@d", asOf.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
                 cmd.Parameters.AddWithValue("@m", maturity.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                cmd.Parameters.AddWithValue("@e", effective is { } e
+                    ? e.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : (object)DBNull.Value);
                 cmd.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>The EFFECTIVE (period start) this ticker's own SW_EFF_DT showed on exactly
+        /// <paramref name="day"/> — the DOCUMENTED rung-by-date identity (desk 2026-08-26:
+        /// recording started so future anchors can map rungs from Bloomberg's own fields
+        /// instead of calendar inference). Null when that day was never recorded.</summary>
+        public DateTime? EffectiveOn(string ticker, DateTime day)
+        {
+            lock (_gate)
+            {
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "SELECT effective FROM maturity WHERE ticker=@t AND date=@d;";
+                cmd.Parameters.AddWithValue("@t", ticker);
+                cmd.Parameters.AddWithValue("@d", day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                return cmd.ExecuteScalar() is string s
+                    ? DateTime.ParseExact(s, "yyyy-MM-dd", CultureInfo.InvariantCulture)
+                    : null;
             }
         }
 
