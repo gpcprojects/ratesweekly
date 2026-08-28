@@ -229,7 +229,10 @@ namespace RateDesk.Tests
             });
 
             var html = WeeklyEmail.Html(rep);
-            Assert.Contains("Y/E Turn", html);
+            // the label is &nbsp;-joined on BOTH tables now (2026-08-27): Word breaks at a plain
+            // space even under nowrap, which is why the meeting cards always did it — the front
+            // table now shares the one MaskLabel definition rather than its own literal
+            Assert.Contains("Y/E&nbsp;Turn", html);
             Assert.DoesNotContain("1.468", html);    // the turn-dominated level never prints
             Assert.DoesNotContain("-21.7", html);
 

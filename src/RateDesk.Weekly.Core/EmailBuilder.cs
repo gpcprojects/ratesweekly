@@ -90,6 +90,7 @@ namespace RateDesk.Weekly.Core
             using var refData = new RefDataClient();
             var sbh = store != null ? new StoreBackedHistory(store, refData, log) : null;
             svc.History = (RateDesk.Core.Market.IHistoryProvider?)sbh ?? refData;
+            if (store != null) svc.ObservedShifts = Series.RungShiftScan.Bind(store);
             var all = AllTickers(configs, svc);
             // inflation fixing swaps ride along (desk 2026-08-25): the weekly email carries the
             // same Inflation Fixing Runs section as the daily

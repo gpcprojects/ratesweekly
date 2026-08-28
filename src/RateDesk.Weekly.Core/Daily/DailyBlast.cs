@@ -50,7 +50,7 @@ namespace RateDesk.Weekly.Core.Daily
                 sb.AppendLine();
                 sb.Append($"{flag} {runName} Run");
                 if (run.RefPct is { } rp)
-                    sb.Append($"   ({fixing} {rp.ToString("0.000", inv)}{(run.RefRebased ? " rebased" : "")})");
+                    sb.Append($"   ({fixing} {rp.ToString("0.000", inv)}{run.RebasedLabel.Replace(" (", " ").Replace(")", "")})");
                 sb.AppendLine();
                 // same table as the workbook's Runs sheet, minus Maturity (IB window widths —
                 // desk 2026-08-25); Mid | Priced | Step everywhere (desk 2026-08-26)
@@ -60,9 +60,9 @@ namespace RateDesk.Weekly.Core.Daily
                 {
                     var m = run.Rows[i];
                     string start = m.Date.ToString("dd-MMM-yy", inv);
-                    if (m.TurnPeriod)
+                    if (m.Masked)
                     {
-                        sb.AppendLine($"{start,-10} {"Y/E Turn",7}");
+                        sb.AppendLine($"{start,-10} {m.MaskLabel,7}");
                         continue;
                     }
                     sb.AppendLine(
@@ -107,7 +107,7 @@ namespace RateDesk.Weekly.Core.Daily
                 if (run == null || run.Rows.Count == 0) continue;
 
                 sb.Append("<tr>" + Wide($"<b>{runName} closing run</b>") + "</tr>");
-                sb.Append("<tr>" + Td($"{fixing} fixing" + (run.RefRebased ? " (rebased)" : ""))
+                sb.Append("<tr>" + Td($"{fixing} fixing" + run.RebasedLabel)
                     + Td(run.RefPct is { } rp ? rp.ToString("0.000", inv) : "&nbsp;", "text-align:right;")
                     + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + "</tr>");
                 sb.Append("<tr>");
@@ -119,9 +119,9 @@ namespace RateDesk.Weekly.Core.Daily
                 {
                     var m = run.Rows[i];
                     string start = m.Date.ToString("dd-MMM-yy", inv);
-                    if (m.TurnPeriod)
+                    if (m.Masked)
                     {
-                        sb.Append("<tr>" + Td(start) + Td("<i>Y/E Turn</i>", "text-align:right;")
+                        sb.Append("<tr>" + Td(start) + Td($"<i>{m.MaskLabel}</i>", "text-align:right;")
                                   + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + "</tr>");
                         continue;
                     }

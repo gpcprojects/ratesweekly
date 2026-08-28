@@ -99,10 +99,169 @@ namespace RateDesk.Weekly.Core.SaveDown
                 FillTable(wb.Worksheet(sheetName), "history_" + tag, histRows);
             }
 
+            // THE VANDIT AND BLAST PAGES, rebuilt every run in the ATTACHMENT'S layout
+            foreach (var page in new[] { "Vandit", "Blast" })
+                if (wb.Worksheets.TryGetWorksheet(page, out var pws))
+                    WriteLivePage(pws, rep, log);
+
             wb.Save();
             log?.Invoke($"save-down: wrote {System.IO.Path.GetFileName(path)} " +
                         "(incumbent entry pages + app history, macro-enabled)");
             return path;
+        }
+
+        /// <summary>THE VANDIT AND BLAST PAGES (rebuilt 2026-08-28, desk: "rewrite the blast and
+        /// vandit pages to be EXACTLY LIKE the spreadsheet that gets attached to the email").
+        ///
+        /// WHAT WAS WRONG. Both pages read the incumbent's Current sheet, and the columns they
+        /// read for the change-on-day - Current!L:N and AB:AD - are not formulas. They are
+        /// LITERALS the incumbent's macro stamps, and the template carries whatever they held the
+        /// day it was captured (19-Aug-26, per Current!D23). So every saved book paired TODAY's
+        /// live Bloomberg prices with 19-Aug's change columns, and the pages showed it three
+        /// different ways: #VALUE! where the literal was the text "NA", a silent 0.000 where the
+        /// formula wrapped it in IFERROR(...,0) (RBA, RBNZ - the worst of the three, because a
+        /// stale zero reads as "the market did not move"), and quietly stale where it happened to
+        /// still be a number (NOWA, BOJ). T-1 was then derived FROM that stale change, so it was
+        /// wrong wherever the change was.
+        ///
+        /// WHAT THIS DOES INSTEAD. Writes both pages fresh each run, in RunsTable's own column
+        /// order, entirely from formulas - nothing on these pages is a stored number, so the desk
+        /// can open the file with the app down, hit refresh, and get that day's run:
+        ///   · StartDate / Maturity / Mid come straight off the ticker (SW_EFF_DT, MATURITY,
+        ///     LAST_PRICE), so a row always labels the contract it is actually showing;
+        ///   · Priced and Step derive from Mid and the run's own fixing cell;
+        ///   · the three CHANGE columns look up the Historical_ sheet on the contract's own
+        ///     START DATE, never on the ticker number. That is what makes them roll-proof:
+        ///     EESF1A is a different contract after a meeting passes, but the 16-Sep-26 contract
+        ///     is the 16-Sep-26 contract on every date it was quoted. A PX_YEST_CLOSE on a fixed
+        ///     rung would have been one line shorter and wrong on exactly the days that matter.
+        ///
+        /// The anchor dates are found with MAXIFS ("the latest observation on or before the
+        /// target"), in helper columns J:L so the formulas stay readable - the same 1d / -7d /
+        /// EDATE(-1) convention the boards use. A contract with no history on the anchor date
+        /// publishes BLANK, never a zero.</summary>
+        private static void WriteLivePage(IXLWorksheet ws, WeeklyReport rep, Action<string>? log)
+        {
+            var configs = RateDesk.Core.Config.ConfigStore.LoadDefault();
+            ws.Clear();
+            int r = 1;
+            ws.Cell(r, 1).Value = RunsTable.Title(rep.AsOf);
+            ws.Cell(r, 1).Style.Font.SetBold();
+            r += 2;
+
+            foreach (var b in RunsTable.Build(rep))
+            {
+                var tag = OisTags.FirstOrDefault(t =>
+                    t.Run.Equals(b.Bank, StringComparison.OrdinalIgnoreCase));
+                var sched = MeetingsStore.Schedules.FirstOrDefault(s =>
+                    string.IsNullOrEmpty(s.Kind) && s.Name.Equals(b.Bank, StringComparison.OrdinalIgnoreCase));
+                var pat = sched?.Tickers.FirstOrDefault(t => t.Contains("{N}"));
+                if (tag.Sheet == null || sched == null || pat == null) continue;
+                var src = string.IsNullOrEmpty(sched.Source) ? "" : " " + sched.Source;
+                string Tick(int n) => $"{pat.Replace("{N}", n.ToString())}{src} Curncy";
+                string H = tag.Sheet;
+
+                var refTicker = sched.RefTicker
+                    ?? configs.Enabled.FirstOrDefault(c =>
+                        c.Ccy.Equals(sched.Ccy, StringComparison.OrdinalIgnoreCase))?.Ois?.OnFixingTicker;
+
+                ws.Cell(r, 1).Value = $"{b.Bank} closing run";
+                ws.Cell(r, 1).Style.Font.SetBold();
+                r++;
+                int fixRow = r;
+                ws.Cell(r, 1).Value = $"{b.FixingLabel} fixing";
+                if (!string.IsNullOrEmpty(refTicker))
+                    ws.Cell(r, 2).FormulaA1 = $"_xll.BDP(\"{refTicker}\",\"LAST_PRICE\")";
+                ws.Cell(r, 2).Style.NumberFormat.Format = RunsTable.RateFmt;
+                r++;
+
+                int hdrRow = r;
+                for (int c = 0; c < RunsTable.Headers.Length; c++)
+                {
+                    ws.Cell(r, c + 1).Value = RunsTable.Headers[c];
+                    ws.Cell(r, c + 1).Style.Font.SetBold();
+                    ws.Cell(r, c + 1).Style.Fill.SetBackgroundColor(XLColor.FromHtml(RunsTable.BrandBlue));
+                }
+                r++;
+
+                int firstRow = r;
+                for (int i = 0; i < b.Rows.Count; i++)
+                {
+                    string t = Tick(i + 1);        // row i is the i-th rung, as Current does
+                    // LIVE FIRST, THE RUN'S OWN DATE AS THE FALLBACK. The deep rungs of the
+                    // thinner families publish no date fields at all - SKSF4A upwards carry a
+                    // price and nothing else - so a bare BDP would leave the last Riksbank rows
+                    // blank, and blank in column A also kills the change lookups, which key on
+                    // it. A date is safe to carry as a literal in a way a PRICE never is: it is
+                    // the contract's identity, not its mark. Bloomberg still wins whenever it
+                    // has one.
+                    string D(DateTime d) => $"DATE({d.Year},{d.Month},{d.Day})";
+                    ws.Cell(r, 1).FormulaA1 =
+                        $"IFERROR(_xll.BDP(\"{t}\",\"SW_EFF_DT\"),{D(b.Rows[i].Start)})";
+                    ws.Cell(r, 1).Style.DateFormat.Format = "dd-mmm-yy";
+                    ws.Cell(r, 2).FormulaA1 = b.Rows[i].End is { } endD
+                        ? $"IFERROR(_xll.BDP(\"{t}\",\"MATURITY\"),{D(endD)})"
+                        : $"IFERROR(_xll.BDP(\"{t}\",\"MATURITY\"),\"\")";
+                    ws.Cell(r, 2).Style.DateFormat.Format = "dd-mmm-yy";
+
+                    // a masked row is a LABEL on every surface (Y/E Turn, n/a) - the attachment
+                    // prints the label in the Mid cell, so this page does too
+                    if (b.Rows[i].Masked)
+                    {
+                        ws.Cell(r, 3).Value = b.Rows[i].MaskLabel;
+                        ws.Cell(r, 3).Style.Font.SetItalic();
+                        r++;
+                        continue;
+                    }
+
+                    ws.Cell(r, 3).FormulaA1 = $"_xll.BDP(\"{t}\",\"LAST_PRICE\")";
+                    ws.Cell(r, 3).Style.NumberFormat.Format = RunsTable.RateFmt;
+                    ws.Cell(r, 4).FormulaA1 = $"IF(N(C{r})=0,\"\",(C{r}-$B${fixRow})*100)";
+                    if (r > firstRow)
+                        ws.Cell(r, 5).FormulaA1 =
+                            $"IF(OR(N(C{r})=0,N(C{r - 1})=0),\"\",(C{r}-C{r - 1})*100)";
+
+                    // THE CHANGE COLUMNS: today's live mid minus the anchor the run resolved,
+                    // written in as a plain number. One subtraction per cell.
+                    //
+                    // TWO EARLIER ATTEMPTS ARE WHY THIS IS SO PLAIN (2026-08-28). The first put
+                    // MAXIFS in helper columns: MAXIFS post-dates the file format, so a workbook
+                    // must spell it `_xlfn.MAXIFS` and ClosedXML writes the bare name - every cell
+                    // read #NAME?. The second used LOOKUP(2,1/(...)) against the Historical_ sheet,
+                    // keyed on column A's start date - which is a BDP(...,"SW_EFF_DT") that comes
+                    // back as TEXT, so it never equalled the numeric date serials in the history
+                    // and every cell came back blank. Both failures were the formula depending on
+                    // something it did not need to depend on.
+                    //
+                    // The anchor is a settled close. The app has already resolved it, roll-corrected
+                    // and snap-timed, to produce this row's own Δ - so anchor = Mid - Δ/100, and the
+                    // cell only has to subtract. It still tracks the mid as the market moves, which
+                    // is the whole point of a live page; it just no longer re-derives a number the
+                    // run already knew. A row whose Δ the run withheld gets no formula at all, so
+                    // the sheet stays blank exactly where the app is blank.
+                    var chg = new[] { b.Rows[i].D1Bp, b.Rows[i].W1Bp, b.Rows[i].M1Bp };
+                    for (int k = 0; k < 3; k++)
+                    {
+                        ws.Cell(r, 6 + k).Style.NumberFormat.Format = RunsTable.BpFmt;
+                        if (chg[k] is not { } dbp) continue;
+                        var anchor = b.Rows[i].Mid - dbp / 100.0;
+                        ws.Cell(r, 6 + k).FormulaA1 =
+                            $"IFERROR((C{r}-{anchor.ToString("0.000000", System.Globalization.CultureInfo.InvariantCulture)})*100,\"\")";
+                    }
+                    ws.Cell(r, 4).Style.NumberFormat.Format = RunsTable.BpFmt;
+                    ws.Cell(r, 5).Style.NumberFormat.Format = RunsTable.BpFmt;
+                    r++;
+                }
+                if (r - 1 > hdrRow)
+                    ws.Range(hdrRow + 1, 1, r - 1, RunsTable.Headers.Length)
+                        .Style.Border.SetOutsideBorder(XLBorderStyleValues.Thin)
+                        .Border.SetInsideBorder(XLBorderStyleValues.Thin);
+                r++;
+            }
+
+            ws.Columns(1, RunsTable.Headers.Length).AdjustToContents();
+            log?.Invoke($"save-down: rebuilt the {ws.Name} page (live BDP formulas, " +
+                        "changes looked up on start date)");
         }
 
         // ------------------------------------------------------------- Inflation ----

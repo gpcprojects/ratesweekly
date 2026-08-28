@@ -70,9 +70,19 @@ namespace RateDesk.Weekly.Core
                 // 2b. the decision-day front roll and intraday priced re-base are gated on the
                 // announcement time — a run that keeps decisions but no time degrades to rolling
                 // the morning after (honest, but a decision day reads stale all afternoon)
-                if (decisions.Count > 0 && !TimeSpan.TryParse(sched.DecisionTimeLondon, out _))
-                    warnings.Add($"{sched.Name}: no decisionTimeLondon in config\\meetings.json — " +
-                                 "decision-day front roll degrades to the next morning");
+                // NOT gated on decisions.Count any more (fix 2026-08-27, scenario 06): the one
+                // configuration that turns the decision-day machinery off entirely - no calendar
+                // at all - used to raise no warning of any kind, because every check here sat
+                // behind that gate.
+                if (decisions.Count == 0)
+                    warnings.Add($"{OutlierGuard.Prefix}: {sched.Name} has NO decisionDates in " +
+                                 "config\\meetings.json - the decision-day front roll AND the " +
+                                 "Priced re-base are both disabled for this run");
+                else if (!TimeSpan.TryParse(sched.DecisionTimeLondon, out _))
+                    warnings.Add($"{OutlierGuard.Prefix}: {sched.Name} has no decisionTimeLondon " +
+                                 "in config\\meetings.json - the decision-day front roll degrades " +
+                                 "to the next morning, so a decision day publishes an already-" +
+                                 "delivered move as still priced in");
 
                 // 3. observed rolls must be explained by the calendar. Updates are WEEKLY, so the
                 // re-point is only known to lie in the OBSERVATION WINDOW (prev update, this one]

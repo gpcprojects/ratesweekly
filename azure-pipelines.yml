@@ -21,6 +21,15 @@ steps:
   - script: dotnet test tests/RateDesk.Tests/RateDesk.Tests.csproj -c Release
     displayName: tests (must stay green)
 
+  # The central-bank decision scenarios (tests/RateDesk.Scenarios/README.md). One process per
+  # scenario, driving the shipping code end to end against a synthetic Bloomberg; `run all`
+  # returns non-zero on any red. It is time-of-day sensitive (needs London 00:10-23:50) and
+  # fails loudly outside that window rather than passing quietly.
+  - script: >
+      dotnet run --project tests/RateDesk.Scenarios/RateDesk.Scenarios.csproj -c Release --
+      run all --out $(Build.ArtifactStagingDirectory)/scenarios
+    displayName: CB decision scenarios (62, must stay green)
+
   - script: >
       dotnet publish src/RateDesk.Weekly/RateDesk.Weekly.csproj -c Release -r win-x64
       -o $(Build.ArtifactStagingDirectory)/app --self-contained true /p:PublishSingleFile=true

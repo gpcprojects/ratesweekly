@@ -49,10 +49,15 @@ namespace RateDesk.Core
         /// <summary>Render "Y/E Turn" instead of the numbers — the period spans a year-end and
         /// its average carries the turn dislocation (SEK/SWESTR; desk 2026-08-20).</summary>
         public bool TurnPeriod { get; init; }
+        /// <summary>The quoted print was rejected by the neighbour guard: the row publishes a
+        /// label, never a manufactured number (desk 2026-08-27).</summary>
+        public bool Rejected { get; init; }
+        /// <summary>The row publishes a LABEL instead of numbers — turn or rejected print.</summary>
+        public bool Masked => TurnPeriod || Rejected;
+        /// <summary>ONE definition of what a masked row prints, for every surface.</summary>
+        public string MaskLabel => TurnPeriod ? MaskLabels.Turn : Rejected ? MaskLabels.Rejected : "";
         /// <summary>Where the mid came from — "ticker"/"future", or the misprint guard's
-        /// "interp (…)" label. Propagated so the renderers can MARK a synthesized mid
-        /// (fresh-eyes review 2026-08-26: the label used to die here and the email printed
-        /// a neighbour-midpoint in bold as if it were a print).</summary>
+        /// "rejected (…)" label, which the CHECK note quotes.</summary>
         public string MidSource { get; set; } = "";
     }
 
@@ -78,6 +83,13 @@ namespace RateDesk.Core
         /// mark it (fresh-eyes review 2026-08-26: a swap mid used to print under "fixing"
         /// unlabelled for up to a week after every ECB/BOJ decision).</summary>
         public bool RefRebased { get; set; }
+        /// <summary>The re-base could only reach a mark from BEFORE the statement, so it cannot
+        /// contain whatever the decision surprised the market with. Surfaces say so instead of
+        /// claiming the base is the decided period's current OIS (fix 2026-08-27).</summary>
+        public bool RefRebasedStale { get; set; }
+        /// <summary>ONE definition of the suffix every surface prints beside a re-based fixing.</summary>
+        public string RebasedLabel =>
+            !RefRebased ? "" : RefRebasedStale ? " (rebased, pre-statement)" : " (rebased)";
         public List<WeeklyMeeting> Rows { get; } = new();
     }
 
@@ -99,6 +111,10 @@ namespace RateDesk.Core
         /// <summary>The front period spans a year-end (marked run): the front line shows
         /// "Y/E Turn" for its market-pricing cells.</summary>
         public bool TurnPeriod { get; init; }
+        /// <summary>The front row's print was rejected by the neighbour guard.</summary>
+        public bool Rejected { get; init; }
+        public bool Masked => TurnPeriod || Rejected;
+        public string MaskLabel => TurnPeriod ? MaskLabels.Turn : Rejected ? MaskLabels.Rejected : "";
     }
 
     public sealed class WeeklyReport
@@ -205,6 +221,7 @@ namespace RateDesk.Core
                         Title = $"{sched.Name} · {run.Ccy}",
                         RefName = run.RefName, RefPct = run.RefPct,
                         RefRebased = run.RefRebased || run.RefOverridden,
+                        RefRebasedStale = run.RefRebasedStale,
                     };
                     // front-meeting summary line: the run's first row IS the next decision's period
                     if (run.Rows.Count > 0)
@@ -224,25 +241,37 @@ namespace RateDesk.Core
                             Bank = sched.Name, Ccy = run.Ccy,
                             Decision = dec, StartDate = front.Date,
                             MidPct = front.MidPct, RefPct = run.RefPct, PricedBp = front.PricedBp,
-                            TurnPeriod = front.TurnPeriod,
+                            TurnPeriod = front.TurnPeriod, Rejected = front.Rejected,
                             RefRebased = run.RefRebased || run.RefOverridden,
                         });
                     }
-                    var series = MeetingSeriesBuilder(sched, run.Rows.Select(r => r.Date));
+                    // F10 (2026-08-27): with the o/n fixing unquoted, Priced is blank on every
+                    // row and Step — built from Priced — is blank too. Honest, but silent: say so.
+                    if (run.RefPct is null && run.Rows.Count > 0)
+                        rep.Notes.Add($"{OutlierGuard.Prefix}: {sched.Name} — the {run.RefName} fixing " +
+                                      "is unquoted, so Priced, Step and % of 25bp are blank on every " +
+                                      "row. The mids are real; the base is missing.");
+
+                    var series = MeetingSeriesBuilder(sched, run.Rows.Select(r => r.Date), rep.Notes);
+                    // the same boundary derivation the stitcher uses, for the Δ1d fallback below
+                    var rungMap = new MeetingRungMap(sched, run.Rows.Select(r => r.Date));
                     foreach (var row in run.Rows)
                     {
                         var wm = new WeeklyMeeting
                         {
                             Date = row.Date, EndDate = row.EndDate, MidPct = row.MidPct,
-                            PricedBp = row.PricedBp, StepBp = row.StepBp, TurnPeriod = row.TurnPeriod,
+                            PricedBp = row.PricedBp, StepBp = row.StepBp,
+                            TurnPeriod = row.TurnPeriod, Rejected = row.Rejected,
                             MidSource = row.MidSource,
                         };
                         // a synthesized (guard-rejected) mid is published FLAGGED, never bare —
                         // the note gates distribution, the renderers mark the cell
-                        if (row.MidSource.StartsWith("interp", StringComparison.OrdinalIgnoreCase))
-                            rep.Notes.Add($"CHECK: {sched.Name} {row.Date:dd-MMM-yy} mid is the " +
-                                          $"neighbour midpoint — {row.MidSource} — verify before distribution");
-                        if (row.TurnPeriod) { wr.Rows.Add(wm); continue; }   // no changes for a label row
+                        if (row.Rejected)
+                            rep.Notes.Add($"{OutlierGuard.Prefix}: {sched.Name} {row.Date:dd-MMM-yy} " +
+                                          $"publishes NO mid — {row.MidSource}. The row is labelled " +
+                                          $"'{MaskLabels.Rejected}' on every surface; nothing was " +
+                                          "invented in its place. Verify the contributor (SOURCES).");
+                        if (row.Masked) { wr.Rows.Add(wm); continue; }   // no changes for a label row
                         try
                         {
                             // the stitched series is meeting-CONSTANT across ticker rolls, so a
@@ -269,7 +298,21 @@ namespace RateDesk.Core
                         // or interpolation. A historical-curve anchor for the curve-implied
                         // tails was built and SCRAPPED the same day; do not re-add it. Blank
                         // beats manufactured.
-                        wm.D1Bp ??= row.MidSource == "ticker" || row.MidSource == "future"
+                        // ...and NOT when the stitcher blanked it on purpose. row.CoDBp is
+                        // (mid − PX_CLOSE_1D) × 100 straight off the snapshot, and inside an
+                        // announcement→start window yesterday's close IS a mixed-state close —
+                        // the very print the stitcher refuses to source, re-admitted through the
+                        // back door (fix 2026-08-27). Blank is the honest value there; the
+                        // fallback keeps working for the case it was built for, a rung with no
+                        // pre-roll history.
+                        var prevBd = DateTime.Today.AddDays(-1);
+                        while (prevBd.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+                            prevBd = prevBd.AddDays(-1);
+                        // only the ANCHOR day has to be clean. Today being a boundary is fine —
+                        // MeetingRun's own roll correction already handles that case, and the
+                        // CoD it produces is the corrected one.
+                        bool codClean = !rungMap.IsBoundary(prevBd) && !rungMap.IsMixedState(prevBd);
+                        wm.D1Bp ??= codClean && (row.MidSource == "ticker" || row.MidSource == "future")
                             ? row.CoDBp : null;
                         wr.Rows.Add(wm);
                     }

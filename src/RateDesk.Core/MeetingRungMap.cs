@@ -32,9 +32,18 @@ namespace RateDesk.Core
         public IReadOnlyList<DateTime> Boundaries { get; }
         private readonly HashSet<DateTime> _set;
         private readonly HashSet<DateTime> _mixed;
+        private readonly Func<int, DateTime, DateTime?>? _recorded;
 
-        public MeetingRungMap(MeetingScheduleDef sched, IEnumerable<DateTime>? tickerDates = null)
+        /// <param name="recordedEffective">Bloomberg's OWN record of what rung n pointed at on a
+        /// given day (the store's maturity table, via IHistoryProvider.EffectiveOn). When it
+        /// answers, it WINS: a recorded field is evidence, a boundary count is inference. This is
+        /// what makes the map survive a calendar that gained a meeting after the fact — an
+        /// unscheduled decision re-numbers every historical day under a derivation, but it cannot
+        /// change what Bloomberg published at the time (fix 2026-08-27, scenario 21).</param>
+        public MeetingRungMap(MeetingScheduleDef sched, IEnumerable<DateTime>? tickerDates = null,
+            Func<int, DateTime, DateTime?>? recordedEffective = null)
         {
+            _recorded = recordedEffective;
             var cand = sched.Dates.AsEnumerable()
                 .Concat(sched.PastDates)
                 .Concat(tickerDates ?? Enumerable.Empty<DateTime>());
@@ -57,6 +66,21 @@ namespace RateDesk.Core
             // Start-renumbering families (SKSF) renumber wholly at the start (probed
             // 2026-08-25) and have no such window.
             _mixed = new HashSet<DateTime>();
+            // AN UNSTABLE LAG IS AN UNKNOWN, NOT A ZERO (fix 2026-08-27, scenario 56). When the
+            // decision→start gap varies, MeetingCalendar refuses to derive a past announcement —
+            // correctly, it would be a guess — and the boundary falls back to the PERIOD START,
+            // one to six days after the family actually renumbered. Nothing then masked the days
+            // in between, so anchors landing there were read under the wrong numbering. The gap
+            // is bounded even when the date is not: mask the whole window it must lie in, and
+            // lookbacks step back to the last day that is certainly clean.
+            if (!sched.RollsAtPeriodStart && !MeetingCalendar.LagIsStable(sched)
+                && MeetingCalendar.LagRange(sched) is { } lag)
+                foreach (var s0 in sched.Dates.Select(d => d.Date))
+                    // from the EARLIEST the announcement could have been, right up to the day
+                    // before the period starts: the renumber happened somewhere in there and
+                    // nothing inside it can be attributed to a rung
+                    for (int k = 1; k <= lag.Max; k++)
+                        _mixed.Add(s0.AddDays(-k));
             if (!sched.RollsAtPeriodStart)
                 foreach (var b in clustered)
                 {
@@ -81,11 +105,77 @@ namespace RateDesk.Core
         public int? RungFor(DateTime contract, DateTime onDay, int maxIndex = 13)
         {
             var d = onDay.Date;
+
+            // EVIDENCE BEFORE INFERENCE, AND BEFORE THE BOUNDARY-DAY RULE. Ask the record for the
+            // day actually asked about, FIRST. The step-back below exists because a boundary day's
+            // numbering is ambiguous when all we have is a calendar - but a recorded SW_EFF_DT for
+            // that very day settles it, and stepping back past the record throws the answer away.
+            //
+            // Live case that proved it (SKSF, 27-Aug-26): the family renumbers at the period
+            // start, which was 26-Aug. The store holds SKSF1A on 26-Aug with eff 30-Sep - so the
+            // 30-Sep contract was plainly on rung 1 that day. Stepping back to 25-Aug first found
+            // no record, fell through to the boundary count, and answered rung 2 - so the front
+            // row's change-on-day anchored on SKSF2A's 1.815 instead of SKSF1A's 1.715 and
+            // published -10.6bp where the truth was -0.6bp.
+            if (_recorded != null)
+                for (int n0 = 1; n0 <= maxIndex; n0++)
+                    if (_recorded(n0, d) is { } exact && exact.Date == contract.Date)
+                        return n0;
+
+            // ...and when the day is on the record but THIS contract's rung is not, the record
+            // still fixes the family's numbering that day - so use it to calibrate, rather than
+            // falling back to a rule that assumes we know nothing.
+            //
+            // Live case (SKSF, 27-Aug-26): only rungs 0-3 carry date fields; 4A, 5A and 6A are
+            // price-only, so the contracts beyond the year-end turn are never on the record. The
+            // rungs that ARE recorded show the family had already renumbered on 26-Aug, but the
+            // step-back below assumed otherwise and counted one boundary too many for every
+            // unrecorded contract - the 10-Feb row anchored on SKSF5A's 2.147 instead of SKSF4A's
+            // 2.014 and published -8.7bp where the truth was +4.6bp.
+            //
+            // Every recorded rung must agree on the offset, or this is not evidence and we say so
+            // by falling through.
+            if (_recorded != null)
+            {
+                int? offset = null;
+                bool consistent = true;
+                for (int n0 = 1; n0 <= maxIndex && consistent; n0++)
+                {
+                    if (_recorded(n0, d) is not { } eff0) continue;
+                    int naive = 0;
+                    foreach (var b in Boundaries) if (b > d && b <= eff0.Date) naive++;
+                    int off = n0 - naive;
+                    if (offset is { } prev && prev != off) consistent = false;
+                    else offset = off;
+                }
+                if (consistent && offset is { } o)
+                {
+                    int n1 = 0;
+                    foreach (var b in Boundaries) if (b > d && b <= contract.Date) n1++;
+                    n1 += o;
+                    if (n1 >= 1 && n1 <= maxIndex) return n1;
+                }
+            }
+
             if (_set.Contains(d)) d = d.AddDays(-1);
+            if (_recorded != null)
+                for (int n0 = 1; n0 <= maxIndex; n0++)
+                    if (_recorded(n0, d) is { } eff && eff.Date == contract.Date)
+                        return n0;
             int n = 0;
             foreach (var b in Boundaries)
                 if (b > d && b <= contract.Date) n++;
             return n >= 1 && n <= maxIndex ? n : null;
+        }
+
+        /// <summary>True when the store can speak for that day at all — used to tell "no record"
+        /// apart from "recorded, and it says something else".</summary>
+        public bool HasRecordFor(DateTime day, int maxIndex = 13)
+        {
+            if (_recorded == null) return false;
+            for (int n = 1; n <= maxIndex; n++)
+                if (_recorded(n, day.Date) is not null) return true;
+            return false;
         }
     }
 }

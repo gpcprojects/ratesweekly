@@ -20,7 +20,9 @@ namespace RateDesk.Weekly.Core.Daily
         public const string RateFmt = "0.000";
         public const string BpFmt = "+0.0;-0.0;0.0";
         public const string DateFmt = "dd-MMM-yy";
-        public const string TurnLabel = "Y/E Turn";
+        /// <summary>Kept as the one public name for the turn label; the row itself now
+        /// carries whichever label applies (RateDesk.Core.MaskLabels).</summary>
+        public const string TurnLabel = RateDesk.Core.MaskLabels.Turn;
 
         /// <summary>DRAX blue, MUTED — a 30% tint of the logo blue (#01A2E6, sampled from
         /// assets\jbdh_banner.jpg) over white, desk 2026-08-26 ("more faded... a bit more
@@ -48,11 +50,17 @@ namespace RateDesk.Weekly.Core.Daily
             "Δ 1d (bp)", "Δ 1w (bp)", "Δ 1m (bp)",
         };
 
+        /// <summary>MaskLabel non-empty = the row publishes that label instead of numbers
+        /// (a Y/E turn, or a print the neighbour guard rejected). The app never publishes a
+        /// manufactured mid, so there is no "synthesized" flag any more (desk 2026-08-27).</summary>
         public sealed record Row(DateTime Start, DateTime? End, double Mid, double? PricedBp,
-            double? StepBp, double? D1Bp, double? W1Bp, double? M1Bp, bool Turn, bool Synthetic);
+            double? StepBp, double? D1Bp, double? W1Bp, double? M1Bp, string MaskLabel)
+        {
+            public bool Masked => MaskLabel.Length > 0;
+        }
 
         public sealed record Block(string Bank, string Flag, string FixingLabel, double? FixingPct,
-            bool Rebased, List<Row> Rows);
+            bool Rebased, List<Row> Rows, string RebasedLabel = " (rebased)");
 
         public static string Title(DateTime asOf) =>
             $"DRAX OIS Runs {asOf.ToString("dMMMyy", Inv)}";
@@ -73,10 +81,10 @@ namespace RateDesk.Weekly.Core.Daily
                     // the period end: the row's own resolved EndDate, else the next row's start
                     var end = m.EndDate ?? (i + 1 < run.Rows.Count ? run.Rows[i + 1].Date : (DateTime?)null);
                     rows.Add(new Row(m.Date, end, m.MidPct, m.PricedBp, m.StepBp,
-                        m.D1Bp, m.W1Bp, m.M1Bp, m.TurnPeriod,
-                        m.MidSource.StartsWith("interp", StringComparison.OrdinalIgnoreCase)));
+                        m.D1Bp, m.W1Bp, m.M1Bp, m.MaskLabel));
                 }
-                blocks.Add(new Block(runName, flag, fixing, run.RefPct, run.RefRebased, rows));
+                blocks.Add(new Block(runName, flag, fixing, run.RefPct, run.RefRebased, rows,
+                    run.RebasedLabel));
             }
             return blocks;
         }

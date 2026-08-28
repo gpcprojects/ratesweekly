@@ -73,10 +73,18 @@ namespace RateDesk.Weekly.Core.Series
                 int idx = bounds.Count(b => b > asOf.Date && b <= contract.Date);
                 return idx < 1 ? null : idx;
             }
+            // THE LEVEL GOES THROUGH RolledValue (fix 2026-08-27, scenarios 53/59). RungAt
+            // counts boundaries STRICTLY AFTER asOf, so a boundary falling ON asOf is not
+            // counted — while the close being read comes from asOf or earlier, i.e. from the
+            // numbering in force BEFORE that boundary. The two disagreed by exactly one rung
+            // whenever the render's as-of was a renumber day, which is every weekly run made the
+            // day after a bank announced: every published level was the neighbouring contract's,
+            // and the 1w/1m levels beside it (which DO step back) were right, so the rendered
+            // change was a phantom of one full inter-meeting step, wrong-signed.
             var mids = new double?[contracts.Count];
             for (int i = 0; i < contracts.Count; i++)
-                mids[i] = RungAt(contracts[i].Contract) is { } r0
-                    ? store.ValueAsOf(ticker(r0), asOf) : null;
+                mids[i] = RolledValue(store, ticker, bounds, contracts[i].Contract, asOf,
+                                      maxIndexProbe, map);
 
             int guarded = 0;
             for (int i = 0; i < contracts.Count; i++)

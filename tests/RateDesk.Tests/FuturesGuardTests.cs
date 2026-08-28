@@ -82,7 +82,7 @@ namespace RateDesk.Tests
 
             var line = FuturesGuard.CheckRun(svc, sched);
 
-            Assert.StartsWith(FuturesGuard.TriggerPrefix, line);
+            Assert.StartsWith(OutlierGuard.Prefix + ": " + FuturesGuard.TriggerPrefix, line);
             Assert.Contains("verify_strip_changes", line);
         }
 
@@ -164,7 +164,8 @@ namespace RateDesk.Tests
             Assert.StartsWith("futures guard TESTGB ok", FuturesGuard.CheckRun(Service(snap), sched));
 
             sched.GuardFuturesBasisBp = 0.0;   // same price, no expected basis → the 14bp is a fault
-            Assert.StartsWith(FuturesGuard.TriggerPrefix, FuturesGuard.CheckRun(Service(snap), sched));
+            Assert.StartsWith(OutlierGuard.Prefix + ": " + FuturesGuard.TriggerPrefix,
+                FuturesGuard.CheckRun(Service(snap), sched));
         }
 
         [Fact]
