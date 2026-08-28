@@ -59,6 +59,22 @@ namespace RateDesk.Core
         /// day", holiday-dependent), so a derived date there can be days off — and a roll
         /// correction fired on a phantom date manufactures a full step of CoD (fresh-eyes
         /// review 2026-08-26).</summary>
+        /// <summary>The observed decision→start gaps, smallest and largest. When they differ the
+        /// announcement cannot be derived from a start (see <see cref="LagIsStable"/>) — but the
+        /// window it must lie in IS known, and everything inside it is unattributable.</summary>
+        public static (int Min, int Max)? LagRange(MeetingScheduleDef sched)
+        {
+            var lags = new List<int>();
+            foreach (var dec in sched.DecisionDates)
+            {
+                var start = sched.Dates
+                    .Where(d => d.Date >= dec.Date && (d.Date - dec.Date).TotalDays <= 14)
+                    .OrderBy(d => d).Cast<DateTime?>().FirstOrDefault();
+                if (start is { } s) lags.Add((int)(s.Date - dec.Date).TotalDays);
+            }
+            return lags.Count == 0 ? null : (lags.Min(), lags.Max());
+        }
+
         public static bool LagIsStable(MeetingScheduleDef sched)
         {
             var lags = new List<int>();

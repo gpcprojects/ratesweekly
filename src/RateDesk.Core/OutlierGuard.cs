@@ -33,7 +33,7 @@ namespace RateDesk.Core
                 foreach (var (label, sel, abs) in new (string, Func<WeeklyMeeting, double?>, double)[]
                          { ("Δ1d", m => m.D1Bp, AbsD1Bp), ("Δ1w", m => m.W1Bp, AbsW1Bp), ("Δ1m", m => m.M1Bp, AbsM1Bp) })
                 {
-                    var vals = run.Rows.Where(m => !m.TurnPeriod)
+                    var vals = run.Rows.Where(m => !m.Masked)
                         .Select(m => (m, v: sel(m)))
                         .Where(x => x.v.HasValue)
                         .Select(x => (x.m, v: x.v!.Value)).ToList();
@@ -48,7 +48,7 @@ namespace RateDesk.Core
                     // the RBNZ -1.0-vs--20.3 false flag): a front converging on the fixing
                     // legitimately decouples from the strip — its own pricer showed the same
                     // shape. The absolute bars above still cover it.
-                    var front = run.Rows.FirstOrDefault(m => !m.TurnPeriod);
+                    var front = run.Rows.FirstOrDefault(m => !m.Masked);
                     var body = vals.Where(x => !ReferenceEquals(x.m, front)).ToList();
                     if (body.Count < 3) continue;
                     double med = Median(body.Select(x => x.v));

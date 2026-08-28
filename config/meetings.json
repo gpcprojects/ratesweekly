@@ -18,6 +18,9 @@
       ],
       "refTicker": "FEDL01 Index",
       // EFFR annualizes ACT/360 — the compounded-fixing trial's day count (desk 2026-08-26)
+      // the new target applies the day AFTER this period starts, so the o/n fixing is
+      // stale one day longer than for the other runs (desk 2026-08-27)
+      "fixingLagDays": 1,
       "fixingDcc": 360,
       // USD tenor swaps and forwards are SOFR, but everything MEETING-DATED is Fed Funds - including
       // the USSOFED{N} tickers above and the FEDL01 reference. So a trade struck on FOMC dates must
@@ -368,6 +371,9 @@
       "ccy": "CHF",
       "header": "{SZ} Indic SNB Run",
       // SARON annualizes ACT/360 — the compounded-fixing trial's day count (desk 2026-08-26)
+      // the new target applies the day AFTER this period starts, so the o/n fixing is
+      // stale one day longer than for the other runs (desk 2026-08-27)
+      "fixingLagDays": 1,
       "fixingDcc": 360,
       "tickers": [
         "SFSF{N}A"

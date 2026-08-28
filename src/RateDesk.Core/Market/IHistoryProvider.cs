@@ -23,5 +23,15 @@ namespace RateDesk.Core.Market
         /// intraday data (tests, thin tickers): callers must degrade to closes.</summary>
         IReadOnlyList<HistPoint> GetLondonSnaps(string ticker, int lookbackDays, TimeSpan londonTimeOfDay)
             => Array.Empty<HistPoint>();
+
+        /// <summary>The EFFECTIVE date this ticker itself published on that day — Bloomberg's own
+        /// record of which contract the rolling generic pointed at, rather than an inference from
+        /// a calendar. Null when the day was never recorded (older history, a backend that keeps
+        /// no such record), and callers then fall back to the boundary derivation.
+        ///
+        /// <para>Added 2026-08-27 for the announced-but-not-yet-effective re-base, which has to
+        /// find the just-decided period's own mark on a day when it can prove that rung WAS that
+        /// contract. Reading a close from before the decision cannot contain the surprise.</para></summary>
+        DateTime? EffectiveOn(string ticker, DateTime day) => null;
     }
 }

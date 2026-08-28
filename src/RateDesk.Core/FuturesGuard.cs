@@ -78,7 +78,11 @@ namespace RateDesk.Core
                 return Math.Abs(gapBp) <= sched.GuardFuturesTolBp
                     ? $"futures guard {sched.Name} ok: {tk} {window} implies {implied:0.000} vs " +
                       $"meeting blend {blend:0.000}{basis} (Δ{gapBp:+0.0;-0.0}bp ≤ {sched.GuardFuturesTolBp:0.0})"
-                    : $"{TriggerPrefix} — {sched.Name}: {tk} {window} implies {implied:0.000} but the " +
+                    // CHECK-prefixed so it reaches the pre-publish gate (desk 2026-08-27). The
+                    // futures share nothing with the OIS machinery, so a breach is the strongest
+                    // fault signal the app has — it used to be the only one that could not stop
+                    // the press, while a +12.1bp change-on-day could.
+                    : $"{OutlierGuard.Prefix}: {TriggerPrefix} — {sched.Name}: {tk} {window} implies {implied:0.000} but the " +
                       $"meeting rows blend to {blend:0.000}{basis} (Δ{gapBp:+0.0;-0.0}bp > {sched.GuardFuturesTolBp:0.0}bp " +
                       "tolerance). The futures share nothing with the OIS machinery — treat this as a " +
                       "roll/calendar/re-base fault until proven otherwise (run tools\\verify_strip_changes.py).";

@@ -1,3 +1,92 @@
+# Handoff — 2026-08-27
+
+## v0.16.0 — the central-bank decision-day fixes (READ THIS FIRST)
+
+A 62-scenario harness (`tests\RateDesk.Scenarios`, its own README) drove the shipping code end to
+end on hike/cut/hold days and found 12 issues. All are fixed and all 62 scenarios are green, along
+with 314/314 unit tests. `tests\RateDesk.Scenarios\FINDINGS.md` is the audit; `REMEDIATION.md` is
+the plan and what was delivered. **Not yet done: the two live-terminal audits
+(`tools/audit_email_dates.py`, `tools/verify_strip_changes.py`) must be clean before release, and
+one live decision day should be watched with this build in place.**
+
+Four desk decisions shaped the fixes, and they are now product rules:
+
+1. **NEVER INVENT A MID.** The neighbour-misprint guard used to publish the neighbour midpoint in
+   place of an impossible print. It now WITHHOLDS: the row keeps the real print internally (blend
+   inputs, guards) and publishes the label `n/a` with no numbers, on every surface, exactly as a
+   Y/E turn row does — and the step chain steps over it, so the next row carries the cumulative
+   move. `MeetingRow.Rejected` / `Masked` / `MaskLabel`; `MaskLabels` holds the two labels, so the
+   surfaces no longer carry three copies of the turn literal.
+2. **THE DECISION GATES READ THE MARKS' CLOCK, NOT THE WALL CLOCK.**
+   `PricingService.MarksAsOfLondon` — set by `DailyBuilder` from `SnapDiscipline` once the 16:15
+   snap owns the marks. The FOMC announces at 19:00, after the close: a run pressed at 19:30 now
+   keeps the pre-decision board its prices belong to, and the run says so.
+3. **THE RE-BASE FOLLOWS THE FIXING, NOT THE PERIOD START.** The window runs through the period
+   start plus `fixingLagDays` business days (new per-run config knob, default 1), because every
+   o/n index publishes a day in arrears. That is what finally gives FOMC and MPC a re-base at all
+   — their period starts on the decision date, so the old `today < start` window was empty.
+   The re-base also WALKS FORWARD now: it finds the decided period's own mark from a day on which
+   Bloomberg's record proves that rung was that contract, instead of reading a close from before
+   the statement (which cannot contain a surprise). When only the pre-statement close is
+   reachable, `RefRebasedStale` makes every surface say "(rebased, pre-statement)".
+4. **A FUTURES-GUARD BREACH BLOCKS.** The note now carries the `CHECK:` prefix, so it reaches the
+   pre-publish gate. `TriggerPrefix` stays inside the text for the audit scripts.
+
+### The renumbering is now read off the prices too (2026-08-27, second pass)
+
+`Series/RungShiftScan.cs`. There are three ways to know which contract a rolling ticker meant on a
+past day, and the boards use them strictly in order:
+
+1. **The ticker's own recorded SW_EFF_DT** (`HistoryStore.EffectiveOn`). Exact. Only exists from
+   26-Aug-26, because a reference field can only be written down as it is seen — it cannot be
+   fetched retrospectively, which is why it is stamped on every run.
+2. **The strip's own price history** — new. A renumbering is not a price move, it is the whole
+   strip stepping along itself, so it is legible in the prices: today's rung N holding what
+   yesterday's rung N+1 held, every rung at once. Prices ARE backfilled (45 days on a machine's
+   first run), so unlike (1) this reaches the whole window immediately.
+3. **The meeting calendar**, as before.
+
+Why (2) had to exist: an UNSCHEDULED decision inserts a meeting into the calendar after the fact,
+and the calendar then numbers every past day as though the market had always known about it. The
+insertion has its own unmistakable signature — the strip shifting the OTHER way — and nothing else
+can see it. Scenario 63 proves the emergency case comes out right on a store with prices and no
+maturity records at all; 64 is its control, the same market with no emergency, which must stay
+untouched and unremarked.
+
+**It abstains rather than guesses.** Confirmed needs one hypothesis fitting within 1.5bp per rung,
+the runner-up at least 4bp worse, and three rungs agreeing at once — and only rungs where the strip
+is sloped enough (3bp) to tell the hypotheses apart are counted. A flat strip abstains, which costs
+nothing, because a flat strip gives the same answer under every hypothesis. One unjudgeable day
+breaks the chain and the whole correction stands down to the calendar. Eight unit tests in
+`RungShiftScanTests` pin the abstentions, including a 30bp parallel curve move that must NOT read
+as a roll.
+
+**Known limit:** the scan checks a rung against the one above it, so it needs the family to quote
+DEEPER than the run publishes. Every shipped family does (8-13 rungs quoted, 3-6 published), but a
+family that ever quoted only as deep as it publishes would abstain on its last row.
+
+**Not yet seen against a real Bloomberg strip.** The thresholds are calibrated on synthetic data.
+The failure direction is safe — too strict means it never fires and the calendar governs exactly as
+before — but a live decision day should be watched before this is trusted to correct anything.
+
+The structural change worth knowing: **`MeetingRungMap` prefers Bloomberg's own per-day record of
+what each rung pointed at** (`IHistoryProvider.EffectiveOn`, served by `StoreBackedHistory` from
+the store's maturity table) over the derived boundary count. Evidence beats inference. It closed
+both the inter-meeting-decision fault (a calendar that gains a meeting re-numbers history that was
+recorded under the old numbering) and the BOJ unstable-lag fault, and it turned the mixed-state
+exclusion into a fallback rather than a blanket refusal — attributable days are used now, not
+discarded. The store only holds those records from when it started recording them, so the boundary
+count still governs older history; that is the residual exposure and it shrinks every day.
+
+Also in v0.16.0: the dashboard strip's published LEVEL goes through `RolledValue` like its own 1w/1m
+levels (it was the one read in the class that skipped the boundary-day step-back, so every strip
+row was the neighbouring contract whenever the render's as-of was a renumber day); the Δ1d CoD
+fallback no longer re-admits a mixed-state close the stitcher just excluded; a run that publishes
+rows with no o/n fixing says so; `CalendarHealth` now covers the empty-calendar case and runs on
+the daily cadence too; and the 62 scenarios are wired into `azure-pipelines.yml`.
+
+---
+
 # Handoff — 2026-08-20
 
 Read `CLAUDE.md` (team conventions) and `DESIGN.md` (full spec + decision log) with this.

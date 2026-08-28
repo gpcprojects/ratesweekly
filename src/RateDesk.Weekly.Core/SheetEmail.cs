@@ -158,15 +158,15 @@ namespace RateDesk.Weekly.Core
                     + Cell(NoBrk(f.Decision is { } dd ? RunsTable.DateText(dd)
                         : RunsTable.DateText(f.StartDate) + "*"), FrontW[1], true)
                     + Cell(NoBrk(RunsTable.DateText(f.StartDate)), FrontW[2], true)
-                    + (f.TurnPeriod
-                        ? Cell($"<i>{Nb(RunsTable.TurnLabel)}</i>", FrontW[3], true)
+                    + (f.Masked
+                        ? Cell($"<i>{Nb(f.MaskLabel)}</i>", FrontW[3], true)
                         : Cell(RunsTable.RateText(f.MidPct), FrontW[3], true))
                     + Cell(f.RefPct is double rp
                         ? RunsTable.RateText(rp) + (f.RefRebased ? "†" : "") : "&nbsp;", FrontW[4], true)
-                    + (f.TurnPeriod
+                    + (f.Masked
                         ? Cell("&nbsp;", FrontW[5], true)
                         : ChangeCell(f.PricedBp, FrontW[5], 0))   // scale 0 = no heat on Priced
-                    + (f.TurnPeriod
+                    + (f.Masked
                         ? Cell("&nbsp;", FrontW[6], true)
                         : Cell(f.PricedBp is double pv
                             ? NoBrk((pv / 25.0 * 100.0).ToString("+0;-0;0", Inv)) + "%" : "&nbsp;",
@@ -196,7 +196,6 @@ namespace RateDesk.Weekly.Core
             // banks). A single table = a single column grid, by construction.
             sb.Append(TableOpen(Measure));
             sb.Append(TitleRow(RunsTable.Title(rep.AsOf), RunW.Length) + BlankRow(RunW.Length));
-            bool anySynth = false;
             foreach (var b in blocks)
             {
                 // the sheet's two label rows: the bank, then its fixing with the value in col B
@@ -204,7 +203,7 @@ namespace RateDesk.Weekly.Core
                     $"font-weight:bold;color:{Ink};padding:1px 3px;mso-line-height-rule:exactly;" +
                     $"line-height:15pt;\">{Nb(b.Bank + " closing run")}</td></tr>");
                 sb.Append("<tr>"
-                    + Cell(Nb(b.FixingLabel + " fixing" + (b.Rebased ? " (rebased)" : "")), RunW[0], false)
+                    + Cell(Nb(b.FixingLabel + " fixing" + (b.Rebased ? b.RebasedLabel : "")), RunW[0], false)
                     + Cell(b.FixingPct is { } fp ? RunsTable.RateText(fp) : "&nbsp;", RunW[1], true)
                     + Cell("&nbsp;", RunW[2], false) + Cell("&nbsp;", RunW[3], false)
                     + Cell("&nbsp;", RunW[4], false) + Cell("&nbsp;", RunW[5], false)
@@ -220,16 +219,15 @@ namespace RateDesk.Weekly.Core
                     sb.Append(Cell(NoBrk(RunsTable.DateText(m.Start)), RunW[0], true));
                     sb.Append(Cell(m.End is { } e ? NoBrk(RunsTable.DateText(e)) : "&nbsp;",
                         RunW[1], true, cls: "rwc rwm"));
-                    if (m.Turn)
+                    if (m.Masked)
                     {
                         // the sheet writes the label into the Mid cell, italic
-                        sb.Append(Cell($"<i>{Nb(RunsTable.TurnLabel)}</i>", RunW[2], false));
+                        sb.Append(Cell($"<i>{Nb(m.MaskLabel)}</i>", RunW[2], false));
                         for (int c = 3; c < RunW.Length; c++) sb.Append(Cell("&nbsp;", RunW[c], true));
                     }
                     else
                     {
-                        if (m.Synthetic) anySynth = true;
-                        sb.Append(Cell(RunsTable.RateText(m.Mid) + (m.Synthetic ? "†" : ""), RunW[2], true));
+                        sb.Append(Cell(RunsTable.RateText(m.Mid), RunW[2], true));
                         sb.Append(Cell(m.PricedBp is double p ? NoBrk(RunsTable.BpText(p)) : "&nbsp;",
                             RunW[3], true));
                         sb.Append(Cell(m.StepBp is double st ? NoBrk(RunsTable.BpText(st)) : "&nbsp;",
@@ -242,11 +240,6 @@ namespace RateDesk.Weekly.Core
                 }
                 sb.Append(BlankRow(RunW.Length));   // the sheet's blank separator row
             }
-            if (anySynth)
-                sb.Append($"<tr><td colspan=\"{RunW.Length}\" style=\"{Font}" +
-                    $"font-size:11pt;color:{Ink};padding:1px {TitlePad}px;line-height:15pt;\">" +
-                    "†&nbsp;mid is the neighbour midpoint — the quoted print was rejected as implausible" +
-                    "</td></tr>" + BlankRow(RunW.Length));
             sb.Append("</table>");
             return sb.ToString();
         }

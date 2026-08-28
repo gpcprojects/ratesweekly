@@ -73,6 +73,30 @@ namespace RateDesk.Weekly
             _emailSettings.WeeklySheetStyle = CbWeeklySheet.IsChecked == true;
             _emailSettings.WeeklyCardStyle = CbWeeklyCards.IsChecked == true;
             try { _emailSettings.Save(AppDataDir); } catch { /* next change retries */ }
+            if (BodylessWarning() is { } w) StatusText.Text = w;
+        }
+
+        /// <summary>THE WARNING EmailSettings HAS ALWAYS PROMISED (implemented 2026-08-28).
+        ///
+        /// Its own comment says "both off = no OIS/front content at all, which the app says out
+        /// loud" — but nothing ever said it. The weekly on this machine had BOTH style boxes
+        /// unticked, so CREATE/COPY EMAIL built a weekly body with no front table, no OIS runs
+        /// and no forward grid: just the inflation block, in the card flavour, because the
+        /// inflation fragment picks its flavour off the same flag. The daily, with its sheet box
+        /// still ticked, rendered in full — and the two surfaces that are supposed to be
+        /// identical had drifted completely apart with nothing said.
+        ///
+        /// A cadence with no style ticked stays legal — the desk may want a mail that is only
+        /// its inflation section — but it is now impossible to be in that state and not know.</summary>
+        private string? BodylessWarning()
+        {
+            var bad = new List<string>();
+            if (!_emailSettings.WeeklySheetStyle && !_emailSettings.WeeklyCardStyle) bad.Add("WEEKLY");
+            if (!_emailSettings.DailySheetStyle && !_emailSettings.DailyCardStyle) bad.Add("DAILY");
+            return bad.Count == 0 ? null
+                : $"{string.Join(" and ", bad)} email has NO body style ticked — it will carry no "
+                  + "front table and no OIS runs, only the inflation section. Tick \"Sheet tables\" "
+                  + "to match the other surfaces.";
         }
 
         private WeeklyEmail.EmailParts WeeklyParts() => new(
@@ -737,7 +761,8 @@ namespace RateDesk.Weekly
                     : File.Exists(Path.Combine(OutDir, EmailBuilder.PlainTextFile))
                         ? File.ReadAllText(Path.Combine(OutDir, EmailBuilder.PlainTextFile)) : "";
                 ClipboardHtml.Set(body, plain);
-                StatusText.Text = "email copied (current tickboxes applied) — paste into the email body.";
+                StatusText.Text = "email copied (current tickboxes applied) — paste into the email body."
+                    + (BodylessWarning() is { } w0 ? "  ⚠ " + w0 : "");
             }
             catch (Exception ex) { StatusText.Text = "copy failed: " + ex.Message; }
         }

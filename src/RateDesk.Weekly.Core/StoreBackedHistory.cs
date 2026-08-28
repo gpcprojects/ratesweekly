@@ -73,6 +73,10 @@ namespace RateDesk.Weekly.Core
         public IReadOnlyList<HistPoint> GetLondonSnaps(string ticker, int lookbackDays, TimeSpan londonTimeOfDay)
             => _live.GetLondonSnaps(ticker, lookbackDays, londonTimeOfDay);
 
+        /// <summary>Bloomberg's own per-day record of what this rung pointed at, straight from
+        /// the store's maturity table — the whole reason that table is recorded.</summary>
+        public DateTime? EffectiveOn(string ticker, DateTime day) => _store.EffectiveOn(ticker, day);
+
         public string Stats => $"history: {ServedFromStore} ticker(s) served from the store, " +
                                $"{GapFilled} gap-filled from Bloomberg";
 

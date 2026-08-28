@@ -70,9 +70,9 @@ namespace RateDesk.Weekly.Core.Daily
                         ws.Cell(r, 2).Value = e0;
                         ws.Cell(r, 2).Style.DateFormat.Format = "dd-mmm-yy";
                     }
-                    if (m.Turn)
+                    if (m.Masked)
                     {
-                        ws.Cell(r, 3).Value = RunsTable.TurnLabel;
+                        ws.Cell(r, 3).Value = m.MaskLabel;
                         ws.Cell(r, 3).Style.Font.SetItalic();
                     }
                     else
@@ -158,13 +158,22 @@ namespace RateDesk.Weekly.Core.Daily
                 // boundary days and mixed-state days (announcement→start, renumber in flight)
                 // never source a value — step back to the last clean day (desk 2026-08-26)
                 then = then.Date;
-                while (map.IsBoundary(then) || map.IsMixedState(then)) then = then.AddDays(-1);
+                // TRIED AND REVERTED (2026-08-28): lifting this for days the store has a
+                // maturity record for. It looks right - the record names the rung - but a record
+                // is stamped when the RUN looked, and a boundary day's feed re-points intraday,
+                // so it does not settle which contract that day's CLOSE belonged to. Scenario 57
+                // derives the same conclusion independently and rejected the change on twelve
+                // rows. The live cost of leaving it: on a roll day the row carries the previous
+                // clean close (SKSF, 26-Aug-26: 1.7237 where the family had moved to 1.7150),
+                // and self-corrects the next day. Do not re-add without desk sign-off.
+                bool Unusable(DateTime d) => map.IsBoundary(d) || map.IsMixedState(d);
+                while (Unusable(then)) then = then.AddDays(-1);
                 if (map.RungFor(contract, then) is not { } idx) return null;
                 var l = RungHist(idx);
                 for (int i = l.Count - 1; i >= 0; i--)
                     if (l[i].Date.Date <= then.Date)
                     {
-                        if (map.IsBoundary(l[i].Date.Date) || map.IsMixedState(l[i].Date.Date))
+                        if (Unusable(l[i].Date.Date))
                             return ValueAt(contract, l[i].Date.Date.AddDays(-1), depth + 1);
                         return (l[i].Date.Date, l[i].Value, l[i].Source);
                     }
@@ -188,9 +197,10 @@ namespace RateDesk.Weekly.Core.Daily
                 for (int ri = 0; ri < run.Rows.Count; ri++)
                 {
                     var m = run.Rows[ri];
-                    // Y/E-turn periods never publish as policy history (the runs sheet labels
-                    // them; these tables must not launder the turn print — audit 2026-08-26)
-                    if (m.TurnPeriod) continue;
+                    // masked periods never publish as policy history — a Y/E turn print would
+                    // launder the turn into the record, and a rejected print was never a market
+                    // number at all (audit 2026-08-26, extended 2026-08-27)
+                    if (m.Masked) continue;
                     if (ValueAt(m.Date, day) is not { } cur) continue;
                     // a boundary day's own row is unanchorable for Δ1d (the walk-back resolves
                     // both sides to the same pre-boundary close — publishing 0.0 there read as

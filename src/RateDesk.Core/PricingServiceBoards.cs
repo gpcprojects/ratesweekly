@@ -49,6 +49,26 @@ namespace RateDesk.Core
         /// print "Y/E Turn" instead of the numbers (which stay populated — they are the real,
         /// turn-dominated market prints, still valid as blend inputs).</summary>
         public bool TurnPeriod { get; init; }
+        /// <summary>The quoted print was rejected by the neighbour guard as impossible. The row
+        /// keeps the REAL print internally (blend inputs, guards) but publishes NO NUMBER — the
+        /// app never invents a mid (desk 2026-08-27: "we should never have to invent mids"), and
+        /// the hard-data rule already says blank beats manufactured. A CHECK note names it.</summary>
+        public bool Rejected { get; init; }
+
+        /// <summary>The row publishes a LABEL instead of numbers. Two causes, one mechanism.</summary>
+        public bool Masked => TurnPeriod || Rejected;
+
+        /// <summary>What the renderers print in the Mid cell of a masked row. ONE definition, so
+        /// the surfaces cannot drift apart (they carried three copies of the turn literal).</summary>
+        public string MaskLabel => TurnPeriod ? MaskLabels.Turn : Rejected ? MaskLabels.Rejected : "";
+    }
+
+    /// <summary>The labels a masked row publishes in place of its numbers.</summary>
+    public static class MaskLabels
+    {
+        public const string Turn = "Y/E Turn";
+        /// <summary>Short enough for the blast's fixed-width Mid column.</summary>
+        public const string Rejected = "n/a";
     }
 
     public sealed class MeetingRunResult
@@ -64,6 +84,11 @@ namespace RateDesk.Core
         /// decision→start compensation) — a swap mid standing in for the fixing until the new
         /// rate prints. Renderers must mark it (fresh-eyes review 2026-08-26).</summary>
         public bool RefRebased { get; set; }
+        /// <summary>The re-base fell all the way back to the decided contract's last close BEFORE
+        /// the statement — a real print of the right contract, but one that cannot contain
+        /// whatever the decision surprised the market with. Surfaces must not claim the base is
+        /// current (fix 2026-08-27, scenario 61).</summary>
+        public bool RefRebasedStale { get; set; }
         /// <summary>Next decision date + announcement time on the London clock.</summary>
         public DateTime? NextDecision { get; set; }
         public string DecisionTimeLondon { get; set; } = "";
@@ -141,6 +166,20 @@ namespace RateDesk.Core
         /// 365 (the default) for SONIA/CORRA/AONIA/NZ OCR/TONAR/NOWA. Validated against the
         /// desk pricer's own compounded values 2026-08-26 (RBNZ reproduced to the tick).</summary>
         public int FixingDcc { get; set; } = 365;
+        /// <summary>Business days the o/n fixing lags behind the rate it reports, i.e. how far
+        /// past the period start the announced-but-not-yet-effective re-base must keep running.
+        /// ZERO by default, corrected 2026-08-27 against the live Riksbank run. The reasoning:
+        /// the fixing printed on day d reports day d-1, and for eight of the ten runs the new
+        /// policy rate applies FROM the period start. So the printed fixing is stale only while
+        /// d-1 &lt; start, i.e. d &lt;= start, which is a window of zero extra days beyond the start
+        /// itself. A default of 1 re-based the Riksbank on 27-Aug, the day AFTER its period began
+        /// - by which time SWESTR had already printed the new rate - and replaced a real 1.642
+        /// fixing with a 1.660 swap mid, moving every Priced on the board by ~1.8bp.
+        ///
+        /// FOMC and MPC are the exception and carry 1 in config: their period starts ON the
+        /// decision date but the new target applies from the day AFTER, so their fixing is stale
+        /// for one day longer.</summary>
+        public int FixingLagDays { get; set; }
         public string? RefTicker { get; set; }
         /// <summary>Ladder name whose strip is the POLICY curve for this central bank, when that is a
         /// different index from the currency's default OIS curve. USD is the case: tenor swaps and forwards
@@ -219,6 +258,15 @@ namespace RateDesk.Core
         /// Concurrent: written from the UI thread, read from the meetings worker.</summary>
         public System.Collections.Concurrent.ConcurrentDictionary<string, double> MeetingRefOverrides { get; }
             = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>WHEN THE PUBLISHED MARKS WERE TAKEN, on the London clock. Null = the marks
+        /// are live, so the decision gates read the wall clock. Set to the snap time once
+        /// SnapDiscipline has PINNED the marks (from 16:15 London), because the boards must then
+        /// be gated by the clock the PRICES belong to, not by the clock the button was pressed
+        /// at. The FOMC announces at 19:00 — after the 16:15 close — so a run pressed at 19:30
+        /// was rolling the board past a decision every one of its prices predates
+        /// (desk 2026-08-27, scenario 58: "don't roll — the marks are the close").</summary>
+        public DateTime? MarksAsOfLondon { get; set; }
 
         /// <summary>Per-run pricing-source overrides (run name → contributor mnemonic, "" = composite).</summary>
         public System.Collections.Concurrent.ConcurrentDictionary<string, string> MeetingSourceOverrides { get; }
@@ -806,7 +854,8 @@ namespace RateDesk.Core
                 // period's own OIS, exactly the rung the re-base below reads. When the feed HAS
                 // re-pointed, the new front pairs only with the NEXT (unannounced) decision, so
                 // the gate self-disarms and nothing double-rolls.
-                var nowLdn = Dates.DecisionClock.LondonNow();
+                // the decision gates ride the marks' own clock (see MarksAsOfLondon)
+                var nowLdn = MarksAsOfLondon ?? Dates.DecisionClock.LondonNow();
                 int gateShift = 0;
                 {
                     while (meetDates.TryGetValue(gateShift + 1, out var f)
@@ -855,27 +904,79 @@ namespace RateDesk.Core
                         DateTime? effStart = null;
                         foreach (var d in sched.Dates.OrderBy(d => d))
                             if (d.Date >= dec) { effStart = d.Date; break; }
-                        if (effStart is { } eff && today < eff
-                            && (eff - dec).TotalDays <= 10)
+                        if (effStart is { } eff)
                         {
-                            double? pending = quotes[0]?.Effective is { } e0 && e0.Date >= dec
-                                ? quotes[0]?.Mid : null;
-                            if (pending is null && History != null
-                                && sched.Tickers.FirstOrDefault(t => t.Contains("{N}")) is { } pat)
+                        // THE WINDOW (fix 2026-08-27, scenarios 54/55). It used to close the
+                        // moment the period started — but the o/n fixings publish a day in
+                        // ARREARS, so on the period's first day the printed fixing still refers
+                        // to the day before it, i.e. the old rate. For FOMC and MPC, whose
+                        // period starts ON the decision date, `today < eff` was empty and the
+                        // re-base could never fire at all while EFFR/SONIA carried the pre-cut
+                        // rate. The window now runs through eff + fixingLagDays business days;
+                        // erring long is safe, because once the fixing catches up it equals the
+                        // decided period's own OIS and the re-base becomes a no-op.
+                        var windowEnd = eff;
+                        for (int i = 0; i < Math.Max(0, sched.FixingLagDays); i++)
+                        {
+                            windowEnd = windowEnd.AddDays(1);
+                            while (windowEnd.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+                                windowEnd = windowEnd.AddDays(1);
+                        }
+                        if (today <= windowEnd && (eff - dec).TotalDays <= 10)
+                        {
+                            // 1. the LIVE mark of the decided period, wherever the family quotes
+                            //    it. Reading only index 0 worked on the statement day (the gate
+                            //    shift puts it there) and stopped working the moment the feed
+                            //    re-pointed; matching on the contract's own effective date works
+                            //    in both states.
+                            double? pending = null;
+                            for (int k = 0; k < quotes.Length && pending is null; k++)
+                                if (quotes[k]?.Effective is { } ek && ek.Date == eff)
+                                    pending = quotes[k]?.Mid;
+
+                            var pat0 = sched.Tickers.FirstOrDefault(t => t.Contains("{N}"));
+                            bool stale = false;
+                            if (pending is null && History != null && pat0 is { } pat)
                             {
                                 int span = (int)(today - dec).TotalDays + 15;
-                                foreach (var pt in History.GetDaily(MeetingTick(sched, pat, 1), span))
-                                    if (pt.Date.Date < dec) pending = pt.Value;
-                                // composite closes as the fallback — the same rule as FamilyHist
-                                // (audit 2026-08-26: a contributor page with no history left the
-                                // re-base silently undone, overstating Priced by the delivered
-                                // step for the whole decision→start week)
-                                if (pending is null && MeetingSrc(sched).Length > 0)
-                                    foreach (var pt in History.GetDaily(
-                                        pat.Replace("{N}", "1") + " Curncy", span))
-                                        if (pt.Date.Date < dec) pending = pt.Value;
+                                string[] Spellings(int n) => MeetingSrc(sched).Length > 0
+                                    ? new[] { MeetingTick(sched, pat, n), pat.Replace("{N}", n.ToString()) + " Curncy" }
+                                    : new[] { MeetingTick(sched, pat, n) };
+
+                                // 2. a CLOSE of the decided period, from a day on which Bloomberg's
+                                //    own record proves that rung WAS this contract. Walking forward
+                                //    from the decision is what lets the mark contain the surprise;
+                                //    the old code walked backward and could not (scenario 61).
+                                for (var d = today; d >= dec && pending is null; d = d.AddDays(-1))
+                                    for (int n = 0; n <= 3 && pending is null; n++)
+                                        foreach (var tk in Spellings(n))
+                                        {
+                                            if (History.EffectiveOn(tk, d) != eff) continue;
+                                            foreach (var pt in History.GetDaily(tk, span))
+                                                if (pt.Date.Date == d.Date) pending = pt.Value;
+                                            if (pending is not null) break;
+                                        }
+
+                                // 3. last resort: that contract's last close BEFORE the decision —
+                                //    the market's guess at what the meeting would deliver. It is a
+                                //    real print of the right contract, so it beats the stale
+                                //    fixing, but it CANNOT contain a surprise. Flagged, so the
+                                //    surfaces stop claiming the base is current.
+                                if (pending is null)
+                                    foreach (var tk in Spellings(1))
+                                    {
+                                        foreach (var pt in History.GetDaily(tk, span))
+                                            if (pt.Date.Date < dec) pending = pt.Value;
+                                        if (pending is not null) { stale = true; break; }
+                                    }
                             }
-                            if (pending is { } pv) { res.RefPct = pv; res.RefRebased = true; }
+                            if (pending is { } pv)
+                            {
+                                res.RefPct = pv;
+                                res.RefRebased = true;
+                                res.RefRebasedStale = stale;
+                            }
+                        }
                         }
                     }
                 }
@@ -915,7 +1016,11 @@ namespace RateDesk.Core
                 bool TurnAt(int k) =>
                     sched.MarkTurnPeriods && meetDates.TryGetValue(k, out var td)
                     && (meetDates.TryGetValue(k + 1, out var te) ? td.Year != te.Year : td.Month == 12);
-                (double v, bool rej) GuardedMid(int k)
+                // The guard REJECTS, it does not replace. Publishing the neighbour midpoint put a
+                // number the market never quoted in front of clients (desk 2026-08-27: "we should
+                // never have to invent mids"), and the hard-data rule already governs this case —
+                // blank beats manufactured. Returns how far off the print sat, for the note.
+                double? RejectedBy(int k)
                 {
                     double m0 = tickMid[k]!.Value;
                     int lo = k - 1, hi = k + 1;
@@ -926,9 +1031,9 @@ namespace RateDesk.Core
                         && Math.Abs(a - b) * 100.0 < 25.0)
                     {
                         double mExp = (a + b) / 2.0;
-                        if (Math.Abs(m0 - mExp) * 100.0 > 25.0) return (mExp, true);
+                        if (Math.Abs(m0 - mExp) * 100.0 > 25.0) return (m0 - mExp) * 100.0;
                     }
-                    return (m0, false);
+                    return null;
                 }
 
                 double? prevPriced = null;
@@ -959,6 +1064,7 @@ namespace RateDesk.Core
                     double mid;
                     string midSrc;
                     double? cod = null;
+                    double? off = null;      // how far a rejected print sat from its neighbours
                     if (q?.Mid is double qm)
                     {
                         // feed-staleness watch (desk 2026-08-26): a published rung whose quote
@@ -966,10 +1072,13 @@ namespace RateDesk.Core
                         // feed, so the terminal's timezone offset cancels
                         if (q.AgeMinutes is double age0 && age0 - ageBase > 60)
                             staleRungs.Add((d0, age0 - ageBase));
-                        var (gm, rej) = turn0 ? (qm, false) : GuardedMid(n);
-                        mid = gm;
-                        midSrc = rej ? $"interp (ticker {SignedBp((qm - gm) * 100.0)}bp off — rejected)" : "ticker";
-                        cod = rej ? null
+                        // the REAL print stays on the row (blend inputs, guards, the note); when
+                        // the guard rejects it the row publishes a label instead of a number
+                        off = turn0 ? null : RejectedBy(n);
+                        mid = qm;
+                        midSrc = off is { } ob
+                            ? $"rejected (ticker {SignedBp(ob)}bp off its neighbours)" : "ticker";
+                        cod = off != null ? null
                             : rolled
                                 ? (n + 1 < quotes.Length && quotes[n + 1]?.PrevClose is double pc
                                     ? (qm - pc) * 100.0 : null)
@@ -998,15 +1107,19 @@ namespace RateDesk.Core
                     // meeting and its own. That number is clean by construction — neither
                     // neighbouring period contains the turn days, so the turn drag cancels; only
                     // the masked meeting's OWN step is unrecoverable from these contracts.
+                    // A REJECTED print is masked by the same mechanism for the same reason: the
+                    // row cannot publish a number, so it publishes a label and the step chain
+                    // steps over it to the last clean Priced.
                     bool turn = turn0;
+                    bool masked = turn || off != null;
                     res.Rows.Add(new MeetingRow
                     {
                         Date = d0, EndDate = haveEnd && tickerDated.Contains(n + 1) ? dEnd0 : null,
                         MidPct = mid, PricedBp = priced,
-                        StepBp = !turn && priced.HasValue && prevPriced.HasValue ? priced - prevPriced : null,
-                        CoDBp = cod, MidSource = midSrc, TurnPeriod = turn,
+                        StepBp = !masked && priced.HasValue && prevPriced.HasValue ? priced - prevPriced : null,
+                        CoDBp = cod, MidSource = midSrc, TurnPeriod = turn, Rejected = off != null,
                     });
-                    if (!turn) prevPriced = priced;
+                    if (!masked) prevPriced = priced;
                 }
 
                 if (staleRungs.Count > 0)
@@ -1398,8 +1511,14 @@ namespace RateDesk.Core
         /// two different meetings at each roll. One batched prefetch per builder; call the returned
         /// func per meeting. Used by the pricer's meeting charts AND the weekly report's 1w/1m
         /// changes, so both stay roll-safe by construction.</summary>
+        /// <summary>Reads the strip's own price history for renumbering, when a provider offers
+        /// it. Set by the app/CLI to Weekly.Core's RungShiftScan; null in Core-only tests, where
+        /// the calendar fallback governs exactly as before.</summary>
+        public Func<MeetingScheduleDef, Func<int, string>, DateTime, Func<int, double?>,
+            IReadOnlyList<(DateTime Day, int Shift, bool Confirmed)>>? ObservedShifts { get; set; }
+
         internal Func<DateTime, IReadOnlyList<HistPoint>> MeetingSeriesBuilder(
-            MeetingScheduleDef sched, IEnumerable<DateTime> runDates)
+            MeetingScheduleDef sched, IEnumerable<DateTime> runDates, List<string>? notes = null)
         {
             // warm every ticker index the stitching can touch in one batched BDH round-trip
             try
@@ -1415,8 +1534,75 @@ namespace RateDesk.Core
             // previously never a boundary and up to a week of closes after every recent decision
             // stitched to the wrong contract — including the Δ1m anchors in that window),
             // starts kept for SKSF, 14-day cluster keeping the earliest.
-            var rungMap = new MeetingRungMap(sched, runDates);
+            // Bloomberg's own per-day record of what each rung pointed at, when the store has
+            // been recording it (every daily run stores it). Evidence beats the boundary count.
+            var patRec = sched.Tickers.FirstOrDefault(t => t.Contains("{N}"));
+            var recCache = new Dictionary<(int, DateTime), DateTime?>();
+            Func<int, DateTime, DateTime?>? recorded = History == null || patRec == null ? null
+                : (n, d) =>
+                {
+                    if (recCache.TryGetValue((n, d), out var hit)) return hit;
+                    DateTime? v = History.EffectiveOn(MeetingTick(sched, patRec, n), d);
+                    if (v is null && MeetingSrc(sched).Length > 0)
+                        v = History.EffectiveOn(patRec.Replace("{N}", n.ToString()) + " Curncy", d);
+                    recCache[(n, d)] = v;
+                    return v;
+                };
+            var rungMap = new MeetingRungMap(sched, runDates, recorded);
+
+            // THE STRIP'S OWN ACCOUNT OF ITS RENUMBERING (2026-08-27). Prices are seeded 45 days
+            // back on a machine's first run, so this reaches the whole window - unlike the
+            // recorded SW_EFF_DT above, which only exists from the day recording began. It is the
+            // only source that can see an UNSCHEDULED meeting being inserted, because that is not
+            // in the calendar retrospectively and the field history cannot be fetched.
+            IReadOnlyList<(DateTime Day, int Shift, bool Confirmed)>? shifts = null;
+            if (ObservedShifts != null && patRec != null)
+                try
+                {
+                    shifts = ObservedShifts(sched, n => MeetingTick(sched, patRec, n),
+                        DateTime.Today.AddDays(-70),
+                        n => Snapshot.Get(MeetingTick(sched, patRec, n))?.Mid
+                             ?? (MeetingSrc(sched).Length > 0
+                                 ? Snapshot.Get(patRec.Replace("{N}", n.ToString()) + " Curncy")?.Mid
+                                 : null));
+                }
+                catch { /* the calendar still governs */ }
+
+            // Which rung each published contract sits on RIGHT NOW, from the tickers' own live
+            // SW_EFF_DT - no calendar, no store, no inference. This is the anchor the observed
+            // shifts are measured from.
+            int? RungToday(DateTime meeting)
+            {
+                if (patRec == null) return null;
+                for (int n = 0; n <= 13; n++)
+                {
+                    var q = Snapshot.Get(MeetingTick(sched, patRec, n));
+                    if (q?.Effective?.Date == meeting.Date) return n;
+                    if (MeetingSrc(sched).Length > 0
+                        && Snapshot.Get(patRec.Replace("{N}", n.ToString()) + " Curncy")?.Effective?.Date
+                           == meeting.Date) return n;
+                }
+                return null;
+            }
+
+            // total renumbering between a past day and now; null when any day in between could
+            // not be judged (a broken chain is a guess, and this must never guess)
+            int? ShiftSince(DateTime day)
+            {
+                if (shifts == null) return null;
+                int t = 0;
+                foreach (var (d, sh, ok) in shifts)
+                {
+                    if (d.Date <= day.Date) continue;
+                    if (!ok) return null;
+                    t += sh;
+                }
+                return t;
+            }
+            var noted = new HashSet<string>();
             var allMeet = rungMap.Boundaries.ToList();
+            // the run's own front row — the contract the misprint guard must never judge
+            DateTime? frontMeeting = runDates.Select(d => (DateTime?)d.Date).FirstOrDefault();
             // DESK CONVENTION (2026-08-06): history values are the daily 4:30pm-LONDON snaps, not
             // closes — the desk's incumbent sheet snaps then, and the changes must reconcile. The
             // snaps are also STRUCTURALLY cleaner at roll boundaries: at 16:30 on a decision day
@@ -1495,23 +1681,111 @@ namespace RateDesk.Core
                     // the desk sheet's baseline.
                     // mixed-state days (announcement→start, per-rung renumber in flight) source
                     // NOTHING — closes or snaps (desk 2026-08-26, the ECB +24.3bp Δ1m)
-                    var win = h.Where(p => p.Date > lo && !rungMap.IsMixedState(p.Date)
+                    // MIXED-STATE IS A PRECAUTION, NOT A VERDICT (2026-08-27). Those days are
+                    // excluded because the family renumbers through them and nothing says which
+                    // rung is which — but when the store RECORDED what each rung pointed at that
+                    // day, we are not guessing and the day is perfectly usable. Evidence lifts
+                    // the precaution; the re-point below then puts the point on the right rung.
+                    // THE BOUNDARY DAY BELONGS TO WHICHEVER RUNG ACTUALLY HELD THE CONTRACT
+                    // (fix 2026-08-27, live SKSF). `lo` is excluded because on the boundary day
+                    // itself this contract sat one rung HIGHER, and that rung's window covers it.
+                    // That reasoning fails when the higher rung does not exist: SKSF quotes six
+                    // rungs, so on the 26-Aug roll the 12-May-27 contract's pre-roll rung was
+                    // SKSF7A - nothing - and the day fell down the gap between the two windows.
+                    // The board published the row and then blanked all three change columns, on
+                    // a day when the value was sitting on SKSF6A in plain sight (2.236, matching
+                    // Bloomberg's own +0.0 and the desk sheet's +0.1).
+                    //
+                    // Where the store RECORDED what the rungs pointed at that day we are not
+                    // guessing about the boundary at all, so admit the day and let the re-point
+                    // below place it - it reads RungFor, keeps the point only if this really is
+                    // the rung that held the contract, and takes the value from that rung's own
+                    // series either way. With no record the old exclusion stands untouched.
+                    var win = h.Where(p => (p.Date > lo || (p.Date == lo && rungMap.HasRecordFor(p.Date)))
+                        && (!rungMap.IsMixedState(p.Date) || rungMap.HasRecordFor(p.Date))
                         && (p.Date < hi || (p.Date == hi && snapped.Contains(p.Date)))).ToList();
                     if (win.Count == 0) continue;
-                    // same neighbour guard as the live rows: a thin family's misprint (SKSF4A's 1.387
-                    // between 1.85/2.09 neighbours) poisons HISTORY too — judge each point against the
-                    // adjacent generics on the same date, replace with their midpoint when impossible
+
+                    // RE-POINT AGAINST THE RECORD (fix 2026-08-27, scenario 21). The window's idx
+                    // comes from counting boundaries as they stand TODAY. A meeting the calendar
+                    // gained after the fact — an unscheduled decision — re-numbers every day
+                    // before it under that count, while the data was published under the
+                    // numbering the market actually had. Where the store recorded what each rung
+                    // pointed at, use that instead: read the rung that WAS this contract, and
+                    // drop the day when none was. Nothing is invented either way.
+                    // EVIDENCE OVER INFERENCE, in order. `idx` above is the calendar's opinion.
+                    // Two sources can overrule it, and both are the tickers' own data:
+                    //   1. the recorded SW_EFF_DT for that day - exact, but only since 26-Aug-26;
+                    //   2. the renumbering read off the strip's own prices - reaches the whole
+                    //      seeded window, and is the ONLY thing that sees an unscheduled meeting
+                    //      inserted at the front.
+                    // Neither ever invents a number: they pick which rung to read, and the value
+                    // is that rung's own close. When neither can say, the calendar stands.
+                    if (recorded != null || shifts != null)
+                    {
+                        int? rungNow = RungToday(meeting);
+                        var fixedWin = new List<HistPoint>(win.Count);
+                        foreach (var p in win)
+                        {
+                            int? trueIdx = null;
+                            string source = "";
+
+                            if (rungMap.HasRecordFor(p.Date))
+                            {
+                                if (recorded!(idx, p.Date)?.Date == meeting.Date) { fixedWin.Add(p); continue; }
+                                trueIdx = rungMap.RungFor(meeting, p.Date);
+                                source = "the tickers' own recorded dates";
+                            }
+                            else if (rungNow is { } r0 && ShiftSince(p.Date) is { } sh)
+                            {
+                                trueIdx = r0 + sh;
+                                source = "the strip's own prices";
+                            }
+
+                            if (trueIdx is not { } ti) { fixedWin.Add(p); continue; }
+                            if (ti == idx) { fixedWin.Add(p); continue; }
+                            if (ti < 1 || FamilyHist(ti) is not { } alt) continue;   // no rung held it
+                            var hit = alt.pts.FirstOrDefault(x => x.Date.Date == p.Date.Date);
+                            if (hit == default) continue;
+                            fixedWin.Add(hit);
+
+                            // say it once per run, in words a reader can act on
+                            if (notes != null && noted.Add(sched.Name))
+                                notes.Add($"{sched.Name}: on {p.Date:dd-MMM-yy} the tickers were not " +
+                                          $"numbered the way the meeting calendar implies, so the change " +
+                                          $"columns follow {source} instead. This is normal after an " +
+                                          "unscheduled meeting; if there has not been one, the calendar " +
+                                          "in config/meetings.json needs checking.");
+                        }
+                        win = fixedWin;
+                        if (win.Count == 0) continue;
+                    }
+
+                    // Same neighbour guard as the live rows, with the live rows' TWO exemptions,
+                    // which this arm was missing (verified 2026-08-27, scenario 62):
+                    //   · THE FRONT CONTRACT IS NEVER JUDGED. GuardedMid refuses the front row
+                    //     because "the front meeting is the one that gaps for real" — and a
+                    //     decision day is exactly when it gaps. Keying the exemption on the
+                    //     generic index instead of the row meant the front's own closes WERE
+                    //     rewritten (its recent history is read at idx 2 on a decision day), so
+                    //     the board published a real print and a change measured from an
+                    //     invented one.
+                    //   · a TURN period is a legitimate far-off print — never judged, never a
+                    //     neighbour (the live guard's TurnAt stand-down).
+                    // And the guard WITHHOLDS rather than substitutes: the point is dropped from
+                    // the window so the lookback walks back to the last clean day, instead of
+                    // anchoring on a number the market never quoted.
                     var loN = FamilyHist(idx - 1)?.pts;
                     var hiN = FamilyHist(idx + 1)?.pts;
-                    if (loN != null && hiN != null && idx - 1 >= 1)
+                    if (loN != null && hiN != null && idx - 1 >= 1 && meeting.Date != frontMeeting?.Date)
                     {
                         var loBy = loN.ToDictionary(p => p.Date, p => p.Value);
                         var hiBy = hiN.ToDictionary(p => p.Date, p => p.Value);
-                        for (int k = 0; k < win.Count; k++)
-                            if (loBy.TryGetValue(win[k].Date, out var a) && hiBy.TryGetValue(win[k].Date, out var b)
-                                && Math.Abs(a - b) * 100.0 < 25.0
-                                && Math.Abs(win[k].Value - (a + b) / 2.0) * 100.0 > 25.0)
-                                win[k] = new HistPoint(win[k].Date, (a + b) / 2.0);
+                        win = win.Where(p =>
+                            !(loBy.TryGetValue(p.Date, out var a) && hiBy.TryGetValue(p.Date, out var b)
+                              && Math.Abs(a - b) * 100.0 < 25.0
+                              && Math.Abs(p.Value - (a + b) / 2.0) * 100.0 > 25.0)).ToList();
+                        if (win.Count == 0) continue;
                     }
                     pts.InsertRange(0, win);
                 }

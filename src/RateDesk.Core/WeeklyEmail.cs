@@ -166,8 +166,8 @@ namespace RateDesk.Core
                     Td(Inv(f.StartDate), rb) +
                     // a year-end-spanning front period prints the turn, not the policy path —
                     // label it rather than publish a number that reads as a cut (desk 2026-08-20)
-                    (f.TurnPeriod
-                        ? Td($"<i>Y/E Turn</i>", $"text-align:right;color:{EmMut};{rb}") +
+                    (f.Masked
+                        ? Td($"<i>{f.MaskLabel.Replace(" ", "&nbsp;")}</i>", $"text-align:right;color:{EmMut};{rb}") +
                           Td(f.RefPct is double rp3 ? rp3.ToString("0.000") + Reb(f.RefRebased) : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
                           Td("&nbsp;", rb) + Td("&nbsp;", rb)
                         : Td($"<b>{f.MidPct:0.000}</b>", $"text-align:right;{rb}") +
@@ -211,7 +211,7 @@ namespace RateDesk.Core
                 // the compounded value stays IN the report (mechanics for a later install) but
                 // renders NOWHERE — desk 2026-08-26: "no mention of compounded rates anywhere"
                 // † = not the printed fixing (re-based onto the just-decided period's OIS)
-                string rebMark = run.RefRebased ? "†&nbsp;(rebased)" : "";
+                string rebMark = run.RefRebased ? "†&nbsp;" + run.RebasedLabel.Trim().Replace(" ", "&nbsp;") : "";
                 sb.Append($"<div style=\"{EmFont}font-weight:bold;font-size:12.5px;color:{EmTxt};margin:0 0 3px 1px;\">{run.Title}" +
                           (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">fixing {rp:0.000}{rebMark}</span>" : "")
                           + "</div>");
@@ -244,13 +244,13 @@ namespace RateDesk.Core
                 foreach (var m in run.Rows)
                 {
                     string rb = RowBg(mr++);
-                    if (m.TurnPeriod)
+                    if (m.Masked)
                     {
                         // year-end-spanning period: the average carries the SWESTR-style turn
                         // dislocation — label it, never publish it as a policy expectation
                         sb.Append("<tr>" +
                             CTd(Inv(m.Date), 0, rb) +
-                            CTd($"<i>Y/E&nbsp;Turn</i>", 1, $"text-align:right;color:{EmMut};{rb}") +
+                            CTd($"<i>{m.MaskLabel.Replace(" ", "&nbsp;")}</i>", 1, $"text-align:right;color:{EmMut};{rb}") +
                             CTd("&nbsp;", 2, rb) + CTd("&nbsp;", 3, rb) + CTd("&nbsp;", 4, rb) +
                             CTd("&nbsp;", 5, rb) + CTd("&nbsp;", 6, rb) +
                             "</tr>");
@@ -386,8 +386,8 @@ namespace RateDesk.Core
             foreach (var f in rep.Fronts)
                 sb.AppendLine($"{f.Bank} {f.Ccy}\t{(f.Decision ?? f.StartDate).ToString("dd-MMM-yy", inv)}{(f.Decision == null ? " *" : "")}\t" +
                     $"{f.StartDate.ToString("dd-MMM-yy", inv)}\t" +
-                    (f.TurnPeriod
-                        ? $"Y/E Turn\t{(f.RefPct is double rt ? rt.ToString("0.000") : "")}\t"
+                    (f.Masked
+                        ? $"{f.MaskLabel}\t{(f.RefPct is double rt ? rt.ToString("0.000") : "")}\t"
                         : $"{f.MidPct:0.000}\t{(f.RefPct is double rr ? rr.ToString("0.000") : "")}\t" +
                           $"{(f.PricedBp is double p ? p.ToString("+0.0;-0.0;0.0") : "")}"));
         }
@@ -401,11 +401,11 @@ namespace RateDesk.Core
         {
             sb.AppendLine();
             sb.AppendLine(run.Title
-                + (run.RefPct is double rp ? $"  fixing {rp:0.000}{(run.RefRebased ? " (rebased)" : "")}" : ""));
+                + (run.RefPct is double rp ? $"  fixing {rp:0.000}{run.RebasedLabel}" : ""));
             sb.AppendLine("StartDate\tMid\tPriced\tStep\t1d Chg\t1w Chg\t1m Chg");
             foreach (var m in run.Rows)
-                sb.AppendLine(m.TurnPeriod
-                    ? $"{m.Date.ToString("dd-MMM-yy", inv)}\tY/E Turn\t\t\t\t\t"
+                sb.AppendLine(m.Masked
+                    ? $"{m.Date.ToString("dd-MMM-yy", inv)}\t{m.MaskLabel}\t\t\t\t\t"
                     : $"{m.Date.ToString("dd-MMM-yy", inv)}\t{m.MidPct:0.000}\t{m.PricedBp:+0.0;-0.0;0.0}\t{m.StepBp:+0.0;-0.0;0.0}\t" +
                       $"{(m.D1Bp is double d1 ? d1.ToString("+0.0;-0.0;0.0") : "")}\t" +
                       $"{(m.W1Bp is double w ? w.ToString("+0.0;-0.0;0.0") : "")}\t{(m.M1Bp is double m1 ? m1.ToString("+0.0;-0.0;0.0") : "")}");

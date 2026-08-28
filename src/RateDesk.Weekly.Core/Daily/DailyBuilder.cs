@@ -206,6 +206,8 @@ namespace RateDesk.Weekly.Core.Daily
             // cannot come from history).
             var sbh = store != null ? new StoreBackedHistory(store, refData, log) : null;
             svc.History = (IHistoryProvider?)sbh ?? refData;
+            // let the boards read the strip's own renumbering out of the seeded price history
+            if (store != null) svc.ObservedShifts = Series.RungShiftScan.Bind(store);
             var all = EmailBuilder.AllTickers(configs, svc);
             // inflation fixing swaps ride along (desk 2026-08-25): their maturities identify
             // which reference month each ticker means today — the unified fixings history's key
@@ -219,7 +221,14 @@ namespace RateDesk.Weekly.Core.Daily
             var snapSet = svc.MeetingTickers().Concat(PricingService.WeeklyExtraTickers)
                 .Concat(Infl.InflHistory.Families.SelectMany(f =>
                     Enumerable.Range(1, 12).Select(n => $"{f.Root}{n} Curncy"))).ToList();
-            var (_, snapNote) = SnapDiscipline.Apply(refData, snap, snapSet, log);
+            var (snapMode, snapNote) = SnapDiscipline.Apply(refData, snap, snapSet, log);
+            // Once the marks are PINNED to the 16:15 snap they are the close, so the decision
+            // gates must read 16:15 and not the wall clock — otherwise a run pressed after a
+            // late statement rolls the board past a decision every price in it predates
+            // (desk 2026-08-27). Before 16:15 the marks are live and the wall clock is right.
+            if (snapMode == SnapDiscipline.Mode.Snap1615)
+                svc.MarksAsOfLondon = RateDesk.Core.Dates.DecisionClock.LondonNow().Date
+                                      + SnapDiscipline.SnapAt;
             if (sbh == null)
                 try { refData.Prefetch(all, 220); } catch { /* singles fallback inside Core */ }
             var rep = svc.BuildWeekly(meetingsOnly: true);
@@ -232,6 +241,12 @@ namespace RateDesk.Weekly.Core.Daily
             // question): one row far off its run's median gets a CHECK note for a manual look
             // before distribution — flagged, never suppressed
             rep.Notes.AddRange(OutlierGuard.Check(rep));
+            rep.Notes.AddRange(LateAnnouncementNotes(svc));
+            // the calendar guard runs on the daily cadence too (it used to run only inside the
+            // weekly UpdateEngine, so the daily product never saw a missing announcement time or
+            // an empty decision list — scenario 06)
+            try { rep.Notes.AddRange(CalendarHealth.Check(MeetingsStore.Schedules, snap, store!, DateTime.Today)); }
+            catch (Exception ex) { log?.Invoke("! daily: calendar health: " + ex.Message); }
             foreach (var n in rep.Notes) log?.Invoke("  daily note: " + n);
 
             if (store != null)
@@ -313,6 +328,25 @@ namespace RateDesk.Weekly.Core.Daily
                 catch { /* omitted, never guessed */ }
             }
             return rep;
+        }
+
+        /// <summary>Banks whose statement lands AFTER the marks were taken. Their board is
+        /// deliberately NOT rolled (the prices predate the decision), so the run says why rather
+        /// than leaving a reader to wonder where the meeting went.</summary>
+        public static List<string> LateAnnouncementNotes(PricingService svc)
+        {
+            var notes = new List<string>();
+            if (svc.MarksAsOfLondon is not { } marks) return notes;
+            foreach (var sched in MeetingsStore.Schedules)
+            {
+                if (!string.IsNullOrEmpty(sched.Kind)) continue;
+                if (!TimeSpan.TryParse(sched.DecisionTimeLondon, out var t) || t <= marks.TimeOfDay) continue;
+                if (!sched.DecisionDates.Any(d => d.Date == marks.Date)) continue;
+                notes.Add($"{sched.Name} announces at {sched.DecisionTimeLondon} London, after this " +
+                          $"run's {marks:HH:mm} marks — the board is NOT rolled past today's " +
+                          "decision, because every price in this run was taken before it.");
+            }
+            return notes;
         }
 
         /// <summary>Write all three deliverables (blast, workbook, email trio) and copy the
