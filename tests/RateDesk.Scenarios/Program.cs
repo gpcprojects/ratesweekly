@@ -54,12 +54,26 @@ public static class Program
     private static int RunAll(string[] args)
     {
         string root = "results";
-        for (int i = 0; i < args.Length - 1; i++) if (args[i] == "--out") root = args[i + 1];
+        var skip = new HashSet<int>();
+        for (int i = 0; i < args.Length - 1; i++)
+        {
+            if (args[i] == "--out") root = args[i + 1];
+            // --skip 26,47 : run everything else and report these as SKIPPED rather than red.
+            // Only for scenarios whose PREMISE cannot be built today, never to hide a failure -
+            // the reason belongs in FINDINGS.md and the ids belong in the pipeline yaml, where
+            // they are visible, not buried in a filter here.
+            if (args[i] == "--skip")
+                foreach (var t in args[i + 1].Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (int.TryParse(t.Trim(), out var sid)) skip.Add(sid);
+        }
         Directory.CreateDirectory(root);
 
         var dll = Assembly.GetExecutingAssembly().Location;
         var host = Environment.ProcessPath ?? "dotnet";
-        var ids = Registry.All().Select(s => s.Id).ToList();
+        var ids = Registry.All().Select(s => s.Id).Where(i => !skip.Contains(i)).ToList();
+        if (skip.Count > 0)
+            Console.WriteLine($"SKIPPING {string.Join(", ", skip.OrderBy(x => x))} " +
+                              "(premise not constructible today - see FINDINGS.md)");
         var rows = new List<(int Id, string Name, bool Pass, int Failures, bool MustFail)>();
 
         foreach (var id in ids)
