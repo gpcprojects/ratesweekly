@@ -11,29 +11,21 @@ namespace RateDesk.Weekly.Core
     {
         public const string FileName = "recipients.json";
 
-        /// <summary>The incumbent xlsm's BCC_1 list verbatim (London Closing Runs email).</summary>
-        public static readonly string[] Defaults =
-        {
-            "Arthur.LeDreff@brevanhoward.com",
-            "dberge6@bloomberg.net",
-            "globalratesexec@jbdh.com",
-            "Ajay.balaji@brcap.com",
-            "tony.yu@brcap.com",
-            "Rates-team@brcap.com",
-            "jlanders@veritionfund.com",
-            "rhines@veritionfund.com",
-            "Charlie.kirby@tudor.com",
-            "angus.abbot@exoduspoint.com",
-            "jernej.fink@lmrpartners.com",
-            "rmuharemi@schonfeld.com",
-            "Roee Feingold <RoeeFe@barakcapital.com>",
-            "Alan@agavecapital.com",
-            "jongjin.park@barclays.com",
-            "Shanta, Paul <paul.shanta@brevanhoward.com>",
-            "mirco.bulega@gmail.com",
-            "sukhjeet.atwal@bluecrestcapital.com",
-            "james.austin@missioncrestcapital.com",
-        };
+        /// <summary>EMPTY BY DESIGN (2026-08-28). This array used to hold the incumbent's BCC_1
+        /// list verbatim - nineteen live client addresses at Brevan Howard, Tudor, ExodusPoint,
+        /// Schonfeld, Barclays, BlueCrest, Verition and others.
+        ///
+        /// Two things were wrong with that. The repository is PUBLIC, so the client distribution
+        /// list was published with the source. And because Load() falls back here whenever
+        /// recipients.json is absent, every fresh install came preloaded with the whole list -
+        /// one machine set up by someone who did not know, one click of DAILY EMAIL, and the
+        /// desk's client list is on an outbound draft nobody meant to send.
+        ///
+        /// A recipient list is desk data, not application data. It belongs in
+        /// %APPDATA%\RatesWeekly\recipients.json, entered through the RECIPIENTS button, and
+        /// nowhere in the build. A new machine now starts with NO recipients and says so
+        /// ("0 recipient(s) in BCC") rather than quietly addressing eighteen counterparties.</summary>
+        public static readonly string[] Defaults = System.Array.Empty<string>();
 
         public static List<string> Load(string appDataDir)
         {
