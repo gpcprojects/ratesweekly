@@ -160,7 +160,7 @@ namespace RateDesk.Weekly.Core
                     }
                 log?.Invoke($"email: topped up {fx} inflation fixing series");
                 // anchors stay on documented closes — see InflHistory.Maintain (desk call pending)
-                try { Infl.InflHistory.Maintain(store, log); }
+                try { Infl.InflHistory.Maintain(store, log, bars: refData); }
                 catch (Exception ex) { log?.Invoke("  ! infl maintain: " + ex.Message); }
                 // re-collect the marks AFTER the snap pin so the cards publish the close
                 try { Infl.InflHistory.LastLiveMarks = Infl.InflHistory.CollectLiveMarks(snap, store); }

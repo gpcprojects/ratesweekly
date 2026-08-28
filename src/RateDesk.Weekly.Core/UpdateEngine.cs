@@ -159,7 +159,7 @@ namespace RateDesk.Weekly.Core
             // UNIFIED INFLATION HISTORY upkeep (desk 2026-08-25): fold this run's fixing-swap
             // closes into the fixing-identity history via their freshly recorded maturities.
             // 'bbg' rows never overwrite validated sheet rows (Infl.InflHistory merge rule).
-            try { Infl.InflHistory.Maintain(store, Log); }
+            try { Infl.InflHistory.Maintain(store, Log, bars: refdata); }
             catch (Exception ex) { Log("  ! infl maintain: " + ex.Message); }
 
             string state = warnings.Count == 0 ? "ok" : "partial";

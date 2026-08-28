@@ -307,7 +307,7 @@ namespace RateDesk.Weekly.Core.Daily
                 // fixing is quoted independently and swings multiple bp intraday — BPSWIF12
                 // ranged 444.38-455.88 on 26-Aug). Pass `bars: refData` to move both sides
                 // onto the 16:15 snap; one line, no other change needed.
-                try { Infl.InflHistory.Maintain(store, log); }
+                try { Infl.InflHistory.Maintain(store, log, bars: refData); }
                 catch (Exception ex) { log?.Invoke("  ! infl maintain: " + ex.Message); }
                 // fixings nobody quoted today (their 0.00 is silence, not a flat market)
                 try { rep.Notes.AddRange(Infl.InflHistory.StaleNotes(store)); }
