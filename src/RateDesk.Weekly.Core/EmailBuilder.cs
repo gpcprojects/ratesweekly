@@ -175,8 +175,14 @@ namespace RateDesk.Weekly.Core
             CompoundedFixing.Stamp(rep, svc, configs, log);
             // fixings nobody quoted today (their 0.00 is silence, not a flat market)
             if (store != null)
+            {
                 try { rep.Notes.AddRange(Infl.InflHistory.StaleNotes(store)); }
                 catch { /* informational */ }
+                // a tenor that moved alone is a bad mark far more often than a market - said on
+                // every run now, because twice the desk found it before the app did
+                try { rep.Notes.AddRange(Infl.InflHistory.CoherenceNotes(store, rep.AsOf)); }
+                catch { /* informational */ }
+            }
             // exchange-settled futures cross-check (FuturesGuard) — a TRIGGERED line here is the
             // flag that the meeting rows disagree with instruments that share nothing with the
             // OIS machinery. Notes only: the investor-facing email body never carries diagnostics.

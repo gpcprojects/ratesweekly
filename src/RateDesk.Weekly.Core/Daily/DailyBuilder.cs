@@ -312,6 +312,10 @@ namespace RateDesk.Weekly.Core.Daily
                 // fixings nobody quoted today (their 0.00 is silence, not a flat market)
                 try { rep.Notes.AddRange(Infl.InflHistory.StaleNotes(store)); }
                 catch { /* informational */ }
+                // a tenor that moved alone is a bad mark far more often than a market - said on
+                // every run now, because twice the desk found it before the app did
+                try { rep.Notes.AddRange(Infl.InflHistory.CoherenceNotes(store, rep.AsOf)); }
+                catch { /* informational */ }
                 // capture the live fixing marks while the snapshot is in hand — the email
                 // section, lean xlsx and save-down book all publish these
                 try { Infl.InflHistory.LastLiveMarks = Infl.InflHistory.CollectLiveMarks(snap, store); }

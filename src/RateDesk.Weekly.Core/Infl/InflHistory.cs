@@ -523,6 +523,69 @@ namespace RateDesk.Weekly.Core.Infl
             return p;
         }
 
+        /// <summary>12bp, in the family's own unit via the row's base index — the cut is the same
+        /// in every family whether it quotes YoY bp or an index level.</summary>
+        public const double LoneMoverBp = 12.0;
+
+        /// <summary>A TENOR THAT MOVED ALONE, SAID OUT LOUD ON EVERY RUN (desk 2026-08-31).
+        ///
+        /// This test was specified on 2026-08-28 and left on paper, and both times a bad mark
+        /// reached the desk it was the desk that spotted it, not the app — Mar-27 published
+        /// +0.99 index points beside neighbours at +0.15, and Nov-26 +0.21 beside a strip that
+        /// moved 0.00. Maintain now arbitrates between the close and the snap, so most of these
+        /// resolve before they are published; this is the backstop that says when arbitration
+        /// did NOT help, because "nobody flagged it" must never again be the control.
+        ///
+        /// A monthly fixing is quoted on its own and trades thinly, so its own history cannot
+        /// judge it — these tenors swing 10-18bp day to day and a Hampel filter over three
+        /// months flags two points and misses the ones that matter. The STRIP can judge it. A
+        /// real repricing carries the whole curve (the 25-Aug Ofgem cap reset moved all twelve
+        /// months, worst single-tenor disagreement 4.8bp); a bad mark moves one month alone
+        /// (18-105bp). Three months of closes put nothing between 5 and 18, so 12 sits in an
+        /// empty gap rather than on a judgement call.
+        ///
+        /// Neighbours, not the strip median: the change profile has a real term structure and
+        /// measuring against the middle of the curve would condemn its ends. Four nearest months
+        /// either side, median taken, so one bad tenor cannot drag the next one over the line.
+        ///
+        /// Δ1d only — that is the horizon the 12bp gap was measured on. A week's or a month's
+        /// residuals are naturally wider and would need their own calibration; guessing a number
+        /// for them would be the same mistake in a new place.
+        ///
+        /// NON-BLOCKING and never suppressed: the number still publishes, the desk is just told
+        /// which one to look at.</summary>
+        public static List<string> CoherenceNotes(HistoryStore store, DateTime asOf,
+            Dictionary<string, List<Mark>>? marks = null)
+        {
+            var notes = new List<string>();
+            marks ??= LatestMarks(store);
+            foreach (var fam in Families)
+            {
+                var rows = BuildDisplayRows(store, fam,
+                    marks.TryGetValue(fam.Key, out var m) ? m : new List<Mark>(), asOf);
+                var v = rows.Select(r => r.D1).ToList();
+                for (int i = 0; i < rows.Count; i++)
+                {
+                    if (rows[i].D1 is not { } x || rows[i].BaseV is not { } bse) continue;
+                    var near = new List<double>();
+                    foreach (var j in new[] { i - 2, i - 1, i + 1, i + 2 })
+                        if (j >= 0 && j < rows.Count && v[j] is { } nv) near.Add(nv);
+                    if (near.Count < 2) continue;          // too few neighbours to hold a vote
+                    near.Sort();
+                    double med = near.Count % 2 == 1
+                        ? near[near.Count / 2]
+                        : (near[near.Count / 2 - 1] + near[near.Count / 2]) / 2.0;
+                    double tol = LoneMoverBp / 10000.0 * bse;
+                    if (Math.Abs(x - med) <= tol) continue;
+                    notes.Add($"{RateDesk.Core.OutlierGuard.Prefix}: {fam.Key} {rows[i].RefMonth:MMM-yy} " +
+                              $"Δ1d {x:+0.00;-0.00;0.00} against {med:+0.00;-0.00;0.00} either side " +
+                              $"of it — that tenor moved ALONE, which is a bad mark far more often " +
+                              $"than it is a market. Check it before this goes out.");
+                }
+            }
+            return notes;
+        }
+
         /// <summary>UNQUOTED FIXINGS (desk 2026-08-26, probed): the front months of a fixing strip
         /// are thinly quoted — BPSWIF8/9 sat unchanged for days while the rest of the RPI curve
         /// moved 2-6bp, and BPSWIF8 skipped a day entirely. Their change columns then print 0.00,
