@@ -197,24 +197,89 @@ namespace RateDesk.Weekly.Core.Infl
             foreach (var fam in Families)
             {
                 var byFix = new Dictionary<string, List<HistPoint>>();
+
+                // TWO CANDIDATE MARKS PER TENOR PER DAY, AND THE STRIP PICKS (2026-08-31).
+                //
+                // A monthly inflation fixing is quoted on its own and trades thinly, so any ONE
+                // observation of it can be junk while the rest of the curve is fine. Both marks
+                // have now been caught doing it, a working day apart:
+                //   · Mar-27 (BPSWIF3) 27-Aug — the CLOSE was 415.000 while the tenor traded
+                //     429-435 all day. A bad tick printed twice and the second landed on the last
+                //     bar, so it became the close. The 16:15 snap was 435.500.
+                //   · Nov-26 (BPSWIF11) 28-Aug — the SNAP was 434.250 while the close was
+                //     439.375. Nothing was wrong with either: the last trade before 16:15 really
+                //     was 434.250, the tenor jumped at 16:15 and held 439.375 for five hours.
+                //     Thin instrument, two honest marks, 5bp apart.
+                // Preferring one source wholesale just moves the error between tenors, which is
+                // exactly what happened when snaps were switched on: Mar-27 came right and
+                // Nov-26 went wrong.
+                //
+                // So keep both and let the STRIP arbitrate, which is the same discriminator the
+                // OIS side uses and the one measured to work here: a real move carries the whole
+                // curve together (the 25-Aug Ofgem cap reset moved all twelve months, worst
+                // single-tenor disagreement 4.8bp), while a bad mark moves one month alone.
+                // For each day take the median day-over-day change across the strip, then give
+                // each tenor whichever of its two candidates lands closer to it. Nothing is
+                // invented and nothing is discarded — both numbers are real prints of that
+                // tenor on that day, and the strip only decides which one to believe.
+                var close = new Dictionary<int, Dictionary<DateTime, double>>();
+                var snap = new Dictionary<int, Dictionary<DateTime, double>>();
                 for (int m = 1; m <= 12; m++)
                 {
                     var tk = $"{fam.Root}{m} Curncy";
-                    var vals = store.GetDaily(tk, lookbackDays)
-                        .ToDictionary(p => p.Date.Date, p => p.Value);
-                    if (bars != null)
-                        try
-                        {
-                            // same snap discipline (and same cutover) as the meeting boards
-                            foreach (var sp in bars.GetLondonSnaps(tk, lookbackDays, new TimeSpan(16, 30, 0)))
-                                if (sp.Date.Date < RateDesk.Core.PricingService.SnapTimeCutover)
-                                { vals[sp.Date.Date] = sp.Value; snapped++; }
-                            foreach (var sp in bars.GetLondonSnaps(tk, lookbackDays, new TimeSpan(16, 15, 0)))
-                                if (sp.Date.Date >= RateDesk.Core.PricingService.SnapTimeCutover)
-                                { vals[sp.Date.Date] = sp.Value; snapped++; }
-                        }
-                        catch { /* no bars for this rung — closes still serve */ }
-                    foreach (var (day, value) in vals)
+                    close[m] = store.GetDaily(tk, lookbackDays)
+                        .GroupBy(p => p.Date.Date).ToDictionary(g => g.Key, g => g.Last().Value);
+                    snap[m] = new Dictionary<DateTime, double>();
+                    if (bars == null) continue;
+                    try
+                    {
+                        // same snap discipline (and same cutover) as the meeting boards
+                        foreach (var sp in bars.GetLondonSnaps(tk, lookbackDays, new TimeSpan(16, 30, 0)))
+                            if (sp.Date.Date < RateDesk.Core.PricingService.SnapTimeCutover)
+                                snap[m][sp.Date.Date] = sp.Value;
+                        foreach (var sp in bars.GetLondonSnaps(tk, lookbackDays, new TimeSpan(16, 15, 0)))
+                            if (sp.Date.Date >= RateDesk.Core.PricingService.SnapTimeCutover)
+                                snap[m][sp.Date.Date] = sp.Value;
+                    }
+                    catch { /* no bars for this rung — closes still serve */ }
+                }
+
+                var chosen = new Dictionary<int, Dictionary<DateTime, double>>();
+                for (int m = 1; m <= 12; m++) chosen[m] = new Dictionary<DateTime, double>();
+                var prev = new Dictionary<int, double>();
+                foreach (var day in close.Values.SelectMany(d => d.Keys)
+                             .Concat(snap.Values.SelectMany(d => d.Keys)).Distinct().OrderBy(d => d))
+                {
+                    // the strip's own move that day, measured on closes — the reference is taken
+                    // from the source that always exists, so it never depends on what we pick
+                    var strip = new List<double>();
+                    for (int m = 1; m <= 12; m++)
+                        if (close[m].TryGetValue(day, out var cv) && prev.TryGetValue(m, out var pv))
+                            strip.Add(cv - pv);
+                    strip.Sort();
+                    double med = strip.Count == 0 ? 0.0
+                        : strip.Count % 2 == 1 ? strip[strip.Count / 2]
+                        : (strip[strip.Count / 2 - 1] + strip[strip.Count / 2]) / 2.0;
+
+                    for (int m = 1; m <= 12; m++)
+                    {
+                        bool hasC = close[m].TryGetValue(day, out var c0);
+                        bool hasS = snap[m].TryGetValue(day, out var s0);
+                        if (!hasC && !hasS) continue;
+                        double pick;
+                        if (!hasC) { pick = s0; snapped++; }
+                        else if (!hasS || !prev.TryGetValue(m, out var p0)) pick = c0;
+                        else if (Math.Abs(s0 - p0 - med) < Math.Abs(c0 - p0 - med)) { pick = s0; snapped++; }
+                        else pick = c0;
+                        chosen[m][day] = pick;
+                        prev[m] = pick;
+                    }
+                }
+
+                for (int m = 1; m <= 12; m++)
+                {
+                    var tk = $"{fam.Root}{m} Curncy";
+                    foreach (var (day, value) in chosen[m])
                     {
                         if (store.MaturityAsOf(tk, day) is not { } mat) continue;
                         var refMonth = RefMonth(mat, m);

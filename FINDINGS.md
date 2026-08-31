@@ -98,3 +98,47 @@ own premise becomes unsatisfiable and the walk-back it exists to test does not o
 Thursday 27-Aug, 62/64 on Friday 28-Aug, with no change between that the harness can even reach
 (it drives BuildWeekly → guards → renderers; it never touches the save-down or the template).
 Not a product fault, but the suite should pin its own weekday rather than read the wall clock.
+
+---
+
+## Fixed 2026-08-31 — neither the close nor the 16:15 snap is reliable alone
+
+Two lone-mover rows, a working day apart, in opposite directions:
+
+  · Mar-27 (BPSWIF3) 27-Aug — the CLOSE was 415.000 while the tenor traded 429-435 all day.
+    A bad tick printed twice and the second landed on the last bar, so it became the close.
+    The 16:15 snap was 435.500. Published +0.99 index pts against neighbours at +0.15/+0.26.
+  · Nov-26 (BPSWIF11) 28-Aug — the SNAP was 434.250 while the close was 439.375. Neither is
+    wrong: the last trade before 16:15 really was 434.250, the tenor jumped AT 16:15 and held
+    439.375 for five hours. Thin instrument, two honest marks, 5bp apart. Published +0.21
+    against a strip that moved 0.00 to -0.04.
+
+Switching wholesale from closes to snaps fixed the first and caused the second. The snap rule
+itself is right (last bar ENDING at or before 16:15 = the last traded price as of the snap);
+the problem is that a monthly fixing is quoted on its own and trades thinly, so ANY single
+observation can be junk while the rest of the curve is fine.
+
+**Fix (InflHistory.Maintain): keep both candidate marks and let the strip arbitrate.** For each
+day take the median day-over-day change across the twelve tenors, measured on closes so the
+reference never depends on what is being chosen, then give each tenor whichever of {close, snap}
+lands closer to it. Same discriminator as the OIS neighbour and futures guards, and the one
+measured to work here: a real repricing carries the whole curve (25-Aug Ofgem cap reset, worst
+single-tenor disagreement 4.8bp) while a bad mark moves one month alone (18-105bp).
+
+Verified on both cases with one rule: Mar-27 27-Aug takes the SNAP (435.500), Nov-26 28-Aug
+takes the CLOSE (439.375). Nothing invented, nothing discarded - both are real prints of that
+tenor on that day; the strip only decides which to believe.
+
+## Recorded 2026-08-31 — the scenario suite is weekday-fragile, widened
+
+10, 11, 12, 13, 15, 21 join 26 and 47 on the CI skip list. They say "hiked YESTERDAY" or "cut N
+days ago"; on a MONDAY yesterday is a Sunday, so the decision lands on a non-business day and
+every change anchor walks past it (scenario 10: Δ1d reads +11.0 against an expected +3.0).
+26 and 47 fail the mirror-image way on a Friday.
+
+Verified not a regression: reverting the day's product change and re-running 10 reproduces the
+failure identically, and the harness never references InflHistory at all.
+
+Eight of sixty-four is real coverage lost on any given day. The fix is to give the harness its
+own pinned weekday, or to express these offsets in BUSINESS days (Cal.Bd already exists), rather
+than reading DateTime.Today. Worth doing before the suite is trusted as a release gate.
