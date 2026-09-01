@@ -234,7 +234,7 @@ namespace RateDesk.Tests
 
             store.UpsertFixings(fam.Key, "2027-01", new[]
             {
-                new HistPoint(new DateTime(2026, 8, 4), 420.0),         // −28d target, exact
+                new HistPoint(new DateTime(2026, 8, 3), 420.0),         // −28d target 04-Aug walks 1d back
                 new HistPoint(new DateTime(2026, 8, 25), 428.0),        // −7d target, exact
                 new HistPoint(fri, 430.0),                              // the holiday bridge
             }, "bbg", excludeToday: false);
@@ -253,7 +253,7 @@ namespace RateDesk.Tests
             Assert.NotNull(jan.D1);
             Assert.Equal(6.0, jan.D1!.Value, 6);    // 436 − 430 (Fri), not blank
             Assert.Equal(8.0, jan.W1!.Value, 6);    // 436 − 428 (exact −7d, unchanged)
-            Assert.Equal(16.0, jan.M1!.Value, 6);   // 436 − 420 (exact −28d, unchanged)
+            Assert.Equal(16.0, jan.M1!.Value, 6);   // 436 − 420 (−28d target walked 1d, ≤10d cap)
 
             var feb = rows.Single(r => r.RefMonth.Month == 2);
             Assert.Null(feb.D1);                    // nearest save 7d from target > 5d cap
