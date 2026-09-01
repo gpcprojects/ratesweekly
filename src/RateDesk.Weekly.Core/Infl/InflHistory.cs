@@ -246,18 +246,26 @@ namespace RateDesk.Weekly.Core.Infl
 
                 var chosen = new Dictionary<int, Dictionary<DateTime, double>>();
                 for (int m = 1; m <= 12; m++) chosen[m] = new Dictionary<DateTime, double>();
-                var prev = new Dictionary<int, double>();
+                var prev = new Dictionary<int, double>();       // last CHOSEN mark (published-series continuity)
+                var prevDay = new Dictionary<int, DateTime>();  // ...and the day it belongs to
+                var prevClose = new Dictionary<int, double>();  // the PREVIOUS day's closes, and only those
+                DateTime lastDay = default;
                 foreach (var day in close.Values.SelectMany(d => d.Keys)
                              .Concat(snap.Values.SelectMany(d => d.Keys)).Distinct().OrderBy(d => d))
                 {
-                    // the strip's own move that day, measured on closes — the reference is taken
-                    // from the source that always exists, so it never depends on what we pick
+                    // the strip's own move that day: today's close against YESTERDAY'S CLOSE,
+                    // never against yesterday's pick. The old code differenced against prev
+                    // picks, so any day the snaps won displaced the next day's median by the
+                    // close−snap gap — the reference was a lagged function of the choice, the
+                    // one property its own comment ruled out (audit 2026-08-31, scenario 152).
+                    // Only consecutive-day pairs contribute: a tenor that skipped a day would
+                    // otherwise feed a multi-day change into a one-day median.
                     var strip = new List<double>();
                     for (int m = 1; m <= 12; m++)
-                        if (close[m].TryGetValue(day, out var cv) && prev.TryGetValue(m, out var pv))
+                        if (close[m].TryGetValue(day, out var cv) && prevClose.TryGetValue(m, out var pv))
                             strip.Add(cv - pv);
                     strip.Sort();
-                    double med = strip.Count == 0 ? 0.0
+                    double? med = strip.Count == 0 ? null
                         : strip.Count % 2 == 1 ? strip[strip.Count / 2]
                         : (strip[strip.Count / 2 - 1] + strip[strip.Count / 2]) / 2.0;
 
@@ -267,13 +275,31 @@ namespace RateDesk.Weekly.Core.Infl
                         bool hasS = snap[m].TryGetValue(day, out var s0);
                         if (!hasC && !hasS) continue;
                         double pick;
+                        bool contiguous = prev.ContainsKey(m)
+                                          && prevDay.TryGetValue(m, out var pd) && pd == lastDay;
                         if (!hasC) { pick = s0; snapped++; }
-                        else if (!hasS || !prev.TryGetValue(m, out var p0)) pick = c0;
-                        else if (Math.Abs(s0 - p0 - med) < Math.Abs(c0 - p0 - med)) { pick = s0; snapped++; }
-                        else pick = c0;
+                        // no reference median, or this tenor's own last mark is not from the
+                        // preceding day: the close is the documented default. (The old med=0.0
+                        // fallback quietly preferred whichever candidate moved LESS, on exactly
+                        // the thin days the arbitration exists for.)
+                        else if (!hasS || med is not { } md || !contiguous) pick = c0;
+                        else
+                        {
+                            var p0 = prev[m];
+                            if (Math.Abs(s0 - p0 - md) < Math.Abs(c0 - p0 - md)) { pick = s0; snapped++; }
+                            else pick = c0;
+                        }
                         chosen[m][day] = pick;
                         prev[m] = pick;
+                        prevDay[m] = day;
                     }
+
+                    // roll the close-reference forward — today's closes only, so tomorrow's
+                    // median is built from genuine one-day moves or not at all
+                    prevClose.Clear();
+                    for (int m = 1; m <= 12; m++)
+                        if (close[m].TryGetValue(day, out var cv2)) prevClose[m] = cv2;
+                    lastDay = day;
                 }
 
                 for (int m = 1; m <= 12; m++)
@@ -281,7 +307,15 @@ namespace RateDesk.Weekly.Core.Infl
                     var tk = $"{fam.Root}{m} Curncy";
                     foreach (var (day, value) in chosen[m])
                     {
-                        if (store.MaturityAsOf(tk, day) is not { } mat) continue;
+                        // a day is attributable only when the records BRACKETING it agree — a
+                        // re-point inside a record gap (a run skipped over a print day) means
+                        // nothing documents which YEAR this close belonged to, and keying it on
+                        // the stale at-or-before record filed post-roll prices onto the month
+                        // that had just fixed (audit 2026-08-31, scenarios 151/154). The record
+                        // day itself is always attributable: it was stamped alongside the mark.
+                        var (matB, dateB, matA) = store.MaturityBrackets(tk, day);
+                        if (matB is not { } mat) continue;
+                        if (day != dateB && matA is { } ma && ma != mat) continue;
                         var refMonth = RefMonth(mat, m);
                         if (refMonth is null) continue;
                         var fix = $"{refMonth.Value.Year:0000}-{refMonth.Value.Month:00}";
@@ -527,6 +561,10 @@ namespace RateDesk.Weekly.Core.Infl
         /// in every family whether it quotes YoY bp or an index level.</summary>
         public const double LoneMoverBp = 12.0;
 
+        /// <summary>Prefix for the inflation mark-quality notes: informational grammar, beside
+        /// STALE — surfaced in the log and the non-blocking popup, never the CHECK gate.</summary>
+        public const string InfoPrefix = "FIXING";
+
         /// <summary>A TENOR THAT MOVED ALONE, SAID OUT LOUD ON EVERY RUN (desk 2026-08-31).
         ///
         /// This test was specified on 2026-08-28 and left on paper, and both times a bad mark
@@ -577,7 +615,11 @@ namespace RateDesk.Weekly.Core.Infl
                         : (near[near.Count / 2 - 1] + near[near.Count / 2]) / 2.0;
                     double tol = LoneMoverBp / 10000.0 * bse;
                     if (Math.Abs(x - med) <= tol) continue;
-                    notes.Add($"{RateDesk.Core.OutlierGuard.Prefix}: {fam.Key} {rows[i].RefMonth:MMM-yy} " +
+                    // FIXING:, not CHECK: — this note is NON-BLOCKING by its own spec (above),
+                    // but the CHECK prefix routed it into the blocking modal, so one bad RPI
+                    // tenor cancelled the entire daily OIS product (audit 2026-08-31, sc. 146).
+                    // It surfaces in the log and the informational popup, never the gate.
+                    notes.Add($"{InfoPrefix}: {fam.Key} {rows[i].RefMonth:MMM-yy} " +
                               $"Δ1d {x:+0.00;-0.00;0.00} against {med:+0.00;-0.00;0.00} either side " +
                               $"of it — that tenor moved ALONE, which is a bad mark far more often " +
                               $"than it is a market. Check it before this goes out.");

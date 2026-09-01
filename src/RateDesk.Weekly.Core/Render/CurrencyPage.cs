@@ -45,7 +45,12 @@ namespace RateDesk.Weekly.Core.Render
             {
                 if (!sched.Ccy.Equals(cfg.Ccy, StringComparison.OrdinalIgnoreCase)) continue;
                 if (sched.Kind.Equals("fra", StringComparison.OrdinalIgnoreCase)) continue;
+                // the strip's decision gate rides the MARKS' clock, not the wall clock (audit
+                // 2026-08-31, scenario 106): this page renders stored closes as of asOf, so a
+                // statement made after that close must not roll a meeting off here while the
+                // blast built from the same marks keeps it — same rule as svc.MarksAsOfLondon
                 var rows = Panels.From(RollingStrip.ForMeetings(sched, store, asOf,
+                    nowLondon: asOf.Date + SnapDiscipline.SnapAt,
                     source: meetingSource?.Invoke(sched)));
                 if (rows.Count == 0) continue;
                 body.Append(Panels.Linked($"mtg-{sched.Name.ToLowerInvariant()}",

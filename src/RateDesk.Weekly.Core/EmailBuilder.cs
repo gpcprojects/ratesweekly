@@ -91,6 +91,7 @@ namespace RateDesk.Weekly.Core
             var sbh = store != null ? new StoreBackedHistory(store, refData, log) : null;
             svc.History = (RateDesk.Core.Market.IHistoryProvider?)sbh ?? refData;
             if (store != null) svc.ObservedShifts = Series.RungShiftScan.Bind(store);
+            string? inflInheritNote = null;
             var all = AllTickers(configs, svc);
             // inflation fixing swaps ride along (desk 2026-08-25): the weekly email carries the
             // same Inflation Fixing Runs section as the daily
@@ -117,10 +118,22 @@ namespace RateDesk.Weekly.Core
             // forward grid stays live-at-press — it is not a close product. The INFLATION
             // fixings pin too (audit 2026-08-26: the weekly's cards were live-at-press while
             // the daily's were pinned — same cards, two different marks on the same day).
-            var (_, snapNote) = SnapDiscipline.Apply(refData, snap,
+            // ONE London clock per run (audit 2026-08-31, scenario 101) — resolved once, read
+            // by the snap discipline and the decision gate alike
+            var nowLdn = RateDesk.Core.Dates.DecisionClock.LondonNow();
+            var (snapMode, snapNote) = SnapDiscipline.Apply(refData, snap,
                 svc.MeetingTickers().Concat(PricingService.WeeklyExtraTickers)
                     .Concat(Infl.InflHistory.Families.SelectMany(f =>
-                        Enumerable.Range(1, 12).Select(n => $"{f.Root}{n} Curncy"))), log);
+                        Enumerable.Range(1, 12).Select(n => $"{f.Root}{n} Curncy"))), log, nowLdn);
+            // THE GATE RIDES THE MARKS' OWN CLOCK HERE TOO (audit 2026-08-31, scenario 102).
+            // This is the same 2026-08-27 fix the daily got — "otherwise a run pressed after a
+            // late statement rolls the board past a decision every price in it predates" — which
+            // landed in DailyBuilder only: the weekly pinned the same 16:15 marks and then let
+            // BuildWeekly read the wall clock, so a WEEKLY RUN at 19:30 on an FOMC day deleted
+            // the meeting from the client email and re-based Priced onto a pre-statement
+            // expectation, while the blast built from the identical bars kept it.
+            if (snapMode == SnapDiscipline.Mode.Snap1615)
+                svc.MarksAsOfLondon = nowLdn.Date + SnapDiscipline.SnapAt;
             if (store != null)
             {
                 // rung-by-date documentation on the weekly too (desk 2026-08-26): every meeting
@@ -159,6 +172,14 @@ namespace RateDesk.Weekly.Core
                         catch { /* an unquoted fixing month is not an error */ }
                     }
                 log?.Invoke($"email: topped up {fx} inflation fixing series");
+                // inherit the desk's fixing history when this machine's is thin — see
+                // DailyBuilder (desk report 2026-09-01: blank Δ columns on a second terminal)
+                try
+                {
+                    if (appDataDir != null && SaveDown.StoreBackup.ImportInflation(store, appDataDir, log) is { } n0)
+                        inflInheritNote = n0;
+                }
+                catch (Exception ex) { log?.Invoke("  ! infl inherit: " + ex.Message); }
                 // anchors stay on documented closes — see InflHistory.Maintain (desk call pending)
                 try { Infl.InflHistory.Maintain(store, log, bars: refData); }
                 catch (Exception ex) { log?.Invoke("  ! infl maintain: " + ex.Message); }
@@ -170,6 +191,9 @@ namespace RateDesk.Weekly.Core
                 try { refData.Prefetch(all, 220); } catch { /* singles fallback inside Core */ }
             var rep = svc.BuildWeekly();
             if (snapNote != null) rep.Notes.Add(snapNote);
+            // and say WHY a decided meeting is still on the board (same note the daily carries)
+            rep.Notes.AddRange(Daily.DailyBuilder.LateAnnouncementNotes(svc));
+            if (inflInheritNote != null) rep.Notes.Add(inflInheritNote);
             if (sbh != null) log?.Invoke("email " + sbh.Stats);
             // active source + compounded fixing onto every run (trial, desk 2026-08-26)
             CompoundedFixing.Stamp(rep, svc, configs, log);

@@ -30,11 +30,15 @@ namespace RateDesk.Weekly.Core
             : Mode.Snap1615;
 
         /// <summary>Apply the discipline to a fresh snapshot. Returns the mode and, for a
-        /// pre-close run, the CHECK note the report should carry (the app pops CHECK notes).</summary>
+        /// pre-close run, the CHECK note the report should carry (the app pops CHECK notes).
+        /// <paramref name="nowLondon"/>: the run's ONE London clock read (audit 2026-08-31,
+        /// scenario 101) — a builder that reads LondonNow() here and again for MarksAsOfLondon
+        /// can straddle midnight and stamp the gate a day after its own prices; the caller
+        /// resolves the clock once and passes the same value everywhere.</summary>
         public static (Mode Mode, string? Note) Apply(IHistoryProvider bars, RatesSnapshot snap,
-            IEnumerable<string> tickers, Action<string>? log = null)
+            IEnumerable<string> tickers, Action<string>? log = null, DateTime? nowLondon = null)
         {
-            var now = DecisionClock.LondonNow();
+            var now = nowLondon ?? DecisionClock.LondonNow();
             var mode = Resolve(now);
             switch (mode)
             {
@@ -75,7 +79,14 @@ namespace RateDesk.Weekly.Core
                     }
                     log?.Invoke($"snap: London {now:HH:mm} — marks pinned to the 16:15 snap " +
                                 $"({snapped} ticker(s); {fallback} without bars stay live)");
-                    return (mode, null);
+                    // a partially-pinned board mixes 16:15 marks with press-time mids in ONE
+                    // Priced column (audit 2026-08-31, scenario 104) — said in the run notes,
+                    // not only the log. Informational, not CHECK: far rungs without a trade
+                    // today are routine and a daily modal trains the desk to click through.
+                    return (mode, fallback > 0
+                        ? $"SNAP: {fallback} published ticker(s) had no 16:15 bar today — their " +
+                          $"marks are live at press time, beside {snapped} pinned to 16:15"
+                        : null);
             }
         }
     }

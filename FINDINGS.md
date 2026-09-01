@@ -1,3 +1,60 @@
+## Fixed 2026-09-01 (v0.18.0, branch audit-fixes-0.18.0) — the audit batch + the blank-Δ terminal
+
+Fixes from the 2026-08-31 audit (`tests\RateDesk.Scenarios\CATALOGUE_101_200.md`), plus the desk's
+2026-09-01 report that a second terminal's inflation Δ1d/1w/1m never populated. NOT RELEASED —
+v0.17.0 kept at `C:\Users\GPC Work\RatesWeekly\backup\`. Scenario 65 added (the fourth quadrant).
+
+1. **Second-terminal blank Δ columns (the desk report).** Root cause: the fixings mapping is
+   maturity-documented by design and records begin on a machine's own first run, so 45 days of
+   seeded closes can never map — the fixings table opens one day deep and the exact-date anchors
+   (−1bd/−7d/−28d) find nothing for a month. Fix: `StoreBackup.ImportInflation` — a store whose
+   fixing depth is under 8 days inherits the `fixings` rows, index prints and SWIF maturity
+   records from the share snapshot (temp-copy read; standing merge rules; a locally-saved cell is
+   never rewritten except validated-xls-over-bbg). Wired into both builders before `Maintain`;
+   when no snapshot exists the run now SAYS the history is thin instead of publishing silent
+   blanks (`INFL:` note).
+2. **The weekly email's decision gate now rides its own marks (catalogue 102, the headline).**
+   `EmailBuilder` pinned marks to 16:15 but discarded the mode and left `MarksAsOfLondon` null, so
+   a WEEKLY RUN pressed after a statement rolled the board past a decision every price predates —
+   the exact 2026-08-27 daily fix, missing from the second builder. Also: one `LondonNow()` per
+   run, passed into `SnapDiscipline.Apply` (a run straddling midnight could date the gate a day
+   after its prices — catalogue 101), and `LateAnnouncementNotes` now reaches the weekly.
+3. **The public pages gate on the marks' clock (106).** `RollingStrip.ForMeetings` callers
+   (CurrencyPage, MoverScan) pass `nowLondon = asOf + 16:15`, so a dashboard rendered after a
+   statement no longer drops a meeting the blast keeps.
+4. **The rung map is armed everywhere it can be (finding 2).** `PricingService.RecordedEffective`
+   is now the ONE cached, source-aware record lookup; the weekly Δ1d-fallback map, the dashboard
+   strips and the movers scan all pass it (records key the composite spelling). `FallbackIngest`
+   stays deliberately unarmed — its map must match the save-down reader's, which FINDINGS keeps
+   unarmed pending the desk's data-collection call; a comment now says arm BOTH or NEITHER.
+5. **Roll-correction evidence arm (120 — the untested quadrant).** A feed that re-points BEFORE
+   the statement now triggers the CoD correction on record-vs-live SW_EFF_DT evidence, standing
+   down when the previous business day is a boundary/mixed-state day. Scenario 65 locks it.
+6. **The CHECK gate protects the dashboards (144).** `Update_Click` gates BEFORE `RenderAll` —
+   declining now withholds the public pages and the pack, not just the email fragments. The modal
+   defaults to **No** (199). An email BUILD failure still renders pages, as before.
+7. **Inflation coherence notes are non-blocking, as their own spec says (146).** Prefix moved
+   `CHECK:` → `FIXING:`; they surface in the log and the informational popup (now also carrying
+   `SNAP:`/`INFL:` lines) and can no longer cancel the daily OIS product over one RPI tenor.
+8. **The arbitration reference is independent of its own picks (152).** The strip median is built
+   close-against-previous-day's-close (consecutive days only); with no reference the close is the
+   default (the old med=0.0 fallback favoured whichever candidate moved less); a tenor whose last
+   mark is not from the preceding day defaults to its close instead of judging a multi-day change
+   against a one-day median.
+9. **A close inside a record gap that a re-point crossed is skipped (151/154).**
+   `HistoryStore.MaturityBrackets`: a day maps only when the records bracketing it agree (the
+   record day itself always maps). No more year-wrong fixings keyed off a stale record.
+10. **MPC carries `fixingLagDays: 1` (108/141).** The code has documented "FOMC and MPC carry 1
+    in config" since 2026-08-27; the MPC entry never did — the morning after every MPC move, GBP
+    Priced was measured against the pre-decision SONIA with no re-base and no dagger.
+11. **Partial snap pins are said out loud (104)** — a `SNAP:` note when some published tickers
+    had no 16:15 bar — and **a machine whose date ≠ London's date is flagged at startup**.
+
+Deliberately NOT changed (desk calls, per the catalogue): the BOC 14:45 source-time question, the
+Δ1w anchor-slack convention (111), a guard on the re-base's live mid (109), arming the save-down
+history maps (needs the 16:15 rung-probe data change), and everything marked
+"needs-a-desk-call" in the catalogue.
+
 
 ---
 

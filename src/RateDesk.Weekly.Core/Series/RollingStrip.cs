@@ -219,9 +219,14 @@ namespace RateDesk.Weekly.Core.Series
             var contracts = future.Select(d => (d.ToString("dd-MMM-yy"), d)).ToList();
             // ONE boundary derivation for every consumer — MeetingRungMap: announcements
             // (recorded + stable-lag-derived) for decision-renumbering families, starts for
-            // SKSF, 14-day cluster keeping the earliest.
-            var map = new MeetingRungMap(sched);
+            // SKSF, 14-day cluster keeping the earliest. ARMED with the store's own maturity
+            // records (audit 2026-08-31, finding 2): the boards' SKSF fixes — evidence beats
+            // the boundary count — never reached this public surface, so the dashboards could
+            // publish a different rung than the email on the very days the records settle.
+            // Records key the COMPOSITE spelling (the recording side is source-agnostic).
             var pat = sched.Tickers.FirstOrDefault(t => t.Contains("{N}"));
+            var map = new MeetingRungMap(sched, null, pat == null ? null
+                : (n, d) => store.EffectiveOn(pat.Replace("{N}", n.ToString()) + " Curncy", d));
 
             if (pat == null || contracts.Count == 0)
                 return new StripTable { Title = $"{sched.Name} · {sched.Ccy}", AsOf = asOf };

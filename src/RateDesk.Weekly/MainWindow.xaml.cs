@@ -124,6 +124,20 @@ namespace RateDesk.Weekly
             VersionText.Text = "v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?");
             Directory.CreateDirectory(AppDataDir);
             Directory.CreateDirectory(OutDir);
+            // MACHINE CLOCK vs LONDON (audit 2026-08-31, guardrail 7): several store and anchor
+            // paths key on the machine's LOCAL date — a box east of London is on tomorrow's date
+            // every evening, and that skew has produced 0.0 change columns and mis-dated closes.
+            // Said once, loudly, at startup; the mismatch itself is legitimate (a traveller),
+            // the desk just has to know the app is not on London's date right now.
+            try
+            {
+                var ldn = RateDesk.Core.Dates.DecisionClock.LondonNow();
+                if (DateTime.Today != ldn.Date)
+                    Log($"⚠ machine date {DateTime.Today:dd-MMM-yy} ≠ London date {ldn:dd-MMM-yy} — " +
+                        "date-keyed history and change anchors follow the MACHINE clock; run with care " +
+                        "(a box east of London crosses midnight before London does)");
+            }
+            catch { /* informational */ }
             // one-time Roaming → Local store migration, BEFORE anything can open the db
             RateDesk.Weekly.Core.SaveDown.StoreBackup.MigrateRoamingToLocal(AppDataDir, DbPath, Log);
             Loaded += async (_, _) => await SetupSaveDown();
@@ -334,11 +348,14 @@ namespace RateDesk.Weekly
             var checks = notes.Where(n => n.StartsWith(OutlierGuard.Prefix + ":")
                                           && !n.Contains("PRE-CLOSE RUN")).ToList();
             if (checks.Count == 0) return true;
+            // default answer is NO (audit 2026-08-31, scenario 199): a gate whose Enter key
+            // means "distribute" is not a gate — publishing takes a deliberate click
             var r = MessageBox.Show(this,
                 "Outlier check — verify these before distributing:\n\n" + string.Join("\n", checks) +
                 $"\n\nContinue and write/publish the {what}?\n" +
                 "(No = the blast/workbooks/email fragments are NOT written)",
-                "RatesWeekly — manual check required", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                "RatesWeekly — manual check required", MessageBoxButton.YesNo, MessageBoxImage.Warning,
+                MessageBoxResult.No);
             return r == MessageBoxResult.Yes;
         }
 
@@ -347,13 +364,18 @@ namespace RateDesk.Weekly
         /// (Sydney is asleep at 16:15 London) — so this never gates, it informs.</summary>
         private void ShowStaleNotes(IEnumerable<string> notes)
         {
-            var stale = notes.Where(n => n.StartsWith("STALE:")).ToList();
+            // one informational surface for every non-blocking watch: stale feeds, the
+            // inflation mark-quality notes (FIXING — non-blocking by spec, audit 2026-08-31
+            // scenario 146), partially-pinned snaps (SNAP, scenario 104) and thin-history
+            // inheritance (INFL). Informational — the numbers are published either way.
+            var stale = notes.Where(n => n.StartsWith("STALE:") || n.StartsWith("FIXING:")
+                                         || n.StartsWith("SNAP:") || n.StartsWith("INFL:")).ToList();
             if (stale.Count == 0) return;
             MessageBox.Show(this,
-                "Stale feeds under published rungs (>1h without an update):\n\n" +
+                "Feed and mark watches (informational):\n\n" +
                 string.Join("\n", stale) +
-                "\n\nInformational — the numbers are published. Switch a contributor via SOURCES if needed.",
-                "RatesWeekly — stale feed warning", MessageBoxButton.OK, MessageBoxImage.Information);
+                "\n\nThe numbers are published. Switch a contributor via SOURCES if needed.",
+                "RatesWeekly — feed watches", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         /// <summary>SOURCES (trial, desk 2026-08-26): dodgeball's per-run contributor picker as
@@ -540,35 +562,39 @@ namespace RateDesk.Weekly
             try
             {
                 using var store = new HistoryStore(DbPath);
-                var (result, pages, weeklyRep, emailErr0) = await Task.Run(() =>
+                var (result, weeklyRep, emailErr0) = await Task.Run(() =>
                 {
                     var r = UpdateEngine.Run(store, new RatesSnapshot(), Log);
-                    // Pulling the data and not redrawing the pages would leave the desk reading
-                    // last week's dashboards, so the two are one action.
-                    int n = RenderAll(store, Log);
-                    // The email is the same click (DESIGN.md §9), persisted to out\ so COPY EMAIL
-                    // is instant and restart-safe. It builds AFTER the engine has released its
-                    // session, on its own — a failure leaves the dashboards standing.
+                    // The email report builds AFTER the engine has released its session, on its
+                    // own — a build failure must still leave the dashboards renderable below.
                     WeeklyReport? rep0 = null;
                     string? eErr = null;
                     try { rep0 = EmailBuilder.Build(Log, store, AppDataDir); }
                     catch (Exception ex) { eErr = ex.Message; Log("! email build failed: " + ex.Message); }
-                    return (r, n, rep0, eErr);
+                    return (r, rep0, eErr);
                 });
                 var emailErr = emailErr0;
-                var emailNotes = weeklyRep?.Notes.ToList() ?? new List<string>();
-                if (weeklyRep != null)
+                int pages = 0;
+                // GATE BEFORE ANY SURFACE EXISTS (audit 2026-08-31, scenario 144 — widening the
+                // 2026-08-26 gate): the dashboards are the INVESTOR-FACING surface and used to
+                // render before this modal, so declining withheld the email while the flagged
+                // numbers stood on the public pages. Nothing renders now until the CHECK notes
+                // are accepted; a failed email BUILD (no notes to judge) renders pages as before.
+                if (weeklyRep != null && !ConfirmChecks(weeklyRep.Notes, "weekly outputs"))
                 {
-                    // GATE BEFORE PUBLISH (audit 2026-08-26): flagged numbers get eyes before
-                    // the email fragments exist on disk
-                    if (!ConfirmChecks(weeklyRep.Notes, "weekly email fragments"))
+                    emailErr = "cancelled at the outlier check";
+                    Log("WEEKLY CANCELLED — CHECK notes declined; dashboards and email fragments " +
+                        "NOT rendered (previous outputs untouched).");
+                }
+                else
+                    await Task.Run(() =>
                     {
-                        emailErr = "cancelled at the outlier check";
-                        Log("WEEKLY EMAIL CANCELLED — CHECK notes declined; fragments not written.");
-                    }
-                    else
-                        await Task.Run(() =>
-                        {
+                        // Pulling the data and not redrawing the pages would leave the desk
+                        // reading last week's dashboards, so the two are one action.
+                        pages = RenderAll(store, Log);
+                        // The email fragment is the same click (DESIGN.md §9), persisted to
+                        // out\ so COPY EMAIL is instant and restart-safe.
+                        if (weeklyRep != null)
                             try
                             {
                                 EmailBuilder.Render(weeklyRep, OutDir,
@@ -579,8 +605,7 @@ namespace RateDesk.Weekly
                                 emailErr = ex.Message;
                                 Log("! email render failed: " + ex.Message);
                             }
-                        });
-                }
+                    });
                 // snapshot after the weekly too — same inheritance rule
                 await Task.Run(() => RateDesk.Weekly.Core.SaveDown.StoreBackup.AfterRun(store, AppDataDir, Log));
                 StatusText.Text = $"updated {DateTime.Now:HH:mm:ss} — {result.Tickers} tickers, " +

@@ -998,6 +998,27 @@ namespace RateDesk.Core
                 // shift above is active (the feed has not re-pointed yet, so the shifted
                 // pairing makes the naive CoD correct; correcting on top double-shifts).
                 bool rolled = RollCorrectionDue(sched, nowLdn, gateShift);
+                // EVIDENCE ARM (audit 2026-08-31, scenario 120 — the untested quadrant of the
+                // announcement-day 2x2): a feed that re-points BEFORE the statement leaves the
+                // calendar arm false while every PrevClose already belongs to the next contract
+                // along, so a flat tape prints a phantom full step down the strip. When the
+                // store's own record of the previous business day disagrees with a rung's LIVE
+                // SW_EFF_DT, the family provably renumbered since that close — Bloomberg's
+                // fields, not inference. The arm stands down when the previous day is itself a
+                // boundary or mixed-state day (its record cannot attribute that day's close,
+                // the same rule the stitcher applies), and when there are no records at all.
+                if (!rolled && gateShift == 0 && RecordedEffective(sched) is { } recEff)
+                {
+                    var prevBd0 = nowLdn.Date.AddDays(-1);
+                    while (prevBd0.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+                        prevBd0 = prevBd0.AddDays(-1);
+                    var evMap = new MeetingRungMap(sched, meetDates.Values, recEff);
+                    if (!evMap.IsBoundary(prevBd0) && !evMap.IsMixedState(prevBd0))
+                        for (int n = 1; n <= 3 && !rolled && n < quotes.Length; n++)
+                            if (quotes[n]?.Effective is { } liveEff
+                                && recEff(n, prevBd0) is { } recD && recD.Date != liveEff.Date)
+                                rolled = true;
+                }
 
                 // Thin meeting OIS families misprint with a straight face: SKSF4A published a live
                 // two-sided 1.387 between 1.848/2.086 neighbours (2026-08-03) — an impossible
@@ -1517,6 +1538,28 @@ namespace RateDesk.Core
         public Func<MeetingScheduleDef, Func<int, string>, DateTime, Func<int, double?>,
             IReadOnlyList<(DateTime Day, int Shift, bool Confirmed)>>? ObservedShifts { get; set; }
 
+        /// <summary>Bloomberg's own per-day record of what each rung pointed at — the
+        /// MeetingRungMap's evidence arm, built ONCE here so every consumer gets the same
+        /// source-aware, cached lookup. Five call sites used to construct unarmed maps while
+        /// only the stitcher passed records, and the doc-committed SKSF fixes (−10.6 vs −0.6,
+        /// −8.7 vs +4.6) never reached the weekly Δ1d fallback (audit 2026-08-31, finding 2).
+        /// Null when there is no history provider or no rolling-generic pattern.</summary>
+        public Func<int, DateTime, DateTime?>? RecordedEffective(MeetingScheduleDef sched)
+        {
+            var patRec = sched.Tickers.FirstOrDefault(t => t.Contains("{N}"));
+            if (History == null || patRec == null) return null;
+            var recCache = new Dictionary<(int, DateTime), DateTime?>();
+            return (n, d) =>
+            {
+                if (recCache.TryGetValue((n, d), out var hit)) return hit;
+                DateTime? v = History.EffectiveOn(MeetingTick(sched, patRec, n), d);
+                if (v is null && MeetingSrc(sched).Length > 0)
+                    v = History.EffectiveOn(patRec.Replace("{N}", n.ToString()) + " Curncy", d);
+                recCache[(n, d)] = v;
+                return v;
+            };
+        }
+
         internal Func<DateTime, IReadOnlyList<HistPoint>> MeetingSeriesBuilder(
             MeetingScheduleDef sched, IEnumerable<DateTime> runDates, List<string>? notes = null)
         {
@@ -1537,17 +1580,7 @@ namespace RateDesk.Core
             // Bloomberg's own per-day record of what each rung pointed at, when the store has
             // been recording it (every daily run stores it). Evidence beats the boundary count.
             var patRec = sched.Tickers.FirstOrDefault(t => t.Contains("{N}"));
-            var recCache = new Dictionary<(int, DateTime), DateTime?>();
-            Func<int, DateTime, DateTime?>? recorded = History == null || patRec == null ? null
-                : (n, d) =>
-                {
-                    if (recCache.TryGetValue((n, d), out var hit)) return hit;
-                    DateTime? v = History.EffectiveOn(MeetingTick(sched, patRec, n), d);
-                    if (v is null && MeetingSrc(sched).Length > 0)
-                        v = History.EffectiveOn(patRec.Replace("{N}", n.ToString()) + " Curncy", d);
-                    recCache[(n, d)] = v;
-                    return v;
-                };
+            var recorded = RecordedEffective(sched);
             var rungMap = new MeetingRungMap(sched, runDates, recorded);
 
             // THE STRIP'S OWN ACCOUNT OF ITS RENUMBERING (2026-08-27). Prices are seeded 45 days

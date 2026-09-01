@@ -254,7 +254,11 @@ namespace RateDesk.Core
 
                     var series = MeetingSeriesBuilder(sched, run.Rows.Select(r => r.Date), rep.Notes);
                     // the same boundary derivation the stitcher uses, for the Δ1d fallback below
-                    var rungMap = new MeetingRungMap(sched, run.Rows.Select(r => r.Date));
+                    // — ARMED with the store's records like the stitcher's own map (audit
+                    // 2026-08-31: this was one of four unarmed copies, so the boundary-day
+                    // codClean test could disagree with the series it guards)
+                    var rungMap = new MeetingRungMap(sched, run.Rows.Select(r => r.Date),
+                        RecordedEffective(sched));
                     foreach (var row in run.Rows)
                     {
                         var wm = new WeeklyMeeting

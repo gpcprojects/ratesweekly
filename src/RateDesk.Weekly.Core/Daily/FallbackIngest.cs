@@ -70,7 +70,10 @@ namespace RateDesk.Weekly.Core.Daily
 
                     // ONE boundary derivation for every consumer — MeetingRungMap (fresh-eyes
                     // review 2026-08-26): the reader (BankHistoryRows) and this writer must map
-                    // a (date, start) pair to the SAME rung or the manual row is stranded
+                    // a (date, start) pair to the SAME rung or the manual row is stranded.
+                    // DELIBERATELY UNARMED (audit 2026-08-31): the reader's map stays unarmed
+                    // per FINDINGS.md (a run-time record cannot attribute a boundary-day CLOSE),
+                    // so this writer must stay unarmed too — arm BOTH or NEITHER, never one.
                     var map = new MeetingRungMap(sched);
 
                     // engine coverage per rung — across BOTH spellings (contributor + composite):

@@ -221,14 +221,18 @@ namespace RateDesk.Weekly.Core.Daily
             var snapSet = svc.MeetingTickers().Concat(PricingService.WeeklyExtraTickers)
                 .Concat(Infl.InflHistory.Families.SelectMany(f =>
                     Enumerable.Range(1, 12).Select(n => $"{f.Root}{n} Curncy"))).ToList();
-            var (snapMode, snapNote) = SnapDiscipline.Apply(refData, snap, snapSet, log);
+            // ONE London clock per run (audit 2026-08-31, scenario 101): SnapDiscipline and the
+            // gate below must read the SAME instant — two LondonNow() calls straddling midnight
+            // pinned 09-Sep marks and then dated the gate 10-Sep 16:15, sixteen hours in the
+            // future, rolling a meeting off the board the night before its decision.
+            var nowLdn = RateDesk.Core.Dates.DecisionClock.LondonNow();
+            var (snapMode, snapNote) = SnapDiscipline.Apply(refData, snap, snapSet, log, nowLdn);
             // Once the marks are PINNED to the 16:15 snap they are the close, so the decision
             // gates must read 16:15 and not the wall clock — otherwise a run pressed after a
             // late statement rolls the board past a decision every price in it predates
             // (desk 2026-08-27). Before 16:15 the marks are live and the wall clock is right.
             if (snapMode == SnapDiscipline.Mode.Snap1615)
-                svc.MarksAsOfLondon = RateDesk.Core.Dates.DecisionClock.LondonNow().Date
-                                      + SnapDiscipline.SnapAt;
+                svc.MarksAsOfLondon = nowLdn.Date + SnapDiscipline.SnapAt;
             if (sbh == null)
                 try { refData.Prefetch(all, 220); } catch { /* singles fallback inside Core */ }
             var rep = svc.BuildWeekly(meetingsOnly: true);
@@ -301,6 +305,18 @@ namespace RateDesk.Weekly.Core.Daily
                         catch { /* an unquoted fixing month is not an error */ }
                     }
                 log?.Invoke($"daily: topped up {fx} inflation fixing series");
+                // A MACHINE THAT NEVER RAN INFLATION HAS NO FIXING HISTORY (desk report
+                // 2026-09-01: a second terminal's Δ1d/1w/1m all blank on the daily run). The
+                // mapping is maturity-documented by design, and maturity records only start on
+                // a machine's own first run — so 45 days of seeded closes can never map, and
+                // the exact-date anchors (−1bd/−7d/−28d) find nothing for a month. The desk's
+                // history already exists in the share snapshot; inherit it instead of waiting.
+                try
+                {
+                    if (appDataDir != null && SaveDown.StoreBackup.ImportInflation(store, appDataDir, log) is { } inflN)
+                        rep.Notes.Add(inflN);
+                }
+                catch (Exception ex) { log?.Invoke("  ! infl inherit: " + ex.Message); }
                 // anchors stay on DOCUMENTED CLOSES pending the desk's call on the snapshot
                 // convention (measured 2026-08-26: instant-16:15, close, and window-average
                 // marks all leave 2-6bp of adjacent-month dispersion, because each monthly

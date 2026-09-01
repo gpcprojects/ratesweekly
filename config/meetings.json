@@ -182,6 +182,13 @@
         "2027-12-16"
       ],
       "decisionTimeLondon": "12:00",
+      // Bank Rate applies from the decision day but SONIA is published in arrears (the fixing
+      // printed on day d reports day d-1), so like FOMC the fixing is stale one extra day —
+      // the code has documented "FOMC and MPC carry 1 in config" since 2026-08-27, but this
+      // entry never carried it: the morning after every MPC move, GBP Priced was measured
+      // against the pre-decision fixing with no re-base and no dagger (audit 2026-08-31,
+      // scenario 108/141 — confirmed against PricingServiceBoards.FixingLagDays' own comment).
+      "fixingLagDays": 1,
       // ICE 3M SONIA futures compound the same index the MPC OIS fixes on, over IMM quarters.
       // Probed by NAME 2026-08-20 ("SFIZ6 Comdty" = ICE 3MTH SONIA FU). Cross-check only.
       "guardFutures": "SFI{MY} Comdty",

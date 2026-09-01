@@ -304,10 +304,15 @@ namespace RateDesk.Weekly.Core.Series
 
                 // the run's ACTIVE source — the same feed as the email/boards (desk 2026-08-26)
                 var activeSrc = meetingSource?.Invoke(sched) ?? sched.Source ?? "";
-                var strip = RollingStrip.ForMeetings(sched, store, asOf, source: activeSrc);
+                // gate on the MARKS' clock, like the currency pages (audit 2026-08-31, sc. 106)
+                var strip = RollingStrip.ForMeetings(sched, store, asOf,
+                    nowLondon: asOf.Date + SnapDiscipline.SnapAt, source: activeSrc);
                 // ONE boundary derivation for every consumer — MeetingRungMap (this scan
-                // previously ignored the SKSF start rule and settled announcements)
-                var rmap = new MeetingRungMap(sched);
+                // previously ignored the SKSF start rule and settled announcements), ARMED
+                // with the store's records like the boards (audit 2026-08-31, finding 2);
+                // records key the composite spelling — the recording side is source-agnostic
+                var rmap = new MeetingRungMap(sched, null,
+                    (n, d) => store.EffectiveOn(pat.Replace("{N}", n.ToString()) + " Curncy", d));
                 var bounds = rmap.Boundaries.ToList();
                 var tick = RollingStrip.SourceAwareTicker(store, pat, activeSrc);
                 foreach (var row in strip.Rows)

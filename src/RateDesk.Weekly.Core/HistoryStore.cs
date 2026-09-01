@@ -229,6 +229,64 @@ namespace RateDesk.Weekly.Core
             }
         }
 
+        /// <summary>Every recorded (day, maturity, effective) row for a ticker, ascending —
+        /// the raw feed for cross-store inheritance (StoreBackup.ImportInflation) and for the
+        /// roll-inside-a-record-gap test in the fixings mapping.</summary>
+        public List<(DateTime Date, DateTime Maturity, DateTime? Effective)> GetMaturityRows(string ticker)
+        {
+            lock (_gate)
+            {
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "SELECT date, maturity, effective FROM maturity WHERE ticker=@t ORDER BY date;";
+                cmd.Parameters.AddWithValue("@t", ticker);
+                var res = new List<(DateTime, DateTime, DateTime?)>();
+                using var r = cmd.ExecuteReader();
+                while (r.Read())
+                    res.Add((
+                        DateTime.ParseExact(r.GetString(0), "yyyy-MM-dd", CultureInfo.InvariantCulture),
+                        DateTime.ParseExact(r.GetString(1), "yyyy-MM-dd", CultureInfo.InvariantCulture),
+                        r.IsDBNull(2) ? null
+                            : DateTime.ParseExact(r.GetString(2), "yyyy-MM-dd", CultureInfo.InvariantCulture)));
+                return res;
+            }
+        }
+
+        /// <summary>The maturity records BRACKETING a day: the newest at-or-before and the
+        /// oldest strictly after. A close on a day whose brackets DISAGREE sat inside a record
+        /// gap that a re-point crossed — nothing documents which contract it belonged to, and
+        /// the fixings mapping must skip it rather than key a year-wrong month (audit
+        /// 2026-08-31, scenario 151/154: a three-day run gap over an RPI print day filed
+        /// post-roll prices onto the just-fixed month).</summary>
+        public (DateTime? MatBefore, DateTime? DateBefore, DateTime? MatAfter) MaturityBrackets(
+            string ticker, DateTime day)
+        {
+            lock (_gate)
+            {
+                var d = day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "SELECT date, maturity FROM maturity WHERE ticker=@t AND date<=@d " +
+                                  "ORDER BY date DESC LIMIT 1;";
+                cmd.Parameters.AddWithValue("@t", ticker);
+                cmd.Parameters.AddWithValue("@d", d);
+                DateTime? matB = null, dateB = null;
+                using (var r = cmd.ExecuteReader())
+                    if (r.Read())
+                    {
+                        dateB = DateTime.ParseExact(r.GetString(0), "yyyy-MM-dd", CultureInfo.InvariantCulture);
+                        matB = DateTime.ParseExact(r.GetString(1), "yyyy-MM-dd", CultureInfo.InvariantCulture);
+                    }
+                using var cmd2 = _db.CreateCommand();
+                cmd2.CommandText = "SELECT maturity FROM maturity WHERE ticker=@t AND date>@d " +
+                                   "ORDER BY date LIMIT 1;";
+                cmd2.Parameters.AddWithValue("@t", ticker);
+                cmd2.Parameters.AddWithValue("@d", d);
+                DateTime? matA = cmd2.ExecuteScalar() is string s
+                    ? DateTime.ParseExact(s, "yyyy-MM-dd", CultureInfo.InvariantCulture)
+                    : null;
+                return (matB, dateB, matA);
+            }
+        }
+
         /// <summary>The most recent day a maturity was RECORDED for this ticker — null if never.
         /// The hard-data rule's discriminator: a rung is Bloomberg-documented right now only if
         /// its record day matches the family front rung's (a stale historical record means the
