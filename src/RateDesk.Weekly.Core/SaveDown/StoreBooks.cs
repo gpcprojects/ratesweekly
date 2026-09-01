@@ -66,9 +66,10 @@ namespace RateDesk.Weekly.Core.SaveDown
                 var refTicker = sched.RefTicker
                     ?? configs.Enabled.FirstOrDefault(c =>
                         c.Ccy.Equals(sched.Ccy, StringComparison.OrdinalIgnoreCase))?.Ois?.OnFixingTicker;
+                // historyDays <= 0 = everything the store holds (desk 2026-09-01)
                 var refHist = string.IsNullOrEmpty(refTicker)
                     ? new List<RateDesk.Core.Market.HistPoint>()
-                    : store.GetDaily(refTicker!, historyDays + 40).ToList();
+                    : store.GetDaily(refTicker!, historyDays <= 0 ? 36600 : historyDays + 40).ToList();
                 double? RefAt(DateTime day)
                 {
                     for (int i = refHist.Count - 1; i >= 0; i--)

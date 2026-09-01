@@ -1,3 +1,20 @@
+## Fixed 2026-09-01 (v0.18.3, same branch) — history is kept forever, and the sheets grow with it
+
+Desk rule made explicit: NO history ever rolls off. Verified layer by layer:
+
+- **The store never prunes** — zero DELETE statements in HistoryStore; closes, fixings (the
+  ingested 2021-2026 incumbent sheet included), maturity records and manual marks accumulate
+  for the life of the desk. A rung recorded from today has six months of life in six months.
+- **The rendered history tables were the gap**: publish.json `historyDays` (250 on the desk
+  machine) windowed the save-down books' history_ pages, so in ~10 months the oldest rows
+  would have rolled off the SHEETS while the store kept them. `historyDays: 0` now means
+  EVERYTHING — the window resolves to the family's own earliest stored close — and the desk
+  machine's publish.json is set to 0. Positive values remain a lean-book option.
+- **Read windows widened so they can never become silent caps**: the inflation Base-print
+  reads (2600d → 7300d ≈ 20y); the save-down refTicker read follows historyDays' 0-semantics.
+- Inflation history pages already rendered the full fixings table (GetFixingHistory is
+  uncapped) — no change needed there.
+
 ## Fixed 2026-09-01 (v0.18.2, same branch) — RPI Daily blank the morning after a bank holiday
 
 Desk screenshot, 01-Sep-26: the UK RPI card's whole Daily column blank while Weekly/Monthly

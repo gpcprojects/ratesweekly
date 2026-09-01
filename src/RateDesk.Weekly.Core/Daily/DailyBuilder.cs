@@ -33,9 +33,12 @@ namespace RateDesk.Weekly.Core.Daily
         /// Historical_* tabs are ingested for outage days (FallbackIngest). Null = no ingest.</summary>
         public static string? LoadFallbackBook(string appDataDir) => LoadString(appDataDir, "fallbackBook");
 
-        /// <summary>publish.json {"historyDays": 61} — the save-down books' history_ window in
-        /// BUSINESS days. Default 61 = the incumbent's own depth; the key was previously read
-        /// and dropped (audit 2026-08-26) — it now actually reaches the books.</summary>
+        /// <summary>publish.json {"historyDays": N} — the save-down books' history_ window in
+        /// BUSINESS days. 0 = EVERYTHING THE STORE HOLDS (desk 2026-09-01: history is kept and
+        /// never rolls off — the ingested incumbent sheet plus every day's save-down accumulate,
+        /// and the rendered tables must grow with them). A positive N keeps a lean window for
+        /// anyone who wants one; default 61 = the incumbent's own depth. The key was previously
+        /// read and dropped (audit 2026-08-26) — it now actually reaches the books.</summary>
         public static int LoadHistoryDays(string appDataDir)
         {
             const int dflt = 61;
@@ -45,7 +48,7 @@ namespace RateDesk.Weekly.Core.Daily
             {
                 using var doc = JsonDocument.Parse(File.ReadAllText(path));
                 return doc.RootElement.TryGetProperty("historyDays", out var v)
-                       && v.ValueKind == JsonValueKind.Number && v.GetInt32() is > 0 and <= 2000
+                       && v.ValueKind == JsonValueKind.Number && v.GetInt32() is >= 0 and <= 2000
                     ? v.GetInt32() : dflt;
             }
             catch { return dflt; }

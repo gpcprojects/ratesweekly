@@ -137,7 +137,12 @@ namespace RateDesk.Weekly.Core.Daily
             // would take minutes with a store round-trip per (day x meeting x horizon).
             // Lookback anchored on the REPORT's asOf, not the wall clock (audit 2026-08-26:
             // an offline export of an old report silently lost its early rows).
-            int lookback = historyDays + 60 + Math.Max(0, (int)(DateTime.Today - asOf.Date).TotalDays);
+            // historyDays <= 0 = EVERYTHING (desk 2026-09-01): the window resolves below to
+            // the family's own earliest stored close, so the tables grow with the store and
+            // old history never rolls off the rendered sheets.
+            bool unbounded = historyDays <= 0;
+            int lookback = unbounded ? 36600
+                : historyDays + 60 + Math.Max(0, (int)(DateTime.Today - asOf.Date).TotalDays);
             var rungData = new Dictionary<int, List<(DateTime Date, double Value, string Source)>>();
             List<(DateTime Date, double Value, string Source)> RungHist(int n)
             {
@@ -184,6 +189,27 @@ namespace RateDesk.Weekly.Core.Daily
             double? Chg(double cur, (DateTime Date, double Value, string Source)? anchor, DateTime target)
                 => anchor is { } a && (target.Date - a.Date).TotalDays <= 10
                     ? (cur - a.Value) * 100.0 : null;
+
+            // unbounded: the window is the store's own depth for this family — earliest close
+            // across the rungs (RungHist caches, so the walk below reuses every one of these
+            // reads). A family with nothing stored renders nothing, exactly as before.
+            if (unbounded)
+            {
+                DateTime? floor = null;
+                for (int n = 0; n <= 13; n++)
+                {
+                    var l = RungHist(n);
+                    if (l.Count > 0 && (floor is null || l[0].Date < floor)) floor = l[0].Date;
+                }
+                if (floor is not { } f0) historyDays = 0;
+                else
+                {
+                    int bd = 0;
+                    for (var d = PrevBd(asOf.Date.AddDays(1)); d >= f0.Date; d = PrevBd(d))
+                        if (d < asOf.Date) bd++;
+                    historyDays = bd;
+                }
+            }
 
             // last N BUSINESS days strictly before asOf — the store excludes today by design,
             // and the old calendar-day window shipped ~30% fewer rows than asked (audit 2026-08-26)

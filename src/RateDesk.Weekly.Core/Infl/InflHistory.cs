@@ -480,7 +480,10 @@ namespace RateDesk.Weekly.Core.Infl
             // earlier in the month used to lose the last-write-wins scan permanently)
             var d = new Dictionary<(int, int), double>();
             var src = new Dictionary<(int, int), string>();
-            foreach (var p in store.GetDailyWithSource(fam.IndexTicker, 2600))
+            // 7300d (~20y): the Base column needs year-ago prints forever — the ingested sheet
+            // reaches 2021 and the store never prunes, so the read window must not become the
+            // silent cap on it (desk 2026-09-01: history is kept, lookbacks grow with it)
+            foreach (var p in store.GetDailyWithSource(fam.IndexTicker, 7300))
             {
                 var k = (p.Date.Month, p.Date.Year);
                 if (d.ContainsKey(k) && src[k] == "bbg" && p.Source != "bbg") continue;
@@ -697,7 +700,7 @@ namespace RateDesk.Weekly.Core.Infl
         private static Dictionary<(int M, int Y), double> Prints(HistoryStore store, string idxTicker)
         {
             var d = new Dictionary<(int, int), double>();
-            foreach (var p in store.GetDaily(idxTicker, 2600))
+            foreach (var p in store.GetDaily(idxTicker, 7300))   // ~20y — never the silent cap (desk 2026-09-01)
                 d[(p.Date.Month, p.Date.Year)] = p.Value;   // stamped at the reference month
             return d;
         }

@@ -260,6 +260,37 @@ namespace RateDesk.Tests
             Assert.Equal(6.0, feb.W1!.Value, 6);    // −7d target 25-Aug walks 1d to 24-Aug
         }
 
+        // ---------------------------- history is kept, never rolled off (desk 2026-09-01) ----
+        [Fact]
+        public void BankHistoryRows_ZeroHistoryDays_MeansEverythingTheStoreHolds()
+        {
+            // historyDays = 0 must resolve to the family's own earliest stored close, so the
+            // rendered history tables grow with the store instead of rolling old rows off.
+            using var store = new HistoryStore(Path.Combine(_dir, "grow.db"));
+            store.UpsertDaily("SKSF2A Curncy", new[]
+            {
+                new HistPoint(new(2026, 8, 21), 1.720),
+                new HistPoint(new(2026, 8, 24), 1.725),
+                new HistPoint(new(2026, 8, 25), 1.730),
+            }, excludeToday: false);
+            var sched = RateDesk.Core.MeetingsStore.Schedules.First(s => s.Name == "RIKSBANK");
+            var run = new RateDesk.Core.WeeklyRun { Title = "RIKSBANK · SEK" };
+            run.Rows.Add(new RateDesk.Core.WeeklyMeeting
+                { Date = new(2026, 9, 30), MidPct = 1.73, EndDate = new(2026, 11, 11) });
+            var asOf = new DateTime(2026, 8, 27);
+
+            var all = RateDesk.Weekly.Core.Daily.DailyBook.BankHistoryRows(
+                store, sched, run, "SKSF{N}A", asOf, historyDays: 0);
+            var capped = RateDesk.Weekly.Core.Daily.DailyBook.BankHistoryRows(
+                store, sched, run, "SKSF{N}A", asOf, historyDays: 4);
+
+            // unbounded window = business days back to the earliest close (21-Aug), i.e. the
+            // same rows the explicit 4-day window produces on this fixture — no more, no less
+            Assert.True(all.Count > 0);
+            Assert.Equal(new DateTime(2026, 8, 21), all.Min(r => r.Day));
+            Assert.Equal(capped.Count, all.Count);
+        }
+
         // ------------------------------------------------- 146: coherence is non-blocking ----
         [Fact]
         public void CoherenceNotes_CarryTheInformationalPrefix_NotTheBlockingOne()
