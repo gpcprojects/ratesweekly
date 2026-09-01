@@ -1,3 +1,20 @@
+## Fixed 2026-09-01 (v0.18.2, same branch) — RPI Daily blank the morning after a bank holiday
+
+Desk screenshot, 01-Sep-26: the UK RPI card's whole Daily column blank while Weekly/Monthly
+populated. 31-Aug-26 was the UK summer bank holiday: `PrevBd` only knows weekends, so the Δ1d
+anchor landed ON the holiday, and the 2026-08-25 convention ("EXACT saved date, blank when
+missing") blanked every tenor — while −7d and −28d hit real Tuesdays. The inflation cards were
+the last exact-match surface in the app; the OIS side has walked its anchors under per-horizon
+staleness caps since 2026-08-26.
+
+Fix (`InflHistory.BuildDisplayRows`): the three anchors now walk to the LAST SAVE AT OR BEFORE
+the target under the same 5/7/10-day caps ("weekends and long holiday bridges, no more"). On
+ordinary days the exact date still hits, so nothing else changes; across a holiday the anchor
+is the last real trading day (28-Aug here); past the cap the cell stays blank rather than
+stretching. One consequence to know: on a post-holiday morning the Δ1d column is a genuine
+one-business-day change that spans several calendar days, so the FIXING lone-mover watch may
+read slightly wider dispersion that day — informational only.
+
 ## Fixed 2026-09-01 later (v0.18.1, same branch) — the policy-delta base (desk dictation)
 
 Desk (Gabriel), 2026-09-01: "use the most recent fixing + or - the amount they move by, we don't

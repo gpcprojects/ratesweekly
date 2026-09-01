@@ -219,6 +219,47 @@ namespace RateDesk.Tests
             Assert.Contains("PRE-CLOSE", note2);
         }
 
+        // --------------------------------- the 01-Sep-26 desk report: RPI Daily blank ----
+        [Fact]
+        public void BuildDisplayRows_AnchorsWalkAcrossAHoliday_AndStayBlankPastTheCap()
+        {
+            // 01-Sep-26 is the day after the UK summer bank holiday: PrevBd lands on 31-Aug,
+            // which has no saves because nothing traded, and the old exact-date match blanked
+            // the whole Daily column. The anchor must walk to Friday 28-Aug (3 days ≤ the
+            // 5-day cap) — and a month whose nearest save is PAST the cap must stay blank.
+            using var store = new HistoryStore(Path.Combine(_dir, "hol.db"));
+            var fam = InflHistory.Families.First(f => f.IsIndexUnit);   // index units: plain arithmetic
+            var asOf = new DateTime(2026, 9, 1);                        // Tuesday
+            var fri = new DateTime(2026, 8, 28);                        // last real trading day
+
+            store.UpsertFixings(fam.Key, "2027-01", new[]
+            {
+                new HistPoint(new DateTime(2026, 8, 4), 420.0),         // −28d target, exact
+                new HistPoint(new DateTime(2026, 8, 25), 428.0),        // −7d target, exact
+                new HistPoint(fri, 430.0),                              // the holiday bridge
+            }, "bbg", excludeToday: false);
+            store.UpsertFixings(fam.Key, "2027-02", new[]
+            {
+                new HistPoint(new DateTime(2026, 8, 24), 500.0),        // 7 days before PrevBd — past the 5d cap
+            }, "bbg", excludeToday: false);
+
+            var rows = InflHistory.BuildDisplayRows(store, fam, new[]
+            {
+                new InflHistory.Mark(new DateTime(2027, 1, 1), 436.0),
+                new InflHistory.Mark(new DateTime(2027, 2, 1), 506.0),
+            }, asOf);
+
+            var jan = rows.Single(r => r.RefMonth.Month == 1);
+            Assert.NotNull(jan.D1);
+            Assert.Equal(6.0, jan.D1!.Value, 6);    // 436 − 430 (Fri), not blank
+            Assert.Equal(8.0, jan.W1!.Value, 6);    // 436 − 428 (exact −7d, unchanged)
+            Assert.Equal(16.0, jan.M1!.Value, 6);   // 436 − 420 (exact −28d, unchanged)
+
+            var feb = rows.Single(r => r.RefMonth.Month == 2);
+            Assert.Null(feb.D1);                    // nearest save 7d from target > 5d cap
+            Assert.Equal(6.0, feb.W1!.Value, 6);    // −7d target 25-Aug walks 1d to 24-Aug
+        }
+
         // ------------------------------------------------- 146: coherence is non-blocking ----
         [Fact]
         public void CoherenceNotes_CarryTheInformationalPrefix_NotTheBlockingOne()

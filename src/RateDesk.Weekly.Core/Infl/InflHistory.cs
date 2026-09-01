@@ -526,23 +526,33 @@ namespace RateDesk.Weekly.Core.Infl
                 if (mid is { } midNow && hist.TryGetValue($"{mk.RefMonth:yyyy-MM}", out var series))
                 {
                     // THE INCUMBENT SHEET'S OWN ANCHORS (read from its Table helpers,
-                    // 2026-08-25 after the app's monthly diverged badly): previous business
-                    // day / −7 calendar days / −28 CALENDAR DAYS (not same-day-last-month —
-                    // that is the OIS sheet's convention, not this one), each matched to the
-                    // EXACT saved date and blank when that date has no save. 7 and 28
-                    // preserve the weekday, so exact matching is safe by construction.
-                    double? MidOn(DateTime day)
+                    // 2026-08-25): previous business day / −7 calendar days / −28 CALENDAR
+                    // DAYS (not same-day-last-month — that is the OIS sheet's convention, not
+                    // this one). Originally matched to the EXACT saved date, blank when
+                    // missing — until 01-Sep-26, the day after the UK summer bank holiday,
+                    // published a fully blank RPI Daily column (PrevBd only knows weekends;
+                    // 31-Aug had no saves because nothing traded). Anchors now walk to the
+                    // LAST SAVE AT OR BEFORE the target under the OIS side's own per-horizon
+                    // staleness caps (5/7/10 — "weekends and long holiday bridges, no more"):
+                    // on ordinary days the exact date still hits and nothing changes; across
+                    // a holiday the anchor is the last real trading day; past the cap the
+                    // cell stays blank rather than stretching (desk 2026-09-01).
+                    double? MidAt(DateTime target, int capDays)
                     {
+                        double? v = null;
                         foreach (var p in series)
-                            if (p.Date.Date == day.Date)
-                                return fam.IsIndexUnit
-                                    ? p.Value
-                                    : baseV is { } b4 ? b4 * (1 + p.Value / 10000.0) : null;
-                        return null;
+                            if (p.Date.Date <= target.Date
+                                && (target.Date - p.Date.Date).TotalDays <= capDays)
+                                v = p.Value;            // series ascends — last match wins
+                        return v is { } raw
+                            ? fam.IsIndexUnit
+                                ? raw
+                                : baseV is { } b4 ? b4 * (1 + raw / 10000.0) : null
+                            : null;
                     }
-                    d1 = midNow - MidOn(PrevBd(asOf.Date));
-                    w1 = midNow - MidOn(asOf.Date.AddDays(-7));
-                    m1 = midNow - MidOn(asOf.Date.AddDays(-28));
+                    d1 = midNow - MidAt(PrevBd(asOf.Date), 5);
+                    w1 = midNow - MidAt(asOf.Date.AddDays(-7), 7);
+                    m1 = midNow - MidAt(asOf.Date.AddDays(-28), 10);
                 }
                 rows.Add(new DisplayRow(mk.RefMonth, baseV, mid, yoy, mom, d1, w1, m1));
                 prevMid = mid;
