@@ -66,6 +66,11 @@
         "2027-12-08"
       ],
       "decisionTimeLondon": "19:00",
+      // policy TARGET ticker (desk 2026-09-01): the documented source of the delivered
+      // move size for the announced-but-not-yet-effective base — Fed target upper bound.
+      // Probed by NAME 2026-09-01 via BbgSmoke; base = fixing print + (target now -
+      // target pre-decision close), resetting once the fixing itself moves.
+      "policyTicker": "FDTR Index",
       // 30-day Fed Funds futures settle on average EFFR — the same index as USSOFED. Probed
       // by NAME 2026-08-20 ("FFV6 Comdty" = 30DAY FED FUND). Cross-check only, never a mid.
       "guardFutures": "FF{MY} Comdty",
@@ -124,6 +129,11 @@
         "2027-12-16"
       ],
       "decisionTimeLondon": "13:15",
+      // policy TARGET ticker (desk 2026-09-01): the documented source of the delivered
+      // move size for the announced-but-not-yet-effective base — deposit facility - the rate ESTR tracks.
+      // Probed by NAME 2026-09-01 via BbgSmoke; base = fixing print + (target now -
+      // target pre-decision close), resetting once the fixing itself moves.
+      "policyTicker": "EUORDEPO Index",
       // ICE 3M ESTR futures (TKY root, desk-supplied 2026-08-20) — INDEX-MATCHED to the ESTR
       // meetings, so no basis knob: TKYU6 implied 2.460 matched the meeting blend to 0.0bp live.
       // The desk's Euribor hedge (ER{MY}) was considered but carries the Euribor/ESTR basis —
@@ -182,6 +192,11 @@
         "2027-12-16"
       ],
       "decisionTimeLondon": "12:00",
+      // policy TARGET ticker (desk 2026-09-01): the documented source of the delivered
+      // move size for the announced-but-not-yet-effective base — Official Bank Rate.
+      // Probed by NAME 2026-09-01 via BbgSmoke; base = fixing print + (target now -
+      // target pre-decision close), resetting once the fixing itself moves.
+      "policyTicker": "UKBRBASE Index",
       // Bank Rate applies from the decision day but SONIA is published in arrears (the fixing
       // printed on day d reports day d-1), so like FOMC the fixing is stale one extra day —
       // the code has documented "FOMC and MPC carry 1 in config" since 2026-08-27, but this
@@ -246,6 +261,11 @@
         "2027-12-08"
       ],
       "decisionTimeLondon": "14:45",
+      // policy TARGET ticker (desk 2026-09-01): the documented source of the delivered
+      // move size for the announced-but-not-yet-effective base — overnight LENDING rate - moves 1:1 with the target, so the DELTA is identical.
+      // Probed by NAME 2026-09-01 via BbgSmoke; base = fixing print + (target now -
+      // target pre-decision close), resetting once the fixing itself moves.
+      "policyTicker": "CABROVER Index",
       // 3M CORRA futures compound the same index as the BOC meeting OIS, over IMM quarters.
       // Probed by NAME 2026-08-20 ("CORZ6 Comdty" = 3M CORRA Futures). Cross-check only.
       "guardFutures": "COR{MY} Comdty",
@@ -305,6 +325,11 @@
         "2027-12-14"
       ],
       "decisionTimeLondon": "05:30",
+      // policy TARGET ticker (desk 2026-09-01): the documented source of the delivered
+      // move size for the announced-but-not-yet-effective base — cash rate target.
+      // Probed by NAME 2026-09-01 via BbgSmoke; base = fixing print + (target now -
+      // target pre-decision close), resetting once the fixing itself moves.
+      "policyTicker": "RBATCTR Index",
       // ASX 30-day interbank cash rate futures settle on the average AUD overnight cash rate —
       // the FF analog. Probed by NAME 2026-08-20 ("IBV6 Comdty" = 30-DAY INTERBANK). Cross-check only.
       "guardFutures": "IB{MY} Comdty",
@@ -363,6 +388,11 @@
         "2028-02-09"
       ],
       "decisionTimeLondon": "03:00",
+      // policy TARGET ticker (desk 2026-09-01): the documented source of the delivered
+      // move size for the announced-but-not-yet-effective base — the OCR itself - also the refTicker, so the kick-in reset fires the day it re-prints.
+      // Probed by NAME 2026-09-01 via BbgSmoke; base = fixing print + (target now -
+      // target pre-decision close), resetting once the fixing itself moves.
+      "policyTicker": "NZOCRS Index",
       "pastDates": [
         "2025-08-20",
         "2025-10-08",
@@ -465,6 +495,11 @@
         "2027-12-17"
       ],
       "decisionTimeLondon": "04:00",
+      // policy TARGET ticker (desk 2026-09-01): the documented source of the delivered
+      // move size for the announced-but-not-yet-effective base — uncollateralized o/n call target.
+      // Probed by NAME 2026-09-01 via BbgSmoke; base = fixing print + (target now -
+      // target pre-decision close), resetting once the fixing itself moves.
+      "policyTicker": "BOJDTR Index",
       "pastDates": [
         "2025-07-31",
         "2025-09-19",
@@ -514,6 +549,11 @@
         "2027-06-22"
       ],
       "decisionTimeLondon": "08:30",
+      // policy TARGET ticker (desk 2026-09-01): the documented source of the delivered
+      // move size for the announced-but-not-yet-effective base — policy (repo) rate.
+      // Probed by NAME 2026-09-01 via BbgSmoke; base = fixing print + (target now -
+      // target pre-decision close), resetting once the fixing itself moves.
+      "policyTicker": "SWRRATEI Index",
       // SWESTR drops hard on the last business day of the year (a documented dislocation the
       // Riksbank opened an investigation into, 2023), so the meeting period that SPANS a
       // year-end averages the turn, not the policy path — live 2026-08-20 the Dec-26 rung
@@ -582,6 +622,11 @@
         "2027-12-16"
       ],
       "decisionTimeLondon": "09:00",
+      // policy TARGET ticker (desk 2026-09-01): the documented source of the delivered
+      // move size for the announced-but-not-yet-effective base — sight deposit rate.
+      // Probed by NAME 2026-09-01 via BbgSmoke; base = fixing print + (target now -
+      // target pre-decision close), resetting once the fixing itself moves.
+      "policyTicker": "NOBRDEP Index",
       "pastDates": [
         "2025-08-14",
         "2025-09-18",

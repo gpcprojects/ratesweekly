@@ -108,6 +108,10 @@ public static class Market
                     store.UpsertDaily(fixTk, bank.FixingHistory.Select(p => new HistPoint(p.Date, p.Value)).ToList());
             }
 
+            // ---- raw closes for explicitly-named securities (policy targets, chiefly) ----
+            foreach (var g in bank.RawCloses.GroupBy(x => x.Ticker))
+                store.UpsertDaily(g.Key, g.Select(p => new HistPoint(p.Date, p.Value)).ToList());
+
             // ---- anything else the scenario names explicitly ----
             foreach (var e in bank.Extras)
             {

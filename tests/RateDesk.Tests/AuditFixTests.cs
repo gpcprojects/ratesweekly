@@ -198,10 +198,11 @@ namespace RateDesk.Tests
             snap.Update("AAA Curncy", 1.0, 1.0, 1.0);
             snap.Update("BBB Curncy", 2.0, 2.0, 2.0);
             var bars = new FakeBars();
-            // AAA has a bar today (pins); BBB has none (stays live) — judged on the INJECTED
-            // clock's date, whatever wall-clock day the test runs on
+            // AAA has a bar today (pins); BBB has bars but not today (went DARK — the note's
+            // trigger) — judged on the INJECTED clock's date, whatever day the test runs on
             var now = DateTime.Today.AddHours(17);
             bars.Snaps["AAA Curncy"] = new List<HistPoint> { new(now.Date, 1.111) };
+            bars.Snaps["BBB Curncy"] = new List<HistPoint> { new(now.Date.AddDays(-1), 2.0) };
 
             var (mode, note) = SnapDiscipline.Apply(bars, snap,
                 new[] { "AAA Curncy", "BBB Curncy" }, null, nowLondon: now);

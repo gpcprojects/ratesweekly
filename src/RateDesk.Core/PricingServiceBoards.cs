@@ -181,6 +181,14 @@ namespace RateDesk.Core
         /// for one day longer.</summary>
         public int FixingLagDays { get; set; }
         public string? RefTicker { get; set; }
+        /// <summary>The bank's own POLICY TARGET ticker (FDTR, UKBRBASE, EUORDEPO, ...) — the
+        /// documented source of the DELIVERED MOVE SIZE for the announced-but-not-yet-effective
+        /// base (desk 2026-09-01: "use the most recent fixing ± the amount they move by, not
+        /// the stub mid"). Δ = target now − target's last pre-decision close; inside the window
+        /// the base is fixing print + Δ, and it resets to the print alone the moment the fixing
+        /// itself has genuinely moved. Null = the pre-2026-09-01 behaviour (the decided period's
+        /// own OIS), which also remains the fallback whenever the target data is missing.</summary>
+        public string? PolicyTicker { get; set; }
         /// <summary>Ladder name whose strip is the POLICY curve for this central bank, when that is a
         /// different index from the currency's default OIS curve. USD is the case: tenor swaps and forwards
         /// are SOFR, but everything meeting-dated is Fed Funds — the board's own USSOFED{N} tickers and its
@@ -924,6 +932,59 @@ namespace RateDesk.Core
                         }
                         if (today <= windowEnd && (eff - dec).TotalDays <= 10)
                         {
+                            // THE POLICY-DELTA BASE (desk 2026-09-01, supersedes the stub-mid
+                            // as the PRIMARY path: "use the most recent fixing ± the amount they
+                            // move by, we don't want to use the stub mid"). The bank's own
+                            // target ticker documents the delivered move: Δ = target now − the
+                            // target's last close BEFORE the decision. Base = fixing print + Δ —
+                            // no OIS basis, no intra-period expectations, surprises included
+                            // because the target itself re-prints at the statement. Resets to
+                            // the print alone the moment the fixing has GENUINELY moved (≥ half
+                            // the delta, right sign — whenever that happens: the RBNZ OCR is its
+                            // own fixing and re-prints the day the change takes effect, and a
+                            // moved print must never carry the delta a second time); the
+                            // calendar windowEnd above remains the hard stop either way.
+                            bool polResolved = false;
+                            if (!string.IsNullOrEmpty(sched.PolicyTicker)
+                                && res.RefPct is { } fixPrint
+                                && Snapshot.Get(sched.PolicyTicker)?.Mid is { } polNow
+                                && History != null)
+                            {
+                                int span0 = (int)(today - dec).TotalDays + 15;
+                                double? polPre = null, fixPre = null;
+                                foreach (var pt in History.GetDaily(sched.PolicyTicker, span0))
+                                    if (pt.Date.Date < dec) polPre = pt.Value;
+                                if (polPre is { } pp)
+                                {
+                                    double delta = polNow - pp;
+                                    bool kickedIn = false;
+                                    if (Math.Abs(delta) > 1e-9
+                                        && !string.IsNullOrEmpty(res.RefName))
+                                    {
+                                        foreach (var pt in History.GetDaily(res.RefName, span0))
+                                            if (pt.Date.Date < dec) fixPre = pt.Value;
+                                        if (fixPre is { } fp0
+                                            && Math.Abs(fixPrint - fp0) >= Math.Abs(delta) / 2.0
+                                            && Math.Sign(fixPrint - fp0) == Math.Sign(delta))
+                                            kickedIn = true;
+                                    }
+                                    if (Math.Abs(delta) > 1e-9 && !kickedIn)
+                                    {
+                                        res.RefPct = fixPrint + delta;
+                                        res.RefRebased = true;
+                                        polResolved = true;
+                                    }
+                                    // kicked in, or a genuine hold on any later day: the print
+                                    // IS the base — no re-base, no dagger
+                                    else if (kickedIn || today != dec)
+                                        polResolved = true;
+                                    // Δ == 0 ON the decision day falls through: the target
+                                    // print can lag the statement by minutes, and the stub
+                                    // bridge below still beats a stale base in that gap
+                                }
+                            }
+                            if (!polResolved)
+                            {
                             // 1. the LIVE mark of the decided period, wherever the family quotes
                             //    it. Reading only index 0 worked on the statement day (the gate
                             //    shift puts it there) and stopped working the moment the feed
@@ -975,6 +1036,7 @@ namespace RateDesk.Core
                                 res.RefPct = pv;
                                 res.RefRebased = true;
                                 res.RefRebasedStale = stale;
+                            }
                             }
                         }
                         }

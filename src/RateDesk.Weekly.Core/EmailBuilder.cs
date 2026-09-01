@@ -70,6 +70,11 @@ namespace RateDesk.Weekly.Core
             }
             all.AddRange(svc.MeetingTickers());
             all.AddRange(PricingService.WeeklyExtraTickers);
+            // the policy-target tickers (desk 2026-09-01): the documented source of the
+            // delivered move size for the announced-but-not-yet-effective base. Snapshot-only —
+            // deliberately NOT in MeetingTickers, so they stay out of the 16:15 snap set
+            foreach (var sched in MeetingsStore.Schedules)
+                if (!string.IsNullOrEmpty(sched.PolicyTicker)) all.Add(sched.PolicyTicker);
             return all.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         }
 

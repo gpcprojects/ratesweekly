@@ -76,6 +76,10 @@ public sealed class BankSpec
     /// <summary>Daily o/n fixing prints, for the (silent) compounded-fixing mechanics.</summary>
     public List<(DateTime Date, double Value)> FixingHistory { get; } = new();
 
+    /// <summary>Raw daily closes for any explicitly-named security (the policy TARGET ticker's
+    /// history, chiefly — the policy-delta base needs the target's last pre-decision close).</summary>
+    public List<(string Ticker, DateTime Date, double Value)> RawCloses { get; } = new();
+
     // ---------- series helpers (business days only, like BDH) ----------
 
     /// <summary>A flat stored series on rung <paramref name="n"/> over [from, to], business days

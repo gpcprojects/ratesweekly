@@ -1,3 +1,36 @@
+## Fixed 2026-09-01 later (v0.18.1, same branch) — the policy-delta base (desk dictation)
+
+Desk (Gabriel), 2026-09-01: "use the most recent fixing + or - the amount they move by, we don't
+want to use the stub mid for the fixing." Supersedes the 2026-08-11 stub-mid re-base as the
+PRIMARY path; the stub survives only as the flagged fallback.
+
+- `meetings.json` gains a `policyTicker` per run — the bank's own target, the documented source
+  of the delivered move. All nine probed by NAME 2026-09-01 (BbgSmoke): FDTR, UKBRBASE,
+  EUORDEPO (depo — the rate ESTR tracks), BOJDTR, SWRRATEI, RBATCTR, NZOCRS, CABROVER
+  (overnight LENDING — moves 1:1 with target, so the delta is identical), NOBRDEP. Values
+  cross-checked: RBATCTR 4.35 = RBACOR's flat level, NZOCRS 2.50, SWRRATEI 1.75 vs SWESTR ~1.71.
+- Inside the announcement→effective(+fixingLagDays) window: Δ = target now − target's last
+  pre-decision close; base = FIXING PRINT + Δ; dagger on. No OIS basis, no intra-period
+  expectations; surprises included because the target itself re-prints at the statement.
+- THE RESET (desk: "it has to reset once the new rate DOES genuinely kick in"): the moment the
+  fixing print has moved ≥ half the delta in the move's direction since the decision, the base
+  is the print alone, dagger off — whenever that happens (the RBNZ OCR is its own fixing and
+  re-prints at the effective date, inside the still-open window: adding Δ to a moved print
+  would double-count the cut, scenario 80's exact test). The calendar windowEnd stays the hard
+  stop regardless.
+- Δ = 0 ON the decision day falls through to the stub bridge (the target print can lag the
+  statement; RBNZ's decision day reads Δ = 0 by construction since target == fixing) — the one
+  place the decided period's OIS still serves, flagged, exactly as before. Δ = 0 on any later
+  day is a hold: base = the print, no re-base.
+- Missing target data (the entire pre-2026-09-01 suite seeds none) → the stub path verbatim,
+  so every existing scenario's behaviour is unchanged by construction.
+- Policy tickers ride the snapshot universe (deliberately NOT the 16:15 snap set), and the
+  SNAP partial-pin note now fires only for a ticker that HAS bars but not today — fixings,
+  futures and policy targets, which never bar, stay out of it.
+- Scenarios 66-80 (Group19): all nine banks mid-window (hike/cut/15bp/50bp mixed), the reset
+  per lag shape, and the kick-in — all business-day anchored. 340/340 units, 78/80 scenarios
+  (14 + 47 = the pre-existing date fragility, identical to baseline).
+
 ## Fixed 2026-09-01 (v0.18.0, branch audit-fixes-0.18.0) — the audit batch + the blank-Δ terminal
 
 Fixes from the 2026-08-31 audit (`tests\RateDesk.Scenarios\CATALOGUE_101_200.md`), plus the desk's

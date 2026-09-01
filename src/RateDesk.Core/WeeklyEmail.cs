@@ -182,7 +182,7 @@ namespace RateDesk.Core
                           "* swap-period start shown (no decision calendar for this bank)</div>");
             if (anyRebasedFront)
                 sb.Append($"<div style=\"{EmFont}font-size:10px;color:{EmMut};margin:{(anyStartOnly ? "0" : "-10px")} 0 14px 2px;\">" +
-                          "† fixing re-based onto the just-decided period's OIS — the new rate has not printed yet</div>");
+                          "† fixing re-based for the just-announced decision — the new rate has not printed yet</div>");
         }
 
         // ---- 2. Central Bank OIS Meetings (3 cards per row) ----

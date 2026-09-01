@@ -54,12 +54,13 @@ namespace RateDesk.Weekly.Core
                     return (mode, null);
 
                 default:
-                    int snapped = 0, fallback = 0;
+                    int snapped = 0, fallback = 0, dark = 0;
                     foreach (var t in tickers.Distinct(StringComparer.OrdinalIgnoreCase))
                     {
                         var q = snap.Get(t);
                         if (q?.Mid is null) continue;   // never quoted — nothing to pin
                         double? v = null;
+                        bool hasBars = false;
                         try
                         {
                             // compare LONDON date to LONDON date — bars are keyed on the London
@@ -67,7 +68,8 @@ namespace RateDesk.Weekly.Core
                             // LOCAL date at 16:15 London, which silently unpinned every mark
                             // (audit 2026-08-26)
                             var s = bars.GetLondonSnaps(t, 4, SnapAt);
-                            if (s.Count > 0 && s[^1].Date.Date == now.Date) v = s[^1].Value;
+                            hasBars = s.Count > 0;
+                            if (hasBars && s[^1].Date.Date == now.Date) v = s[^1].Value;
                         }
                         catch { /* bars unavailable — fall back below */ }
                         if (v is { } sv)
@@ -75,7 +77,15 @@ namespace RateDesk.Weekly.Core
                             snap.Update(t, sv, sv, sv);
                             snapped++;
                         }
-                        else fallback++;
+                        else
+                        {
+                            fallback++;
+                            // bars exist but not TODAY: a ticker that usually pins went dark —
+                            // the one shape that silently mixes a press-time mid into a pinned
+                            // board. Tickers with no bars EVER (fixings, futures, policy
+                            // targets) are expected here and stay out of the note.
+                            if (hasBars) dark++;
+                        }
                     }
                     log?.Invoke($"snap: London {now:HH:mm} — marks pinned to the 16:15 snap " +
                                 $"({snapped} ticker(s); {fallback} without bars stay live)");
@@ -83,8 +93,8 @@ namespace RateDesk.Weekly.Core
                     // Priced column (audit 2026-08-31, scenario 104) — said in the run notes,
                     // not only the log. Informational, not CHECK: far rungs without a trade
                     // today are routine and a daily modal trains the desk to click through.
-                    return (mode, fallback > 0
-                        ? $"SNAP: {fallback} published ticker(s) had no 16:15 bar today — their " +
+                    return (mode, dark > 0
+                        ? $"SNAP: {dark} usually-pinned ticker(s) had no 16:15 bar today — their " +
                           $"marks are live at press time, beside {snapped} pinned to 16:15"
                         : null);
             }
