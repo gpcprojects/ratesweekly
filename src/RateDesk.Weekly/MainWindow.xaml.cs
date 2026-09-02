@@ -176,6 +176,13 @@ namespace RateDesk.Weekly
                 // the salix search runs on EVERY open — a desk that chose Save Locally during an
                 // outage upgrades back to C+C automatically the day the drive returns
                 var detected = await Task.Run(() => RateDesk.Weekly.Core.SaveDown.SaveDownConfig.DetectSalix(Log));
+                // salix not visible from this process (drive letters are per-logon-session):
+                // derive the same C+C home from publish.json's own dailyDir — the folder the
+                // desk already declared as truth for the run files (found live 2026-09-02:
+                // BOTH machines had silently fallen back to Documents, so the snapshots never
+                // travelled and the second terminal "inherited" from its own thin copy)
+                detected ??= await Task.Run(() =>
+                    RateDesk.Weekly.Core.SaveDown.SaveDownConfig.DeriveFromDailyDir(AppDataDir, Log));
                 if (detected != null)
                 {
                     RateDesk.Weekly.Core.SaveDown.SaveDownConfig.Save(AppDataDir, new("cc", detected));
@@ -191,7 +198,11 @@ namespace RateDesk.Weekly
                     await Task.Run(() => RateDesk.Weekly.Core.SaveDown.SaveDownConfig.EnsureFolders(cfg.Root));
                     StatusText.Text = cfg.Mode == "cc"
                         ? "C+C folder located successfully."
-                        : "History saves to your Documents folder (OIS Runs / Inflation Runs).";
+                        : "⚠ history saves to your LOCAL Documents — nothing reaches the desk share.";
+                    if (cfg.Mode != "cc")
+                        Log("⚠ save-down root is LOCAL (" + cfg.Root + ") — snapshots and run books do " +
+                            "NOT reach the desk share, and other machines cannot inherit this history. " +
+                            "Map the salix drive (or set publish.json dailyDir) and reopen the app.");
                     OfferStoreRestore(cfg.Root);
                     return;
                 }
@@ -564,6 +575,13 @@ namespace RateDesk.Weekly
                 using var store = new HistoryStore(DbPath);
                 var (result, weeklyRep, emailErr0) = await Task.Run(() =>
                 {
+                    // shallow-store inheritance first — see Daily_Click (desk 2026-09-02)
+                    try
+                    {
+                        if (RateDesk.Weekly.Core.SaveDown.StoreBackup.InheritAll(store, AppDataDir, Log) is { } n0)
+                            Log(n0);
+                    }
+                    catch (Exception ex0) { Log("! inherit: " + ex0.Message); }
                     var r = UpdateEngine.Run(store, new RatesSnapshot(), Log);
                     // The email report builds AFTER the engine has released its session, on its
                     // own — a build failure must still leave the dashboards renderable below.
@@ -807,6 +825,17 @@ namespace RateDesk.Weekly
             try
             {
                 using var store = new HistoryStore(DbPath);
+                // a shallow store inherits the desk's history from the share snapshot BEFORE
+                // anything reads it (desk 2026-09-02: the app comes WITH the history)
+                await Task.Run(() =>
+                {
+                    try
+                    {
+                        if (Core.SaveDown.StoreBackup.InheritAll(store, AppDataDir, Log) is { } n)
+                            Log(n);
+                    }
+                    catch (Exception ex) { Log("! inherit: " + ex.Message); }
+                });
                 var rep = await Task.Run(() => Core.Daily.DailyBuilder.Build(store, Log, AppDataDir));
                 // GATE BEFORE PUBLISH (audit 2026-08-26): flagged numbers must be seen before
                 // the blast/workbooks/shared-drive copies exist, not after

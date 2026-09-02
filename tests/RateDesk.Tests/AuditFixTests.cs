@@ -133,6 +133,105 @@ namespace RateDesk.Tests
             Assert.DoesNotContain(hist, x => x.Date == days[1] || x.Date == days[2]);
         }
 
+        // ----------------------------------- the 2026-09-02 desk report: the broken carrier ----
+        [Fact]
+        public void InheritAll_ShallowStoreInheritsTheDeskHistory_DeepStoreSkips()
+        {
+            var shareRoot = Path.Combine(_dir, "share2");
+            Directory.CreateDirectory(Path.Combine(shareRoot, StoreBackup.Folder));
+            var deepFloor = DateTime.Today.AddDays(-400);
+            using (var rich = new HistoryStore(Path.Combine(_dir, "rich2.db")))
+            {
+                rich.UpsertDaily("EESF1A Curncy", new[]
+                {
+                    new HistPoint(deepFloor, 2.00), new HistPoint(DateTime.Today.AddDays(-30), 2.10),
+                }, excludeToday: false);
+                rich.UpsertDaily("XYZ Index", new[] { new HistPoint(deepFloor.AddDays(3), 5.0) },
+                    excludeToday: false, source: "xls");
+                rich.SetMaturity("EESF1A Curncy", deepFloor, deepFloor.AddDays(42));
+                rich.BackupTo(Path.Combine(shareRoot, StoreBackup.Folder, StoreBackup.LatestName));
+            }
+            var appData = Path.Combine(_dir, "appdata3");
+            Directory.CreateDirectory(appData);
+            SaveDownConfig.Save(appData, new("cc", shareRoot));
+
+            // shallow local: own 30-day seed only, plus one row the snapshot also has
+            using var store = new HistoryStore(Path.Combine(_dir, "shallow.db"));
+            store.UpsertDaily("EESF1A Curncy", new[]
+                { new HistPoint(DateTime.Today.AddDays(-30), 2.11) }, excludeToday: false);
+
+            var note = StoreBackup.InheritAll(store, appData);
+            Assert.NotNull(note);
+            Assert.Equal(deepFloor.Date, store.EarliestDaily());
+            // the local machine's own row was never replaced
+            Assert.Contains(store.GetDaily("EESF1A Curncy", 36600),
+                p => p.Date.Date == DateTime.Today.AddDays(-30).Date && Math.Abs(p.Value - 2.11) < 1e-9);
+            // provenance travelled
+            Assert.Contains(store.GetDailyWithSource("XYZ Index", 36600), p => p.Source == "xls");
+            Assert.NotEmpty(store.GetMaturityRows("EESF1A Curncy"));
+            // a now-deep store skips instantly
+            Assert.Null(StoreBackup.InheritAll(store, appData));
+        }
+
+        [Fact]
+        public void AfterRun_NeverRotatesADeeperSnapshotAway()
+        {
+            var shareRoot = Path.Combine(_dir, "share3");
+            var dir = Path.Combine(shareRoot, StoreBackup.Folder);
+            Directory.CreateDirectory(dir);
+            var latest = Path.Combine(dir, StoreBackup.LatestName);
+            using (var rich = new HistoryStore(Path.Combine(_dir, "rich3.db")))
+            {
+                for (int i = 1; i <= 40; i++)
+                    rich.UpsertDaily($"T{i} Curncy", new[]
+                        { new HistPoint(DateTime.Today.AddDays(-i - 1), 1.0 + i) }, excludeToday: false);
+                rich.BackupTo(latest);
+            }
+            long deepSize = new FileInfo(latest).Length;
+            var appData = Path.Combine(_dir, "appdata4");
+            Directory.CreateDirectory(appData);
+            SaveDownConfig.Save(appData, new("cc", shareRoot));
+
+            var logs = new List<string>();
+            using var thin = new HistoryStore(Path.Combine(_dir, "thin3.db"));
+            thin.UpsertDaily("T1 Curncy", new[]
+                { new HistPoint(DateTime.Today.AddDays(-2), 9.9) }, excludeToday: false);
+            StoreBackup.AfterRun(thin, appData, logs.Add);
+
+            // the deep snapshot still holds the latest slot; no rotation to prev happened
+            Assert.Contains(logs, l => l.Contains("REFUSED"));
+            Assert.False(File.Exists(Path.Combine(dir, StoreBackup.PrevName)));
+            using (var check = new HistoryStore(CopyTemp(latest)))
+                Assert.True(check.DailyRowCount() >= 40);
+            Assert.Equal(deepSize, new FileInfo(latest).Length);
+        }
+
+        private string CopyTemp(string src)
+        {
+            var t = Path.Combine(_dir, "probe-" + Guid.NewGuid().ToString("N") + ".db");
+            File.Copy(src, t);
+            return t;
+        }
+
+        [Fact]
+        public void DeriveFromDailyDir_FindsTheRunsHome_FromPublishJson()
+        {
+            var home = Path.Combine(_dir, "OIS and Inflation Runs");
+            var excel = Path.Combine(home, "Excel files");
+            Directory.CreateDirectory(excel);
+            var appData = Path.Combine(_dir, "appdata5");
+            Directory.CreateDirectory(appData);
+            File.WriteAllText(Path.Combine(appData, "publish.json"),
+                "{\"dailyDir\": " + System.Text.Json.JsonSerializer.Serialize(excel) + "}");
+            Assert.Equal(home, SaveDownConfig.DeriveFromDailyDir(appData));
+
+            // no dailyDir, or an unreachable one → null, never a guess
+            var appData2 = Path.Combine(_dir, "appdata6");
+            Directory.CreateDirectory(appData2);
+            File.WriteAllText(Path.Combine(appData2, "publish.json"), "{}");
+            Assert.Null(SaveDownConfig.DeriveFromDailyDir(appData2));
+        }
+
         // ------------------------------------------------- the 2026-09-01 desk report ----
         [Fact]
         public void ImportInflation_InheritsFixingsPrintsAndRecords_FromTheShareSnapshot()

@@ -63,6 +63,27 @@ namespace RateDesk.Weekly.Core.SaveDown
             return null;
         }
 
+        /// <summary>The C+C home derived from publish.json's own dailyDir — the run-files folder
+        /// the desk already declared as truth ("Y:\...\OIS and Inflation Runs\Excel files"), whose
+        /// PARENT is exactly the home DetectSalix looks for. The fallback that saved the desk on
+        /// 2026-09-02: drive letters are per-logon-session, so the salix scan can fail in one
+        /// process while the path itself is perfectly reachable — and both machines had silently
+        /// dropped to Documents, so no history ever travelled. Null when dailyDir is unset or
+        /// its parent is unreachable from this process too.</summary>
+        public static string? DeriveFromDailyDir(string appDataDir, Action<string>? log = null)
+        {
+            try
+            {
+                var dailyDir = Daily.DailyBuilder.LoadDailyDir(appDataDir);
+                if (string.IsNullOrWhiteSpace(dailyDir)) return null;
+                var home = Path.GetDirectoryName(dailyDir.TrimEnd('\\', '/'));
+                if (home == null || !Directory.Exists(home)) return null;
+                log?.Invoke($"save-down: C+C derived from publish.json dailyDir → {home}");
+                return home;
+            }
+            catch { return null; }
+        }
+
         public static string? FindCc(string root)
         {
             static bool IsCc(string name) =>

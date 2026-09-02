@@ -37,8 +37,36 @@ namespace RateDesk.Weekly.Core.SaveDown
                 store.BackupTo(tmp);
                 var latest = Path.Combine(dir, LatestName);
                 var prev = Path.Combine(dir, PrevName);
+                // A THIN MACHINE MUST NEVER ROTATE THE DESK'S HISTORY AWAY (audit 2026-08-31,
+                // scenario 165/168; live risk 2026-09-02 the day the machines finally shared a
+                // root): two runs from a shallow second terminal would replace BOTH generations
+                // of the only deep snapshot. A new snapshot only takes the latest slot when it
+                // is at least as deep as what stands there — depth read from the standing file
+                // via a local temp copy (never open a share db in place).
                 if (File.Exists(latest))
                 {
+                    long newDaily = store.DailyRowCount(), newFix = store.FixingRowCount();
+                    long oldDaily = 0, oldFix = 0;
+                    var probe = Path.Combine(Path.GetTempPath(),
+                        "rw-snapdepth-" + Guid.NewGuid().ToString("N") + ".db");
+                    try
+                    {
+                        File.Copy(latest, probe, overwrite: true);
+                        using var old = new HistoryStore(probe);
+                        oldDaily = old.DailyRowCount(); oldFix = old.FixingRowCount();
+                    }
+                    catch { /* unreadable standing snapshot — replace it */ }
+                    finally { try { File.Delete(probe); } catch { } }
+                    if (newDaily < oldDaily * 0.9 || newFix < oldFix * 0.9)
+                    {
+                        File.Delete(tmp);
+                        log?.Invoke($"! store backup REFUSED: the share snapshot is deeper than this " +
+                                    $"machine's store (daily {oldDaily:N0} vs {newDaily:N0}, fixings " +
+                                    $"{oldFix:N0} vs {newFix:N0}) — kept the deep one. Inherit first " +
+                                    "(run DAILY; the shallow-store inheritance fills this machine), " +
+                                    "then snapshots resume.");
+                        return;
+                    }
                     if (File.Exists(prev)) File.Delete(prev);
                     File.Move(latest, prev);
                 }
@@ -72,6 +100,69 @@ namespace RateDesk.Weekly.Core.SaveDown
             return true;
         }
 
+        /// <summary>THE APP COMES WITH THE DESK'S HISTORY (desk 2026-09-02, after the second
+        /// terminal published blank Δ columns twice). A SHALLOW store — one whose closes reach
+        /// back under ~120 days, i.e. a machine living on its own seed — inherits EVERYTHING the
+        /// share snapshot holds that it lacks: daily closes (insert-only, provenance kept),
+        /// maturity records (the rung identities that make old closes attributable), and the
+        /// unified fixings (via ImportInflation's own gates). Local rows are never replaced;
+        /// this fills the past, it does not rewrite it. A deep store answers one cheap local
+        /// query and skips. Tries the latest snapshot, then the previous generation.</summary>
+        public static string? InheritAll(HistoryStore store, string appDataDir, Action<string>? log = null)
+        {
+            var localFloor = store.EarliestDaily();
+            bool shallow = localFloor is null || localFloor > DateTime.Today.AddDays(-120);
+            if (!shallow) return null;
+
+            var sd = SaveDownConfig.Load(appDataDir);
+            if (sd == null || !Directory.Exists(sd.Root)) return null;
+            var dir = Path.Combine(sd.Root, Folder);
+            foreach (var name in new[] { LatestName, PrevName })
+            {
+                var path = Path.Combine(dir, name);
+                if (!File.Exists(path)) continue;
+                var tmp = Path.Combine(Path.GetTempPath(), "rw-inherit-" + Guid.NewGuid().ToString("N") + ".db");
+                try
+                {
+                    File.Copy(path, tmp, overwrite: true);
+                    using var snap = new HistoryStore(tmp);
+                    var snapFloor = snap.EarliestDaily();
+                    // only a snapshot MEANINGFULLY deeper than this machine is worth inheriting
+                    if (snapFloor is not { } sf
+                        || (localFloor is { } lf && sf > lf.AddDays(-60))) continue;
+
+                    int closes = 0, recs = 0;
+                    foreach (var tk in snap.DailyTickers())
+                    {
+                        var have = store.GetDaily(tk, 36600).Select(p => p.Date.Date).ToHashSet();
+                        foreach (var g in snap.GetDailyWithSource(tk, 36600)
+                                     .Where(p => !have.Contains(p.Date.Date)).GroupBy(p => p.Source))
+                            closes += store.UpsertDaily(tk,
+                                g.Select(p => new RateDesk.Core.Market.HistPoint(p.Date, p.Value)),
+                                excludeToday: true, source: g.Key);
+                    }
+                    foreach (var tk in snap.MaturityTickers())
+                    {
+                        var have = store.GetMaturityRows(tk).Select(r => r.Date).ToHashSet();
+                        foreach (var (day, mat, eff) in snap.GetMaturityRows(tk))
+                            if (!have.Contains(day)) { store.SetMaturity(tk, day, mat, eff); recs++; }
+                    }
+                    log?.Invoke($"inherit: {closes:N0} close(s) + {recs:N0} rung record(s) from " +
+                                $"{path} — this store now reaches {store.EarliestDaily():dd-MMM-yy}");
+                    // the fixings ride the same snapshot through their own merge gates
+                    string? infl = null;
+                    try { infl = ImportInflation(store, appDataDir, log); } catch { }
+                    return $"INFL: inherited the desk history from the share snapshot ({closes:N0} " +
+                           $"closes, {recs:N0} rung records) — lookbacks now reach " +
+                           $"{store.EarliestDaily():dd-MMM-yy}." +
+                           (infl != null ? " " + infl : "");
+                }
+                catch (Exception ex) { log?.Invoke($"! inherit from {name}: {ex.Message}"); }
+                finally { try { if (File.Exists(tmp)) File.Delete(tmp); } catch { } }
+            }
+            return null;
+        }
+
         /// <summary>INHERIT THE FIXING HISTORY WHEN THIS MACHINE'S IS THIN (desk report
         /// 2026-09-01: a second terminal's daily run published the inflation cards with every
         /// Δ1d/1w/1m blank). The unified fixings mapping is maturity-documented BY DESIGN, and
@@ -100,15 +191,26 @@ namespace RateDesk.Weekly.Core.SaveDown
             if (before >= 8) return null;
 
             var sd = SaveDownConfig.Load(appDataDir);
-            var bk = sd != null && Directory.Exists(sd.Root) ? FindBackup(sd.Root) : null;
-            if (bk is not { } b)
+            if (sd == null || !Directory.Exists(sd.Root))
                 return $"INFL: this store's fixing history is {before} day(s) deep — Δ1d/1w/1m stay " +
-                       "blank until history accumulates (no share snapshot found to inherit from).";
+                       "blank until history accumulates (no save-down root configured to inherit from).";
+            // try the latest snapshot, then the previous generation — a thin machine's own
+            // write may occupy the latest slot (2026-09-02: both desks were saving to their
+            // OWN Documents, so "the share snapshot" was the machine's own thin copy)
+            string? bPath = null;
+            foreach (var nm in new[] { LatestName, PrevName })
+            {
+                var cand = Path.Combine(sd.Root, Folder, nm);
+                if (File.Exists(cand)) { bPath = cand; break; }
+            }
+            if (bPath is not { } bp)
+                return $"INFL: this store's fixing history is {before} day(s) deep — Δ1d/1w/1m stay " +
+                       $"blank until history accumulates (no snapshot under {sd.Root}).";
 
             var tmp = Path.Combine(Path.GetTempPath(), "rw-inherit-" + Guid.NewGuid().ToString("N") + ".db");
             try
             {
-                File.Copy(b.Path, tmp, overwrite: true);
+                File.Copy(bp, tmp, overwrite: true);
                 using var snapStore = new HistoryStore(tmp);
                 int rows = 0;
                 foreach (var fam in Infl.InflHistory.Families)
@@ -150,13 +252,14 @@ namespace RateDesk.Weekly.Core.SaveDown
                     }
                 }
                 int after = Depth();
-                log?.Invoke($"infl inherit: {rows} fixing row(s) from the share snapshot " +
-                            $"({b.AsOf:dd-MMM-yy HH:mm}) — history {before}→{after} day(s) deep");
+                log?.Invoke($"infl inherit: {rows} fixing row(s) from {bp} — " +
+                            $"history {before}→{after} day(s) deep");
                 return after > before
                     ? $"INFL: inherited {rows} fixing row(s) from the share snapshot — history is now " +
                       $"{after} day(s) deep and the Δ columns populate from this run."
-                    : $"INFL: this store's fixing history is {before} day(s) deep and the share snapshot " +
-                      "adds nothing — Δ1d/1w/1m stay blank until history accumulates.";
+                    : $"INFL: this store's fixing history is {before} day(s) deep and the snapshot at " +
+                      $"{bp} adds nothing — it is as thin as this machine. Run DAILY on the main desk " +
+                      "machine first so a deep snapshot lands on the shared root, then run here again.";
             }
             finally
             {

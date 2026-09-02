@@ -183,6 +183,13 @@ switch (cmd)
             var appData = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly");
             using var store = new HistoryStore(dbPath);
+            // shallow-store inheritance first (desk 2026-09-02: the app comes WITH the history)
+            try
+            {
+                if (RateDesk.Weekly.Core.SaveDown.StoreBackup.InheritAll(store, appData, Console.WriteLine) is { } n0)
+                    Console.WriteLine(n0);
+            }
+            catch (Exception ex0) { Console.WriteLine("! inherit: " + ex0.Message); }
             var rep = RateDesk.Weekly.Core.Daily.DailyBuilder.Build(store, Console.WriteLine, appData);
             var o = RateDesk.Weekly.Core.Daily.DailyBuilder.Render(rep, store, outDir, appData, Console.WriteLine);
             Console.WriteLine($"as of {rep.AsOf:yyyy-MM-dd HH:mm:ss} — {rep.Runs.Count} CB runs, " +

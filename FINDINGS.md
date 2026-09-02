@@ -1,3 +1,30 @@
+## Fixed 2026-09-02 (v0.18.4) — the history carrier was broken: both machines saved down LOCALLY
+
+Second terminal's popup: "fixing history is 0 day(s) deep and the share snapshot adds nothing."
+Diagnosis on the desk machine: savedown.json said Mode local, Root Documents — the salix drive
+scan has been failing (drive letters are per-logon-session), so BOTH machines quietly snapshotted
+into their OWN Documents. Nothing ever travelled; the second terminal "inherited" from its own
+thin copy. The desk store itself is intact (179,782 closes to 2019-07, 40,556 fixings/1,163 days,
+4,151 maturity records — local snapshot verified identical).
+
+1. **Root derivation fallback**: when the salix scan fails, the C+C home is derived from
+   publish.json's own dailyDir (its parent IS "OIS and Inflation Runs"); local Documents only as
+   the last resort, and then the app SAYS so loudly at startup ("nothing reaches the desk share").
+2. **`StoreBackup.InheritAll`**: a SHALLOW store (closes reaching back <120d) inherits everything
+   the share snapshot holds that it lacks — daily closes (insert-only, provenance kept), maturity
+   records, fixings — before any run reads it. Wired into DAILY/WEEKLY clicks and the CLI. Deep
+   stores skip on one local query. THE APP NOW LITERALLY COMES WITH THE DESK'S HISTORY.
+3. **Snapshot rotation depth guard** (audit scenario 165/168, about to become live): a snapshot
+   at least 10% thinner than the standing one never takes the latest slot — a thin machine can
+   no longer rotate the desk's history off the share.
+4. **ImportInflation** tries the previous generation too, and its notes NAME the root path it
+   looked at, so "adds nothing" is diagnosable at a glance.
+
+Interim unblock: the full snapshot staged at Desktop\RatesWeekly_history_for_other_terminal.db —
+place on the second terminal at Documents\RatesWeekly Data Store\history_backup.db, update the
+exe, run DAILY. Open desk question: the durable share root — ideally the salix UNC path
+(\server\share\...) so per-session drive letters stop mattering.
+
 ## Fixed 2026-09-01 (v0.18.3, same branch) — history is kept forever, and the sheets grow with it
 
 Desk rule made explicit: NO history ever rolls off. Verified layer by layer:

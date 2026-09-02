@@ -165,6 +165,48 @@ namespace RateDesk.Weekly.Core
 
         public long FixingRowCount() { lock (_gate) return Scalar("SELECT COUNT(*) FROM fixings;"); }
 
+        public long DailyRowCount() { lock (_gate) return Scalar("SELECT COUNT(*) FROM daily;"); }
+
+        /// <summary>Oldest stored close of any ticker — the store's depth watermark for the
+        /// shallow-machine inheritance gate. Null on an empty store.</summary>
+        public DateTime? EarliestDaily()
+        {
+            lock (_gate)
+            {
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "SELECT MIN(date) FROM daily;";
+                return cmd.ExecuteScalar() is string s
+                    ? DateTime.ParseExact(s, "yyyy-MM-dd", CultureInfo.InvariantCulture)
+                    : null;
+            }
+        }
+
+        public List<string> DailyTickers()
+        {
+            lock (_gate)
+            {
+                var res = new List<string>();
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "SELECT DISTINCT ticker FROM daily;";
+                using var r = cmd.ExecuteReader();
+                while (r.Read()) res.Add(r.GetString(0));
+                return res;
+            }
+        }
+
+        public List<string> MaturityTickers()
+        {
+            lock (_gate)
+            {
+                var res = new List<string>();
+                using var cmd = _db.CreateCommand();
+                cmd.CommandText = "SELECT DISTINCT ticker FROM maturity;";
+                using var r = cmd.ExecuteReader();
+                while (r.Read()) res.Add(r.GetString(0));
+                return res;
+            }
+        }
+
         /// <summary>Daily closes WITH provenance, ascending — for surfaces that must show where a
         /// number came from ('bbg' engine pull vs 'xls' manual fallback entry).</summary>
         public List<(DateTime Date, double Value, string Source)> GetDailyWithSource(string ticker, int lookbackDays)
