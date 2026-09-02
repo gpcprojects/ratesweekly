@@ -87,6 +87,7 @@ namespace RateDesk.Core
         /// contain whatever the decision surprised the market with. Surfaces say so instead of
         /// claiming the base is the decided period's current OIS (fix 2026-08-27).</summary>
         public bool RefRebasedStale { get; set; }
+        public bool RenumberedToday { get; set; }
         // the wordy "(rebased...)" suffix was retired 2026-09-02: every surface now stars the
         // fixing NUMBER (italic where markup allows) with one shared disclaimer line
         // (RunsTable.RebaseNote); RefRebased/RefRebasedStale stay the flags of record.
@@ -222,6 +223,7 @@ namespace RateDesk.Core
                         RefName = run.RefName, RefPct = run.RefPct,
                         RefRebased = run.RefRebased || run.RefOverridden,
                         RefRebasedStale = run.RefRebasedStale,
+                        RenumberedToday = run.RenumberedToday,
                     };
                     // front-meeting summary line: the run's first row IS the next decision's period
                     if (run.Rows.Count > 0)
@@ -320,6 +322,18 @@ namespace RateDesk.Core
                             ? row.CoDBp : null;
                         wr.Rows.Add(wm);
                     }
+                    // A ROLL-DAY BOARD EXPLAINS ITSELF (desk 2026-09-02, twice in one day): on
+                    // the day a family renumbers, a rung-vs-rung read of the Δ columns is one
+                    // whole meeting out, and a correct board looks wrong to anyone holding
+                    // yesterday's screen. Informational — the numbers stand.
+                    if (wr.RenumberedToday
+                        && wr.Rows.FirstOrDefault(x => !x.Masked && x.D1Bp is { }) is { } fr0
+                        && fr0.D1Bp is { } fd1)
+                        rep.Notes.Add($"ROLL: {sched.Name} renumbered at the decision — the Δ " +
+                            $"columns difference each CONTRACT against its own prior marks " +
+                            $"(front {fr0.Date:dd-MMM-yy}: {fr0.MidPct:0.000} − " +
+                            $"{fr0.MidPct - fd1 / 100.0:0.000} = {fd1:+0.0;-0.0;0.0}bp Δ1d). " +
+                            "A rung-vs-rung read against yesterday's screen is one meeting out.");
                     rep.Runs.Add(wr);
                 }
                 catch (Exception ex) { rep.Notes.Add($"{sched.Name}: {ex.Message}"); }

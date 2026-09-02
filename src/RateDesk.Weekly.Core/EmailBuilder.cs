@@ -198,6 +198,8 @@ namespace RateDesk.Weekly.Core
             if (snapNote != null) rep.Notes.Add(snapNote);
             // and say WHY a decided meeting is still on the board (same note the daily carries)
             rep.Notes.AddRange(Daily.DailyBuilder.LateAnnouncementNotes(svc));
+            if (store != null)
+                try { rep.Notes.AddRange(Daily.DailyBuilder.QuietQuoteNotes(store, svc)); } catch { }
             if (inflInheritNote != null) rep.Notes.Add(inflInheritNote);
             if (sbh != null) log?.Invoke("email " + sbh.Stats);
             // active source + compounded fixing onto every run (trial, desk 2026-08-26)

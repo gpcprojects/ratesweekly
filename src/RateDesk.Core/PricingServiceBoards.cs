@@ -89,6 +89,11 @@ namespace RateDesk.Core
         /// whatever the decision surprised the market with. Surfaces must not claim the base is
         /// current (fix 2026-08-27, scenario 61).</summary>
         public bool RefRebasedStale { get; set; }
+        /// <summary>The family renumbered between the previous close and these marks (the
+        /// announcement-day or evidence-detected roll). Surfaces use it to SAY the Δ columns
+        /// difference each contract against its own prior marks — the desk read a correct
+        /// roll-day board as wrong twice on 02-Sep-26 because nothing explained the shift.</summary>
+        public bool RenumberedToday { get; set; }
         /// <summary>Next decision date + announcement time on the London clock.</summary>
         public DateTime? NextDecision { get; set; }
         public string DecisionTimeLondon { get; set; } = "";
@@ -1092,6 +1097,9 @@ namespace RateDesk.Core
                                 && recEff(n, prevBd0) is { } recD && recD.Date != liveEff.Date)
                                 rolled = true;
                 }
+                // the gate shift is the same renumbering seen from the other side (feed not yet
+                // re-pointed on the announcement): either way, these marks sit across a roll
+                res.RenumberedToday = rolled || gateShift > 0;
 
                 // Thin meeting OIS families misprint with a straight face: SKSF4A published a live
                 // two-sided 1.387 between 1.848/2.086 neighbours (2026-08-03) — an impossible

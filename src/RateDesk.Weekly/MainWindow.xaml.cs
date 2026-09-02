@@ -388,7 +388,8 @@ namespace RateDesk.Weekly
             // scenario 146), partially-pinned snaps (SNAP, scenario 104) and thin-history
             // inheritance (INFL). Informational — the numbers are published either way.
             var stale = notes.Where(n => n.StartsWith("STALE:") || n.StartsWith("FIXING:")
-                                         || n.StartsWith("SNAP:") || n.StartsWith("INFL:")).ToList();
+                                         || n.StartsWith("SNAP:") || n.StartsWith("INFL:")
+                                         || n.StartsWith("ROLL:") || n.StartsWith("QUIET:")).ToList();
             if (stale.Count == 0) return;
             MessageBox.Show(this,
                 "Feed and mark watches (informational):\n\n" +

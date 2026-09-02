@@ -249,6 +249,8 @@ namespace RateDesk.Weekly.Core.Daily
             // before distribution — flagged, never suppressed
             rep.Notes.AddRange(OutlierGuard.Check(rep));
             rep.Notes.AddRange(LateAnnouncementNotes(svc));
+            if (store != null)
+                try { rep.Notes.AddRange(QuietQuoteNotes(store, svc)); } catch { /* informational */ }
             // the calendar guard runs on the daily cadence too (it used to run only inside the
             // weekly UpdateEngine, so the daily product never saw a missing announcement time or
             // an empty decision list — scenario 06)
@@ -351,6 +353,43 @@ namespace RateDesk.Weekly.Core.Daily
                 catch { /* omitted, never guessed */ }
             }
             return rep;
+        }
+
+        /// <summary>QUIET QUOTES, SAID OUT LOUD (desk 2026-09-02: NDSF6A/7A printed identical
+        /// closes two days running while the strip repriced, and the desk read the history
+        /// sheet as "anchored on T-2"). A meeting rung whose last two SETTLED closes are
+        /// exactly equal while most of its strip moved is a quote nobody refreshed — the
+        /// anchor is still a real print, but the board says so instead of leaving the desk
+        /// to conclude the data is stale. Informational, never a gate.</summary>
+        public static List<string> QuietQuoteNotes(HistoryStore store, PricingService svc)
+        {
+            var notes = new List<string>();
+            foreach (var sched in MeetingsStore.Schedules.Where(s => string.IsNullOrEmpty(s.Kind)))
+            {
+                var pat = sched.Tickers.FirstOrDefault(x => x.Contains("{N}"));
+                if (pat == null) continue;
+                var src = svc.MeetingSrc(sched);
+                var quiet = new List<string>();
+                int moved = 0, seen = 0;
+                for (int n = 1; n <= 9; n++)
+                {
+                    var tk = pat.Replace("{N}", n.ToString()) + (src.Length > 0 ? " " + src : "") + " Curncy";
+                    var h = store.GetDaily(tk, 12);
+                    if (h.Count == 0 && src.Length > 0)
+                        h = store.GetDaily(pat.Replace("{N}", n.ToString()) + " Curncy", 12);
+                    if (h.Count < 2) continue;
+                    seen++;
+                    double a = h[^1].Value, b = h[^2].Value;
+                    if (Math.Abs(a - b) < 1e-9)
+                        quiet.Add($"{pat.Replace("{N}", n.ToString())} ({h[^1].Date:dd-MMM})");
+                    else if (Math.Abs(a - b) > 0.005) moved++;
+                }
+                if (quiet.Count > 0 && moved >= Math.Max(3, seen / 2))
+                    notes.Add($"QUIET: {sched.Name} — {string.Join(", ", quiet)} printed an UNCHANGED " +
+                              $"close while {moved}/{seen} of the strip moved: a quote nobody refreshed, " +
+                              "not a stale anchor. Its change columns are real prints standing still.");
+            }
+            return notes;
         }
 
         /// <summary>Banks whose statement lands AFTER the marks were taken. Their board is

@@ -1,3 +1,30 @@
+## v0.19.3 (2026-09-02) — a roll-day board explains itself (the RBNZ double query)
+
+The desk read the 02-Sep RBNZ board as wrong twice in one day. It was right both times, proven
+two independent ways — and the real defect was that nothing on the board SAID what happened:
+
+- **The Δ columns were correct**: every row anchored on the 01-Sep close of ITS OWN CONTRACT
+  (front −15.4 = 2.756 − 2.9097, old rung 2), receipts from the store's recorded SW_EFF_DT
+  (01-Sep: NDSF1A eff 03-Sep, NDSF2A eff 29-Oct; 02-Sep: everything shifted one — the family
+  renumbered overnight at the decision) AND from a fresh BDH pull that matched the store to the
+  pip on all nine rungs. The desk's other-source sheet paired rung-N-yesterday with
+  rung-N-today across the renumbering — one whole meeting out; its "+0.47 front change"
+  compares the September contract to the October one.
+- **"It looks like T-2 / 01-Sep missing" was Bloomberg's own quiet quotes**: NDSF6A and NDSF7A
+  printed IDENTICAL closes on 31-Aug and 01-Sep (3.4025, 3.4725 — terminal receipts), and
+  4A/5A moved 0.4bp. At sheet precision the 01-Sep row reads as a copy of 31-Aug. Nothing was
+  missing; nothing anchored on T-2 (T-2 fits worse on every discriminating row).
+
+Two new informational notes so this class of query answers itself on the board:
+- **ROLL:** on any day a family renumbered (announcement, evidence, or gate-shift), the run
+  notes name the arithmetic: "the Δ columns difference each CONTRACT against its own prior
+  marks (front 29-Oct: 2.756 − 2.910 = −15.4bp Δ1d). A rung-vs-rung read against yesterday's
+  screen is one meeting out."
+- **QUIET:** a rung whose last two settled closes are exactly equal while ≥half its strip moved
+  is named ("a quote nobody refreshed, not a stale anchor").
+Both ride the informational popup and the log, never the CHECK gate. WeeklyRun.RenumberedToday
+is the new flag of record (set from the roll correction OR the announced-gate shift).
+
 ## v0.19.1 (2026-09-02) — the * convention, and a hold never re-bases
 
 Desk dictations off the 02-Sep-26 board (RBNZ hiked overnight; BOC held):
