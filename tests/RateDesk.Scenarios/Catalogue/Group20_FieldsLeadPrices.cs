@@ -95,5 +95,61 @@ public static class Group20_FieldsLeadPrices
         });
         s.NotesNotContain.Add("FUTURES GUARD");
         yield return s;
+
+        // ------------------------------------------------------------------ 82 (SEK negative)
+        // THE REGRESSION LOCK for the fix's own first bug (desk, within the hour): a start-
+        // rolling run-down is ALWAYS unquoted with a spot-forward eff — that alone must never
+        // shift a board. SKSF's fields are honest (rung 1's eff IS the next start, no skip),
+        // and the rows must publish exactly where the fields put them.
+        var kDec0 = Cal.D(-13);                    // decided two weeks ago
+        var kSt0 = kDec0.AddDays(6);               // current period started a week ago
+        var kSt1 = kSt0.AddDays(35);               // next start ~4 weeks out
+        var kSt2 = kSt1.AddDays(42);
+        var kSt3 = kSt2.AddDays(42);
+        var kDec1 = kSt1.AddDays(-6);
+        var kDec2 = kSt2.AddDays(-6);
+        var kSpot = Cal.NextBd(Cal.NextBd(Cal.D(0)));   // T+2, the run-down's daily spot claim
+
+        var k = new BankSpec { Bank = "RIKSBANK", MarkTurnPeriods = false };
+        k.Dates.AddRange(new[] { kSt0.AddDays(-42), kSt0, kSt1, kSt2, kSt3 });
+        k.DecisionDates.AddRange(new[] { kDec0, kDec1, kDec2 });
+        k.Fix(1.629).FixHist(Cal.D(-70), Cal.D(-1), 1.629);
+        // the run-down: unquoted, spot-forward eff, maturing at the NEXT start — every day's
+        // normal state for this family, and exactly what mis-fired the old detector
+        k.Quote(0, mid: null, prevClose: null, eff: kSpot, mat: kSt1);
+        k.Quote(1, mid: 1.730, prevClose: 1.732, eff: kSt1, mat: kSt2);   // eff == next start: NO skip
+        k.Quote(2, mid: 1.859, prevClose: 1.850, eff: kSt2, mat: kSt3);
+        k.Close(1, Cal.D(-10), Cal.D(-1), 1.732);
+        k.Close(2, Cal.D(-10), Cal.D(-1), 1.850);
+        foreach (var day in Cal.BusinessDays(Cal.D(-10), Cal.D(-1)))
+        {
+            k.Records.Add((1, day, kSt1, kSt2));
+            k.Records.Add((2, day, kSt2, kSt3));
+        }
+
+        var s2 = new ScenarioSpec
+        {
+            Id = 82,
+            Name = "RIKSBANK: spot-eff run-down on a quiet day - the board must NOT shift",
+            Question = "SKSF0A is unquoted with a T+2 eff every day of its life. Does the " +
+                       "fields-lead shift stay OFF when rung 1's eff is exactly the next " +
+                       "scheduled start, publishing the rows where Bloomberg's fields put them?",
+        };
+        s2.Banks.Add(k);
+        // rows exactly on the fields: kSt1 @ 1.730 (Δ1d 1.730−1.732 = −0.2), kSt2 @ 1.859
+        // (Δ1d +0.9); no phantom spot-dated front row, no relabelled second row.
+        s2.Expect.Add(new BankExpect
+        {
+            Bank = "RIKSBANK",
+            Fixing = 1.629, Rebased = false,
+            Front = new FrontExpect(kDec1, kSt1, 1.730, 1.629, +10.1, Rebased: false),
+            Rows = new List<RowExpect>
+            {
+                new(kSt1, kSt2, 1.730, +10.1, null, -0.2, Any.Num, Any.Num),
+                new(kSt2, kSt3, 1.859, +23.0, +12.9, +0.9, Any.Num, Any.Num),
+            },
+        });
+        s2.NotesNotContain.Add("FUTURES GUARD");
+        yield return s2;
     }
 }

@@ -1,3 +1,15 @@
+## v0.19.5 (2026-09-02) — the fields-lead detector's own first bug: SEK shifted on a healthy day
+
+Caught by the desk within the hour of v0.19.4: the RIKSBANK board grew a phantom 04-Sep front
+row and relabelled the Y/E-turn 1.476 onto 11-Nov. Cause: the v0.19.4 detector keyed on "an
+unquoted run-down claiming a future start" — but a START-ROLLING run-down is always unquoted
+with a spot-forward eff (SKSF0A carries T+2 every day of its life), so the shift fired daily
+for SEK on honest fields. The real discriminator is THE SKIP: rung 1's own eff strictly beyond
+the next scheduled start (NDSF said 29-Oct while a 03-Sep start loomed = pre-rolled; SKSF says
+30-Sep = exactly the next start = honest). Detector now requires the skip; rung 0's spot eff
+only labels the shifted front row. Scenario 82 locks SEK's everyday state as the negative case
+beside 81's NDSF positive. 347/347; scenarios 80/82.
+
 ## v0.19.4 (2026-09-02) — RBNZ: FIELDS LEAD PRICES. The desk was right; the app and its own verifications were wrong
 
 **Correction of the v0.19.3 entry below, which stood for under an hour.** The 02-Sep RBNZ board

@@ -777,9 +777,23 @@ namespace RateDesk.Core
             // resolved date one rung out (rung 0's own eff becomes row 1's start). Start-
             // rolling families only — everywhere else fields and prices flip together
             // (RBA/NORGES price-jump receipts around their 05/08-May-26 hikes).
+            //
+            // THE DISCRIMINATOR IS THE SKIP, NOT THE RUN-DOWN'S SPOT DATE (regression caught by
+            // the desk within the hour, 02-Sep-26): a start-rolling run-down is ALWAYS unquoted
+            // with a spot-forward eff (SKSF0A carries T+2 every day of its life), so "rung 0
+            // claims a future start" fires daily for SEK and shifted a healthy board one period
+            // (a phantom 04-Sep row; the Y/E-turn 1.476 relabelled onto 11-Nov). Fields have
+            // genuinely pre-rolled only when rung 1's OWN eff SKIPS the next scheduled start —
+            // NDSF said 29-Oct while a 03-Sep start loomed; SKSF says 30-Sep, exactly the next
+            // start, no skip.
+            var nextStart0 = sched.Dates.Where(x => x.Date >= DateTime.Today)
+                .OrderBy(x => x).Cast<DateTime?>().FirstOrDefault();
             if (sched.RollsAtPeriodStart
-                && quotes[0] is { Mid: null, Effective: { } e0 } && e0.Date > DateTime.Today)
+                && quotes[0] is { Mid: null } q0f
+                && nextStart0 is { } ns0
+                && quotes[1]?.Effective is { } e1f && e1f.Date > ns0.Date)
             {
+                var e0 = q0f.Effective ?? ns0;
                 var shifted = new Dictionary<int, DateTime> { [1] = e0.Date };
                 var shiftedDated = new HashSet<int> { 1 };
                 for (int n = 1; n <= maxRows + 1; n++)
