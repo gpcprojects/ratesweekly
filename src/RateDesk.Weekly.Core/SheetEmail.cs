@@ -245,9 +245,9 @@ namespace RateDesk.Weekly.Core
             // the * disclaimer, snug under the last OIS table and BEFORE the inflation runs,
             // only on a day a fixing actually carries the star (desk 2026-09-02)
             if (blocks.Any(x => x.Rebased))
-                sb.Append($"<tr><td colspan=\"{RunW.Length}\" style=\"{Font}font-size:8pt;" +
-                    $"font-style:italic;color:{Ink};padding:0 3px 2px 3px;mso-line-height-rule:exactly;" +
-                    $"line-height:10pt;\">{RunsTable.RebaseNote}</td></tr>");
+                sb.Append($"<tr><td colspan=\"{RunW.Length}\" style=\"{Font}font-size:11pt;" +
+                    $"font-style:italic;color:{Ink};padding:1px 3px;mso-line-height-rule:exactly;" +
+                    $"line-height:15pt;\">{RunsTable.RebaseNote}</td></tr>" + BlankRow(RunW.Length));
             sb.Append("</table>");
             return sb.ToString();
         }
