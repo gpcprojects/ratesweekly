@@ -102,7 +102,10 @@ public static class Group20_FieldsLeadPrices
         // shift a board. SKSF's fields are honest (rung 1's eff IS the next start, no skip),
         // and the rows must publish exactly where the fields put them.
         var kDec0 = Cal.D(-13);                    // decided two weeks ago
-        var kSt0 = kDec0.AddDays(6);               // current period started a week ago
+        var kSt0 = Cal.D(-7);                      // period started EXACTLY a week ago — the
+                                                   // Δ1w anchor lands ON the start day, whose
+                                                   // post-roll records must be read honestly
+                                                   // (the 26-Aug-26 SKSF shape)
         var kSt1 = kSt0.AddDays(35);               // next start ~4 weeks out
         var kSt2 = kSt1.AddDays(42);
         var kSt3 = kSt2.AddDays(42);
@@ -119,9 +122,20 @@ public static class Group20_FieldsLeadPrices
         k.Quote(0, mid: null, prevClose: null, eff: kSpot, mat: kSt1);
         k.Quote(1, mid: 1.730, prevClose: 1.732, eff: kSt1, mat: kSt2);   // eff == next start: NO skip
         k.Quote(2, mid: 1.859, prevClose: 1.850, eff: kSt2, mat: kSt3);
-        k.Close(1, Cal.D(-10), Cal.D(-1), 1.732);
-        k.Close(2, Cal.D(-10), Cal.D(-1), 1.850);
-        foreach (var day in Cal.BusinessDays(Cal.D(-10), Cal.D(-1)))
+        // the contracts lived one rung further out before the start, and the records say so:
+        // pre-start days carry the OLD numbering, the start day onward the NEW — exactly what
+        // the store accumulated across 26-Aug-26. The Δ1w anchor below must read the START
+        // DAY's own record (rung 1 = kSt1's contract at 1.732), never a one-out shift of it.
+        k.Close(2, Cal.D(-12), kSt0.AddDays(-1), 1.732);
+        k.Close(3, Cal.D(-12), kSt0.AddDays(-1), 1.850);
+        k.Close(1, kSt0, Cal.D(-1), 1.732);
+        k.Close(2, kSt0, Cal.D(-1), 1.850);
+        foreach (var day in Cal.BusinessDays(Cal.D(-12), kSt0.AddDays(-1)))
+        {
+            k.Records.Add((2, day, kSt1, kSt2));
+            k.Records.Add((3, day, kSt2, kSt3));
+        }
+        foreach (var day in Cal.BusinessDays(kSt0, Cal.D(-1)))
         {
             k.Records.Add((1, day, kSt1, kSt2));
             k.Records.Add((2, day, kSt2, kSt3));
@@ -137,7 +151,10 @@ public static class Group20_FieldsLeadPrices
         };
         s2.Banks.Add(k);
         // rows exactly on the fields: kSt1 @ 1.730 (Δ1d 1.730−1.732 = −0.2), kSt2 @ 1.859
-        // (Δ1d +0.9); no phantom spot-dated front row, no relabelled second row.
+        // (Δ1d +0.9); no phantom spot-dated front row, no relabelled second row. Δ1w anchors
+        // ON the start day and must read its post-roll record honestly: 1.730 − 1.732 = −0.2
+        // and 1.859 − 1.850 = +0.9 — the broken at-or-after test read one rung out and
+        // published −12.0 (the 26-Aug −8.5/+34.2 shape).
         s2.Expect.Add(new BankExpect
         {
             Bank = "RIKSBANK",
@@ -145,8 +162,8 @@ public static class Group20_FieldsLeadPrices
             Front = new FrontExpect(kDec1, kSt1, 1.730, 1.629, +10.1, Rebased: false),
             Rows = new List<RowExpect>
             {
-                new(kSt1, kSt2, 1.730, +10.1, null, -0.2, Any.Num, Any.Num),
-                new(kSt2, kSt3, 1.859, +23.0, +12.9, +0.9, Any.Num, Any.Num),
+                new(kSt1, kSt2, 1.730, +10.1, null, -0.2, -0.2, Any.Num),
+                new(kSt2, kSt3, 1.859, +23.0, +12.9, +0.9, +0.9, Any.Num),
             },
         });
         s2.NotesNotContain.Add("FUTURES GUARD");

@@ -1,3 +1,17 @@
+## v0.19.6 (2026-09-02) — start-day records are honest: the Δ1w +34.2/−8.5 pair
+
+Third desk catch of the day, same root as the second: the fields-lead day test used AT-OR-AFTER
+the next start, so a START DAY's own post-roll records (rung 1's honest eff = the start after
+it) read as pre-rolled and got shifted one out. The Δ1w anchors landed exactly on 26-Aug — the
+SKSF start day, and the first day of recording — so the front row anchored on the 11-Nov
+contract's 1.815 (−8.5) and the 11-Nov row on the turn contract's mark (+34.2), while 10-Feb+
+escaped only because price-only rungs have no records. STRICTLY-AFTER in both detectors; the
+honest start-day reads give Δ1w +1.5 / +4.4 off the store's own 26-Aug marks (1.715 / 1.815).
+Known one-day residue, accepted: a fields-lead family whose prices roll the day AFTER its start
+reads honest for that day (fields alone cannot tell); the boundary step-back already treats
+those marks cautiously. Scenario 82 now anchors its Δ1w ON a start day and asserts the honest
+read — the exact 26-Aug shape, locked.
+
 ## v0.19.5 (2026-09-02) — the fields-lead detector's own first bug: SEK shifted on a healthy day
 
 Caught by the desk within the hour of v0.19.4: the RIKSBANK board grew a phantom 04-Sep front

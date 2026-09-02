@@ -786,7 +786,7 @@ namespace RateDesk.Core
             // genuinely pre-rolled only when rung 1's OWN eff SKIPS the next scheduled start —
             // NDSF said 29-Oct while a 03-Sep start loomed; SKSF says 30-Sep, exactly the next
             // start, no skip.
-            var nextStart0 = sched.Dates.Where(x => x.Date >= DateTime.Today)
+            var nextStart0 = sched.Dates.Where(x => x.Date > DateTime.Today)
                 .OrderBy(x => x).Cast<DateTime?>().FirstOrDefault();
             if (sched.RollsAtPeriodStart
                 && quotes[0] is { Mid: null } q0f
@@ -1691,7 +1691,14 @@ namespace RateDesk.Core
             {
                 if (!sched.RollsAtPeriodStart) return false;
                 if (leadCache.TryGetValue(d0.Date, out var l)) return l;
-                var s = sched.Dates.Where(x => x.Date >= d0.Date)
+                // STRICTLY AFTER (fix within the day, 02-Sep-26): on a start day the family
+                // has rolled and rung 1's HONEST eff is the start after it — an at-or-after
+                // test read every start day's records as pre-rolled and shifted them one out
+                // (the 26-Aug SKSF records fed the Δ1w anchors: front −8.5 against the 11-Nov
+                // contract's mark, +34.2 against the turn's). Undetectable residue: a fields-
+                // lead family whose prices roll a day after ITS start reads honest for that
+                // one day; the boundary-day step-back already treats those marks cautiously.
+                var s = sched.Dates.Where(x => x.Date > d0.Date)
                     .OrderBy(x => x).Cast<DateTime?>().FirstOrDefault();
                 bool lead = s is { } s0 && Raw(1, d0) is { } r1 && r1.Date > s0.Date;
                 leadCache[d0.Date] = lead;
