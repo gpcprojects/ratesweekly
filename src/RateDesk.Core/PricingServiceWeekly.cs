@@ -329,7 +329,7 @@ namespace RateDesk.Core
                     if (wr.RenumberedToday
                         && wr.Rows.FirstOrDefault(x => !x.Masked && x.D1Bp is { }) is { } fr0
                         && fr0.D1Bp is { } fd1)
-                        rep.Notes.Add($"ROLL: {sched.Name} renumbered at the decision — the Δ " +
+                        rep.Notes.Add($"ROLL: {sched.Name} rolled across the decision — the Δ " +
                             $"columns difference each CONTRACT against its own prior marks " +
                             $"(front {fr0.Date:dd-MMM-yy}: {fr0.MidPct:0.000} − " +
                             $"{fr0.MidPct - fd1 / 100.0:0.000} = {fd1:+0.0;-0.0;0.0}bp Δ1d). " +

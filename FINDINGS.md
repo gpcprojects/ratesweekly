@@ -1,4 +1,48 @@
-## v0.19.3 (2026-09-02) — a roll-day board explains itself (the RBNZ double query)
+## v0.19.4 (2026-09-02) — RBNZ: FIELDS LEAD PRICES. The desk was right; the app and its own verifications were wrong
+
+**Correction of the v0.19.3 entry below, which stood for under an hour.** The 02-Sep RBNZ board
+was WRONG — Δ1d published −15.4 where the truth was −8.0, and every row date sat one meeting
+late against its mid (2.830 labelled "10-Dec" when it was the October period). The desk called
+it three times and was right; two in-session "verifications" (SW_EFF_DT records, then a fresh
+BDH of the same fields) confirmed the app instead — because app and verifications trusted the
+SAME lying field.
+
+**The mechanism, proven**: NDSF renumbers its PRICES at the period start but its FIELDS at the
+announcement. In the window between (02-Sep announcement → start), every rung's
+SW_EFF_DT/MATURITY describes the NEXT contract while its mid still prices the old one. Receipts:
+NDSF1A's closes ran 2.7482 → 2.750 → 2.7512 → 2.7557 SMOOTHLY across the alleged renumbering
+(a real roll jumps a whole rung, ~8bp here; RBA/NORGES show exactly that jump on their May-26
+decision days — they are genuine announcement-rollers); NDSF0A claimed a FUTURE-starting,
+unquoted run-down (physically impossible); and NAB's own monitor printed the same mids with
+same-rung 1d changes (+0.5, −8.0, −9.2 …), matching rung-vs-rung arithmetic to the pip. The
+desk's comparison sheet had been keyed correctly all along.
+
+**Fixes (all live)**:
+- RBNZ is `rollsAtPeriodStart` in config (stitching/anchors key on starts, SKSF-style).
+- **Fields-lead detection**, start-rolling families only: an unquoted rung 0 claiming a future
+  start ⇒ every resolved row date shifts one rung out (rung 0's own eff becomes row 1's start),
+  so mids are labelled by their PRICE's period. The announced-gate then rolls the decided row
+  off as usual — front = the monitor's row.
+- **Record-consumer shift**: records stamped on fields-lead days carry the same one-out lie
+  (today's store rows are poisoned); `RecordedEffective` detects those days (rung 1's record
+  skipping an at-or-after start) and reads rung n's identity from rung n−1's record. No store
+  surgery needed — the poisoned rows are reinterpreted wherever read.
+- The evidence-arm roll correction stands down under fields-lead (live effs are the lie).
+- Scenario 81 (Group20) locks the exact 02-Sep state and asserts the monitor's numbers.
+
+**Standing lesson, written into the map's own doc**: a recorded FIELD is only evidence about
+the PRICE when fields and prices move together. The price series' own continuity is the
+stronger witness — a real renumbering jumps a rung; a smooth series across a "roll" means the
+roll never happened in the prices.
+
+**Watch 03/04-Sep**: prices should renumber at the start (rung 0's eff says 04-Sep). The
+fields-lead shift self-disarms the day rung 0's eff is no longer in the future; the start-day
+CoD correction keys on the config start (03-Sep) and could fire a day early on the fallback
+path if prices roll on the 04th — the stitched primary is unaffected. Check the front Δ1d
+against the NAB monitor on both mornings.
+
+## v0.19.3 (2026-09-02) — SUPERSEDED: the account below was wrong about the Δ columns
+(kept for the record; see the v0.19.4 entry above. The ROLL/QUIET notes it introduced remain.)
 
 The desk read the 02-Sep RBNZ board as wrong twice in one day. It was right both times, proven
 two independent ways — and the real defect was that nothing on the board SAID what happened:

@@ -348,6 +348,13 @@
     {
       "name": "RBNZ",
       "ccy": "NZD",
+      // NDSF renumbers its PRICES at the period start while its FIELDS re-point at the
+      // announcement (proven live 02-Sep-26: NDSF1A's closes ran 2.748->2.756 smoothly across
+      // the decision while SW_EFF_DT flipped a day ahead, and NDSF0A claimed a future-starting
+      // run-down; NAB's own monitor confirmed same-rung 1d changes). rollsAtPeriodStart keys
+      // the stitch/anchors on starts; the fields-lead window between announcement and start is
+      // detected and shifted in ResolveMeetingDates/RecordedEffective.
+      "rollsAtPeriodStart": true,
       // NAB/BMO quote these MEETING families two-sided and live (verified 2026-08-06);
       // they do NOT quote the swap-curve families, so this is meeting-only by nature.
       "source": "NABZ",

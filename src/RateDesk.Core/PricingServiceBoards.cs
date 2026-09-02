@@ -765,6 +765,32 @@ namespace RateDesk.Core
                     if (start != default) meetDates[n] = start.Date;
                 }
 
+            // FIELDS CAN LEAD PRICES (RBNZ, discovered live 02-Sep-26). NDSF's SW_EFF_DT and
+            // MATURITY re-point at the ANNOUNCEMENT while its PRICES re-point at the period
+            // start — for the day(s) in between, every rung's fields describe the NEXT
+            // contract out, and a board trusting them labels each mid one meeting late and
+            // stitches its changes one rung wrong (published Δ1d −15.4 where NAB's own
+            // monitor and the desk said −8.0; NDSF1A's own closes ran 2.748→2.756 SMOOTHLY
+            // across the alleged renumbering). The state announces itself with an impossible
+            // claim: a RUN-DOWN (rung 0) that is UNQUOTED yet says it starts in the FUTURE.
+            // While it holds, quote n prices the period [eff(n−1) → eff(n)]: shift every
+            // resolved date one rung out (rung 0's own eff becomes row 1's start). Start-
+            // rolling families only — everywhere else fields and prices flip together
+            // (RBA/NORGES price-jump receipts around their 05/08-May-26 hikes).
+            if (sched.RollsAtPeriodStart
+                && quotes[0] is { Mid: null, Effective: { } e0 } && e0.Date > DateTime.Today)
+            {
+                var shifted = new Dictionary<int, DateTime> { [1] = e0.Date };
+                var shiftedDated = new HashSet<int> { 1 };
+                for (int n = 1; n <= maxRows + 1; n++)
+                {
+                    if (meetDates.TryGetValue(n, out var d0)) shifted[n + 1] = d0;
+                    if (tickerDated.Contains(n)) shiftedDated.Add(n + 1);
+                }
+                meetDates = shifted;
+                tickerDated = shiftedDated;
+            }
+
             // fill gaps from the schedule: some families price beyond where MATURITY is populated
             // (EESF4A+, JYSOMPM4+), and without any tickers the schedule carries the whole run
             var schedDates = sched.Dates.Where(d => d.Date > DateTime.Today).OrderBy(d => d).ToList();
@@ -1085,7 +1111,10 @@ namespace RateDesk.Core
                 // fields, not inference. The arm stands down when the previous day is itself a
                 // boundary or mixed-state day (its record cannot attribute that day's close,
                 // the same rule the stitcher applies), and when there are no records at all.
-                if (!rolled && gateShift == 0 && RecordedEffective(sched) is { } recEff)
+                bool fieldsLead = sched.RollsAtPeriodStart
+                    && quotes.Length > 0 && quotes[0] is { Mid: null, Effective: { } fle }
+                    && fle.Date > nowLdn.Date;
+                if (!rolled && gateShift == 0 && !fieldsLead && RecordedEffective(sched) is { } recEff)
                 {
                     var prevBd0 = nowLdn.Date.AddDays(-1);
                     while (prevBd0.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
@@ -1630,15 +1659,31 @@ namespace RateDesk.Core
             var patRec = sched.Tickers.FirstOrDefault(t => t.Contains("{N}"));
             if (History == null || patRec == null) return null;
             var recCache = new Dictionary<(int, DateTime), DateTime?>();
-            return (n, d) =>
+            var leadCache = new Dictionary<DateTime, bool>();
+            DateTime? Raw(int n0, DateTime d0)
             {
-                if (recCache.TryGetValue((n, d), out var hit)) return hit;
-                DateTime? v = History.EffectiveOn(MeetingTick(sched, patRec, n), d);
+                if (recCache.TryGetValue((n0, d0), out var hit)) return hit;
+                DateTime? v = History.EffectiveOn(MeetingTick(sched, patRec, n0), d0);
                 if (v is null && MeetingSrc(sched).Length > 0)
-                    v = History.EffectiveOn(patRec.Replace("{N}", n.ToString()) + " Curncy", d);
-                recCache[(n, d)] = v;
+                    v = History.EffectiveOn(patRec.Replace("{N}", n0.ToString()) + " Curncy", d0);
+                recCache[(n0, d0)] = v;
                 return v;
-            };
+            }
+            // records taken on a FIELDS-LEAD day (see ResolveMeetingDates) carry the same
+            // one-out lie the live fields did — rung 1's record skipping an imminent start is
+            // the day-level signature, and the honest identity of rung n's PRICE that day is
+            // rung n−1's recorded field
+            bool Lead(DateTime d0)
+            {
+                if (!sched.RollsAtPeriodStart) return false;
+                if (leadCache.TryGetValue(d0.Date, out var l)) return l;
+                var s = sched.Dates.Where(x => x.Date >= d0.Date)
+                    .OrderBy(x => x).Cast<DateTime?>().FirstOrDefault();
+                bool lead = s is { } s0 && Raw(1, d0) is { } r1 && r1.Date > s0.Date;
+                leadCache[d0.Date] = lead;
+                return lead;
+            }
+            return (n, d) => Lead(d) ? (n <= 1 ? Raw(0, d) : Raw(n - 1, d)) : Raw(n, d);
         }
 
         internal Func<DateTime, IReadOnlyList<HistPoint>> MeetingSeriesBuilder(
