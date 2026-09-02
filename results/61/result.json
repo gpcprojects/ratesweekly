@@ -1,0 +1,13 @@
+{
+  "id": 61,
+  "name": "Morning after a SURPRISE hike, feed re-pointed - what is the re-based fixing?",
+  "question": "The live decided-period quote is gone because the family renumbered. Does the re-base still find the delivered rate, or the market\u0027s guess from before the statement?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "ECB: on 28-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "ECB: ticker re-pointed between 10-Jul-26 and 13-Jul-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output"
+  ],
+  "ms": 760
+}

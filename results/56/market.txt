@@ -1,0 +1,25 @@
+scenario 56: Unstable settlement lag (BOJ shape): a 1w anchor inside the gap
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:25
+
+=== BOJ (JPY) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 08-Jul-26, 26-Aug-26, 28-Sep-26, 15-Nov-26, 02-Jan-27, 19-Feb-27
+  past      : 08-Jul-26, 26-Aug-26
+  decisions : 25-Sep-26, 09-Nov-26, 24-Dec-26, 13-Feb-27
+  app boundaries: 08-Jul-26, 26-Aug-26, 25-Sep-26, 09-Nov-26, 24-Dec-26, 13-Feb-27
+  fixing MUTKCALM Index = 0.500
+  quote  n=0  spell=Both      mid=0.500   prev=0.500   eff=26-Aug-26  mat=28-Sep-26  age=-
+  quote  n=1  spell=Both      mid=0.560   prev=0.560   eff=28-Sep-26  mat=15-Nov-26  age=-
+  quote  n=2  spell=Both      mid=0.610   prev=0.610   eff=15-Nov-26  mat=02-Jan-27  age=-
+  quote  n=3  spell=Both      mid=0.650   prev=0.650   eff=02-Jan-27  mat=19-Feb-27  age=-
+  closes n=1: 22-Jun..02-Jul=0.450  03-Jul..21-Aug=0.500  24-Aug..28-Aug=0.560
+  closes n=2: 22-Jun..02-Jul=0.500  03-Jul..21-Aug=0.560  24-Aug..28-Aug=0.610
+  closes n=3: 22-Jun..02-Jul=0.560  03-Jul..21-Aug=0.610  24-Aug..28-Aug=0.650
+  closes n=4: 22-Jun..02-Jul=0.610  03-Jul..21-Aug=0.650  24-Aug..28-Aug=0.680
+  closes n=5: 22-Jun..02-Jul=0.650  03-Jul..21-Aug=0.680
+  closes n=6: 22-Jun..02-Jul=0.680
+  snaps  n=1: 22-Jun..02-Jul=0.450  03-Jul..21-Aug=0.500  24-Aug..28-Aug=0.560
+  snaps  n=2: 22-Jun..02-Jul=0.500  03-Jul..21-Aug=0.560  24-Aug..28-Aug=0.610
+  snaps  n=3: 22-Jun..02-Jul=0.560  03-Jul..21-Aug=0.610  24-Aug..28-Aug=0.650
+  snaps  n=4: 22-Jun..02-Jul=0.610  03-Jul..21-Aug=0.650  24-Aug..28-Aug=0.680
+  snaps  n=5: 22-Jun..02-Jul=0.650  03-Jul..21-Aug=0.680
+  snaps  n=6: 22-Jun..02-Jul=0.680

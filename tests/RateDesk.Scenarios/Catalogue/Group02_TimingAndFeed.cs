@@ -444,9 +444,9 @@ public static class Group02_TimingAndFeed
             foreach (var bank in new[] { "ECB", "MPC" })
                 if (s.Run(bank)!.RefRebased)
                     msgs.Add($"{bank}: the fixing is flagged re-based before the announcement time");
-            if (s.SheetHtml.Contains("†"))
+            if (s.SheetHtml.Contains("*</i>"))
                 msgs.Add("the sheet email carries a re-based dagger before any announcement");
-            if (s.BlastText.Contains("rebased"))
+            if (s.BlastText.Contains("*)"))
                 msgs.Add("the blast says the fixing is rebased before any announcement");
             // and the periods under decision must STILL be on the board
             if (!s.Run("ECB")!.Rows.Any(r => r.Date == E_St0))
@@ -592,7 +592,7 @@ public static class Group02_TimingAndFeed
             // nothing may PRETEND the announcement happened
             if (s.Run("ECB")!.RefRebased)
                 msgs.Add("the fixing is flagged re-based although the announcement time is unknown");
-            if (s.BlastText.Contains("rebased"))
+            if (s.BlastText.Contains("*)"))
                 msgs.Add("the blast claims a rebased fixing with no announcement time on file");
             if (!s.Run("ECB")!.Rows.Any(r => r.Date == E_St0))
                 msgs.Add("the deciding period left the board although the run cannot know the " +
@@ -652,8 +652,8 @@ public static class Group02_TimingAndFeed
                 msgs.Add("the period the RBA just decided is still on the board after the statement");
             // the re-base must be VISIBLE - a swap mid printed silently under "RBA cash" would be
             // read as the policy rate itself
-            if (!s.SheetHtml.Contains("†")) msgs.Add("the re-based fixing carries no dagger in the email");
-            if (!s.BlastText.Contains("rebased")) msgs.Add("the blast does not say the fixing is rebased");
+            if (!s.SheetHtml.Contains("*</i>")) msgs.Add("the adjusted fixing carries no star in the email");
+            if (!s.BlastText.Contains("*)")) msgs.Add("the blast does not say the fixing is rebased");
             // and it must NOT be the stale cash rate: Priced off 3.850 would read -40.0, not -15.0
             if (run.RefPct is { } rp && Math.Abs(rp - S7_Fix) < 1e-9)
                 msgs.Add("Priced is still measured against the pre-cut RBACOR fixing");
@@ -708,7 +708,7 @@ public static class Group02_TimingAndFeed
                 if (run.Rows.Any(r => r.Date == dec))
                     msgs.Add($"a published row starts on the DECISION date {dec:dd-MMM-yy}, not on " +
                              "the period the rate applies over");
-            if (!s.SheetHtml.Contains("†")) msgs.Add("the re-based fixing carries no dagger in the email");
+            if (!s.SheetHtml.Contains("*</i>")) msgs.Add("the adjusted fixing carries no star in the email");
             if (run.RefPct is { } rp && Math.Abs(rp - S8_Fix) < 1e-9)
                 msgs.Add("Priced is still measured against the pre-hike TONA fixing");
             return msgs;

@@ -1,0 +1,32 @@
+scenario 41: OutlierGuard CROSS-SECTIONAL — one body row flags, the front is exempt
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:25
+
+=== FOMC (USD) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27, 29-Mar-27, 10-May-27
+  past      : 08-Jun-26, 20-Jul-26, 31-Aug-26
+  decisions : 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27, 29-Mar-27, 10-May-27
+  app boundaries: 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27, 29-Mar-27, 10-May-27
+  fixing FEDL01 Index = 3.900
+  quote  n=0  spell=Both      mid=3.900   prev=3.900   eff=20-Jul-26  mat=31-Aug-26  age=-
+  quote  n=1  spell=Both      mid=4.150   prev=4.140   eff=31-Aug-26  mat=12-Oct-26  age=-
+  quote  n=2  spell=Both      mid=4.250   prev=4.350   eff=12-Oct-26  mat=23-Nov-26  age=-
+  quote  n=3  spell=Both      mid=4.350   prev=4.340   eff=23-Nov-26  mat=04-Jan-27  age=-
+  quote  n=4  spell=Both      mid=4.450   prev=4.440   eff=04-Jan-27  mat=15-Feb-27  age=-
+  quote  n=5  spell=Both      mid=4.550   prev=4.460   eff=15-Feb-27  mat=29-Mar-27  age=-
+  quote  n=6  spell=Both      mid=4.650   prev=4.630   eff=29-Mar-27  mat=10-May-27  age=-
+  closes n=1: 22-Jun..20-Jul=3.900  21-Jul..04-Aug=4.070  05-Aug..24-Aug=4.100  25-Aug..28-Aug=4.140  31-Aug..31-Aug=4.150
+  closes n=2: 22-Jun..20-Jul=4.070  21-Jul..04-Aug=4.170  05-Aug..24-Aug=4.200  25-Aug..28-Aug=4.350  31-Aug..31-Aug=4.250
+  closes n=3: 22-Jun..20-Jul=4.170  21-Jul..04-Aug=4.270  05-Aug..24-Aug=4.300  25-Aug..28-Aug=4.340  31-Aug..31-Aug=4.350
+  closes n=4: 22-Jun..20-Jul=4.270  21-Jul..04-Aug=4.370  05-Aug..24-Aug=4.400  25-Aug..28-Aug=4.440  31-Aug..31-Aug=4.450
+  closes n=5: 22-Jun..20-Jul=4.370  21-Jul..04-Aug=4.470  05-Aug..24-Aug=4.500  25-Aug..28-Aug=4.460  31-Aug..31-Aug=4.550
+  closes n=6: 22-Jun..20-Jul=4.470  21-Jul..04-Aug=4.570  05-Aug..24-Aug=4.600  25-Aug..28-Aug=4.630  31-Aug..31-Aug=4.650
+  closes n=7: 22-Jun..20-Jul=4.570  21-Jul..04-Aug=4.620  05-Aug..24-Aug=4.650  25-Aug..28-Aug=4.680  31-Aug..31-Aug=4.700
+  closes n=8: 22-Jun..20-Jul=4.620
+  snaps  n=1: 22-Jun..20-Jul=3.900  21-Jul..04-Aug=4.070  05-Aug..24-Aug=4.100  25-Aug..28-Aug=4.140  31-Aug..31-Aug=4.150
+  snaps  n=2: 22-Jun..20-Jul=4.070  21-Jul..04-Aug=4.170  05-Aug..24-Aug=4.200  25-Aug..28-Aug=4.350  31-Aug..31-Aug=4.250
+  snaps  n=3: 22-Jun..20-Jul=4.170  21-Jul..04-Aug=4.270  05-Aug..24-Aug=4.300  25-Aug..28-Aug=4.340  31-Aug..31-Aug=4.350
+  snaps  n=4: 22-Jun..20-Jul=4.270  21-Jul..04-Aug=4.370  05-Aug..24-Aug=4.400  25-Aug..28-Aug=4.440  31-Aug..31-Aug=4.450
+  snaps  n=5: 22-Jun..20-Jul=4.370  21-Jul..04-Aug=4.470  05-Aug..24-Aug=4.500  25-Aug..28-Aug=4.460  31-Aug..31-Aug=4.550
+  snaps  n=6: 22-Jun..20-Jul=4.470  21-Jul..04-Aug=4.570  05-Aug..24-Aug=4.600  25-Aug..28-Aug=4.630  31-Aug..31-Aug=4.650
+  snaps  n=7: 22-Jun..20-Jul=4.570  21-Jul..04-Aug=4.620  05-Aug..24-Aug=4.650  25-Aug..28-Aug=4.680  31-Aug..31-Aug=4.700
+  snaps  n=8: 22-Jun..20-Jul=4.620

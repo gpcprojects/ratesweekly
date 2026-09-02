@@ -1,0 +1,13 @@
+{
+  "id": 35,
+  "name": "Nobody prices the decided rung - the re-base falls back to closes",
+  "question": "With no live mid on the just-decided period, does Priced re-base onto that contract\u0027s last close BEFORE the decision - from the source page when it has one, from the composite when it does not?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "RBA: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "BOC: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 1305
+}

@@ -1,0 +1,4 @@
+STALE: RBA — 1 published rung(s) off a feed quiet >1h (INCLUDING THE FRONT, worst 13-Oct-26 at 195m) — consider another contributor (SOURCES)
+RBA: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers' own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.
+STALE: RBNZ — 1 published rung(s) off a feed quiet >1h (worst 08-Dec-26 at 195m) — consider another contributor (SOURCES)
+RBNZ: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers' own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.

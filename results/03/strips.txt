@@ -1,0 +1,4 @@
+ECB: 3 row(s)  asOf 28-Aug-26
+   25-Oct-26 mid=2.290 1w=2.290 1m=2.290 turn=False tk=EESF2A Curncy
+   13-Dec-26 mid=2.320 1w=2.320 1m=2.320 turn=False tk=EESF3A Curncy
+   31-Jan-27 mid=2.340 1w=2.340 1m=2.340 turn=False tk=EESF4A Curncy

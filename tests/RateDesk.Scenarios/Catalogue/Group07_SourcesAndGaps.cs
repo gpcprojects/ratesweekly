@@ -224,7 +224,7 @@ public static class Group07_SourcesAndGaps
             // so the decided period must be gone
             if (run.Rows.Any(r => r.Date == A_St0))
                 msgs.Add("the period the RBA just decided is still on the board after the statement");
-            if (!s.BlastText.Contains("rebased"))
+            if (!s.BlastText.Contains("*)"))
                 msgs.Add("the blast does not mark the fixing as re-based");
             return msgs;
         });

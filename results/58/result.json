@@ -1,0 +1,13 @@
+{
+  "id": 58,
+  "name": "FOMC day: the 16:15 close precedes the 19:00 statement",
+  "question": "A run pressed after the Fed statement publishes 16:15 marks on a board that has already rolled. What does the desk actually send?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "FOMC: on 20-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "FOMC announces at 19:00 London, after this run\u0027s 16:15 marks \u2014 the board is NOT rolled past today\u0027s decision, because every price in this run was taken before it."
+  ],
+  "ms": 753
+}

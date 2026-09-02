@@ -1,0 +1,3 @@
+CHECK: MPC 12-Oct-26 Δ1d -22.0bp exceeds the 12bp sanity bar — verify before distribution
+CHECK: MPC 23-Nov-26 Δ1d -22.0bp exceeds the 12bp sanity bar — verify before distribution
+CHECK: MPC 04-Jan-27 Δ1d -22.0bp exceeds the 12bp sanity bar — verify before distribution

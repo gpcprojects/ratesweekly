@@ -1,0 +1,16 @@
+{
+  "id": 11,
+  "name": "FOMC cut YESTERDAY (same-day start) - the naive change-on-day is right again",
+  "question": "The day after a same-day-start decision, is the roll correction OFF, does Delta 1d show each contract\u0027s own move rather than the gap to its neighbour, and is Priced measured against the un-re-based EFFR print?",
+  "mustFail": false,
+  "pass": false,
+  "failures": [
+    "FOMC row 1 (11-Oct-26) d1: -4.0 != expected -3.0",
+    "FOMC row 2 (22-Nov-26) d1: -3.0 != expected -2.0",
+    "FOMC row 3 (03-Jan-27) d1: -2.0 != expected -1.0"
+  ],
+  "notes": [
+    "FOMC: on 20-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 748
+}

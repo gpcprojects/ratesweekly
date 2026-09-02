@@ -1,0 +1,23 @@
+scenario 14: ECB hiked 3 days ago - the run sits INSIDE the mixed-state window
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== ECB (EUR) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 28-May-26, 16-Jul-26, 03-Sep-26, 22-Oct-26, 10-Dec-26, 28-Jan-27
+  past      : 28-May-26, 16-Jul-26
+  decisions : 28-Aug-26, 16-Oct-26, 04-Dec-26, 22-Jan-27
+  app boundaries: 22-May-26, 10-Jul-26, 28-Aug-26, 16-Oct-26, 04-Dec-26, 22-Jan-27
+  fixing ESTRON Index = 2.500
+  quote  n=0  spell=Both      mid=2.700   prev=2.700   eff=16-Jul-26  mat=22-Oct-26  age=-
+  quote  n=1  spell=Both      mid=2.790   prev=2.700   eff=22-Oct-26  mat=10-Dec-26  age=-
+  quote  n=2  spell=Both      mid=2.850   prev=2.760   eff=10-Dec-26  mat=28-Jan-27  age=-
+  quote  n=3  spell=Both      mid=2.890   prev=2.820   eff=28-Jan-27  mat=18-Mar-27  age=-
+  closes n=1: 22-Jun..10-Jul=2.500  13-Jul..28-Aug=2.740  31-Aug..31-Aug=2.700
+  closes n=2: 22-Jun..10-Jul=2.740  13-Jul..27-Aug=2.720  28-Aug..28-Aug=2.785  31-Aug..31-Aug=2.760
+  closes n=3: 22-Jun..10-Jul=2.720  13-Jul..27-Aug=2.780  28-Aug..28-Aug=2.845  31-Aug..31-Aug=2.820
+  closes n=4: 22-Jun..10-Jul=2.780  13-Jul..27-Aug=2.825  28-Aug..28-Aug=2.888
+  closes n=5: 22-Jun..10-Jul=2.825
+  snaps  n=1: 22-Jun..10-Jul=2.500  13-Jul..28-Aug=2.740  31-Aug..31-Aug=2.700
+  snaps  n=2: 22-Jun..10-Jul=2.740  13-Jul..27-Aug=2.720  28-Aug..28-Aug=2.785  31-Aug..31-Aug=2.760
+  snaps  n=3: 22-Jun..10-Jul=2.720  13-Jul..27-Aug=2.780  28-Aug..28-Aug=2.845  31-Aug..31-Aug=2.820
+  snaps  n=4: 22-Jun..10-Jul=2.780  13-Jul..27-Aug=2.825  28-Aug..28-Aug=2.888
+  snaps  n=5: 22-Jun..10-Jul=2.825

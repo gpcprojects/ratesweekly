@@ -1,0 +1,16 @@
+{
+  "id": 15,
+  "name": "TWO FOMC decisions inside the 1m window - the anchor crosses two renumbers",
+  "question": "With a scheduled cut 27 days ago and an inter-meeting cut 10 days ago, does the 1m lookback still compare the SAME contract, two renumber boundaries back, rather than booking one or two whole meeting steps?",
+  "mustFail": false,
+  "pass": false,
+  "failures": [
+    "FOMC row 1 (05-Oct-26) d1: -2.0 != expected \u002B1.0",
+    "FOMC row 2 (16-Nov-26) d1: -2.0 != expected \u002B0.5",
+    "FOMC row 3 (28-Dec-26) d1: -3.0 != expected \u002B0.5"
+  ],
+  "notes": [
+    "FOMC: on 21-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 673
+}

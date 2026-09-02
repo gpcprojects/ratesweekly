@@ -1,0 +1,6 @@
+STALE: FOMC — 1 published rung(s) off a feed quiet >1h (INCLUDING THE FRONT, worst 12-Oct-26 at 90m) — consider another contributor (SOURCES)
+FOMC: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers' own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.
+ECB: no future meetings resolved — check config\meetings.json
+CHECK: ECB produced NO rows — the run is missing from every surface; verify before distribution
+CHECK: FUTURES GUARD TRIGGERED — FOMC: FFX6 Comdty Nov-26 implies 4.500 but the meeting rows blend to 4.250 (Δ+25.0bp > 2.5bp tolerance). The futures share nothing with the OIS machinery — treat this as a roll/calendar/re-base fault until proven otherwise (run tools\verify_strip_changes.py).
+CHECK: FOMC 12-Oct-26 Δ1d +20.0bp exceeds the 12bp sanity bar — verify before distribution

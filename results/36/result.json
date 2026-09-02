@@ -1,0 +1,13 @@
+{
+  "id": 36,
+  "name": "A far rung goes unquoted on a decision day - the run truncates",
+  "question": "When the documentation runs out mid-strip, does the run stop dead rather than invent a row, and does the last row\u0027s Maturity tell the truth on every surface?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "RBNZ: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "BOC: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 1190
+}

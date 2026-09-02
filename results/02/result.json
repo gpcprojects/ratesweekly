@@ -1,0 +1,12 @@
+{
+  "id": 2,
+  "name": "FOMC cuts 25bp TODAY, feed not re-pointed (same-day start)",
+  "question": "After the statement, does the decided period leave the board, do the remaining rows keep their own dates and prices, and what is Priced measured against while EFFR still prints the old rate?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "FOMC: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 791
+}

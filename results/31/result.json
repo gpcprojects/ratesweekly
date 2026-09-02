@@ -1,0 +1,12 @@
+{
+  "id": 31,
+  "name": "RIKSBANK step chain skips the Y/E turn row",
+  "question": "Does the row after the turn carry the CUMULATIVE move priced across the masked meeting plus its own, rather than a step off the turn print?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "RIKSBANK: on 03-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 875
+}

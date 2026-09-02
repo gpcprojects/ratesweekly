@@ -1,0 +1,10 @@
+{
+  "id": 57,
+  "name": "Save-down history tables across a decision",
+  "question": "Does every history row carry the value that period was actually quoted at on that day, including through the announcement-to-start window?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [],
+  "ms": 729
+}

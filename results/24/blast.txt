@@ -1,0 +1,7 @@
+{EU} {GB} {AU} {NZ} {US} {CA} {JN} {NO} {SW} London EOD OIS Run — 31-Aug-26
+
+{CA} BOC Run   (CORRA 3.900)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+21-Sep-26    3.750   -15.0      —   +0.5      —   +5.0
+02-Nov-26    3.600   -30.0  -15.0   +0.5      —   +5.0
+14-Dec-26    3.450   -45.0  -15.0   +0.5      —   +5.0

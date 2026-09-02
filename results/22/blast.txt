@@ -1,0 +1,7 @@
+{EU} {GB} {AU} {NZ} {US} {CA} {JN} {NO} {SW} London EOD OIS Run — 31-Aug-26
+
+{US} FOMC Run   (EFFR 3.900)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+09-Oct-26    3.700   -20.0      —    0.0    0.0    0.0
+20-Nov-26    3.500   -40.0  -20.0    0.0    0.0    0.0
+01-Jan-27    3.300   -60.0  -20.0    0.0    0.0    0.0

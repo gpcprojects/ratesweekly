@@ -44,14 +44,28 @@ namespace RateDesk.Weekly.Core.Daily
             // ONE builder for the blocks/rows/formats — the emails' sheet-style tables read the
             // same RunsTable, so the attachment and the inline content cannot drift apart
             // (desk 2026-08-26). This sheet's own layout is unchanged.
-            foreach (var b in RunsTable.Build(rep))
+            var blocks = RunsTable.Build(rep);
+            foreach (var b in blocks)
             {
                 ws.Cell(r, 1).Value = $"{b.Bank} closing run";
                 ws.Cell(r, 1).Style.Font.SetBold();
                 r++;
-                ws.Cell(r, 1).Value = $"{b.FixingLabel} fixing" + (b.Rebased ? " (rebased)" : "");
-                if (b.FixingPct is { } rp) ws.Cell(r, 2).Value = rp;
-                ws.Cell(r, 2).Style.NumberFormat.Format = RunsTable.RateFmt;
+                ws.Cell(r, 1).Value = $"{b.FixingLabel} fixing";
+                if (b.FixingPct is { } rp)
+                {
+                    // starred + italic when manually adjusted for a delivered move (desk
+                    // 2026-09-02) — a text cell, so the * sits right on the number
+                    if (b.Rebased)
+                    {
+                        ws.Cell(r, 2).Value = b.FixingText;
+                        ws.Cell(r, 2).Style.Font.SetItalic();
+                    }
+                    else
+                    {
+                        ws.Cell(r, 2).Value = rp;
+                        ws.Cell(r, 2).Style.NumberFormat.Format = RunsTable.RateFmt;
+                    }
+                }
                 r++;
                 int hdrRow = r;
                 for (int c = 0; c < RunsTable.Headers.Length; c++)
@@ -101,6 +115,12 @@ namespace RateDesk.Weekly.Core.Daily
                     grid.Style.Border.InsideBorderColor = XLColor.FromHtml(RunsTable.GridLine);
                 }
                 r++;   // blank separator
+            }
+            // the * disclaimer, snug under the last OIS table (desk 2026-09-02), starred days only
+            if (blocks.Any(x => x.Rebased))
+            {
+                ws.Cell(r, 1).Value = RunsTable.RebaseNote;
+                ws.Cell(r, 1).Style.Font.SetItalic();
             }
             ws.Columns(1, 2).Width = 12;
             ws.Columns(3, 8).Width = 10;

@@ -1,0 +1,12 @@
+{
+  "id": 52,
+  "name": "Dashboard strip on the morning of a decision day (control)",
+  "question": "Same day, same data, BEFORE the statement: the strip must be right, so any error at 51 is caused by the decision itself and not by the setup.",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "FOMC: on 20-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 790
+}

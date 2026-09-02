@@ -1,0 +1,18 @@
+{
+  "id": 50,
+  "name": "One report, every surface: surprise cut \u002B re-base \u002B Y/E turn \u002B truncated run",
+  "question": "On the hardest day the calendar can produce, do the blast, the workbook, the sheet email, the card email, the plaintext and the frozen report all still say the same thing?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "ECB: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "CHECK: ECB 25-Oct-26 \u03941d -20.0bp exceeds the 12bp sanity bar \u2014 verify before distribution",
+    "CHECK: ECB 13-Dec-26 \u03941d -20.0bp exceeds the 12bp sanity bar \u2014 verify before distribution",
+    "CHECK: ECB 31-Jan-27 \u03941d -20.0bp exceeds the 12bp sanity bar \u2014 verify before distribution",
+    "ECB: ticker re-pointed between 06-Jul-26 and 07-Jul-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output",
+    "BOJ: ticker re-pointed between 07-Aug-26 and 10-Aug-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output",
+    "BOJ: ticker re-pointed between 28-Aug-26 and 31-Aug-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output"
+  ],
+  "ms": 1271
+}

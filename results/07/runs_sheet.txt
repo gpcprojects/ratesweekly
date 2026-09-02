@@ -1,0 +1,9 @@
+DRAX OIS Runs 31Aug26 |  |  |  |  |  |  | 
+ |  |  |  |  |  |  | 
+RBA closing run |  |  |  |  |  |  | 
+RBA cash fixing (rebased) | 3.600 |  |  |  |  |  | 
+StartDate | Maturity | Mid | Priced (bp) | Step (bp) | Δ 1d (bp) | Δ 1w (bp) | Δ 1m (bp)
+13-Oct-26 | 24-Nov-26 | 3.450 | -15.0 |  | -2.0 | -2.0 | -2.0
+24-Nov-26 | 05-Jan-27 | 3.300 | -30.0 | -15.0 | -2.0 | -2.0 | -2.0
+05-Jan-27 | 16-Feb-27 | 3.150 | -45.0 | -15.0 | -2.0 | -2.0 | -2.0
+16-Feb-27 | 30-Mar-27 | 3.000 | -60.0 | -15.0 | -2.0 | -2.0 | -2.0

@@ -1,0 +1,14 @@
+{
+  "id": 44,
+  "name": "COMPLETENESS GATE \u2014 a bank that publishes nothing on its decision day",
+  "question": "When a configured bank drops out of the report entirely on the day it decides, does the run demand eyes with a CHECK note naming it \u2014 or would the desk mail a table silently one bank short?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "FOMC: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "ECB: no future meetings resolved \u2014 check config\\meetings.json",
+    "CHECK: ECB produced NO rows \u2014 the run is missing from every surface; verify before distribution"
+  ],
+  "ms": 775
+}

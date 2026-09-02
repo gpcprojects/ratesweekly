@@ -1,0 +1,13 @@
+{
+  "id": 3,
+  "name": "ECB hikes 25bp TODAY, period starts in 6 days (lagged start)",
+  "question": "Does the decided period roll off, and does Priced re-base onto that period\u0027s own OIS instead of the stale ESTR fixing?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "ECB: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "ECB: ticker re-pointed between 06-Jul-26 and 07-Jul-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output"
+  ],
+  "ms": 719
+}

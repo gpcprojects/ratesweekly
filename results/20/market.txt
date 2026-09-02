@@ -1,0 +1,24 @@
+scenario 20: ECB HOLDS - a 25bp cut was priced (hawkish hold)
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== ECB (EUR) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 31-May-26, 12-Jul-26, 06-Sep-26, 25-Oct-26, 13-Dec-26, 31-Jan-27
+  past      : 31-May-26, 12-Jul-26
+  decisions : 31-Aug-26, 19-Oct-26, 07-Dec-26, 25-Jan-27
+  app boundaries: 25-May-26, 06-Jul-26, 31-Aug-26, 19-Oct-26, 07-Dec-26, 25-Jan-27
+  fixing ESTRON Index = 2.000
+  quote  n=0  spell=Both      mid=2.000   prev=2.000   eff=12-Jul-26  mat=06-Sep-26  age=-
+  quote  n=1  spell=Both      mid=1.995   prev=1.760   eff=06-Sep-26  mat=25-Oct-26  age=-
+  quote  n=2  spell=Both      mid=1.930   prev=1.700   eff=25-Oct-26  mat=13-Dec-26  age=-
+  quote  n=3  spell=Both      mid=1.860   prev=1.640   eff=13-Dec-26  mat=31-Jan-27  age=-
+  quote  n=4  spell=Both      mid=1.800   prev=1.590   eff=31-Jan-27  mat=21-Mar-27  age=-
+  closes n=1: 22-Jun..06-Jul=2.000  07-Jul..28-Aug=1.760
+  closes n=2: 22-Jun..06-Jul=1.760  07-Jul..28-Aug=1.700
+  closes n=3: 22-Jun..06-Jul=1.700  07-Jul..28-Aug=1.640
+  closes n=4: 22-Jun..06-Jul=1.640  07-Jul..28-Aug=1.590
+  closes n=5: 22-Jun..06-Jul=1.590
+  snaps  n=1: 22-Jun..06-Jul=2.000  07-Jul..28-Aug=1.760
+  snaps  n=2: 22-Jun..06-Jul=1.760  07-Jul..28-Aug=1.700
+  snaps  n=3: 22-Jun..06-Jul=1.700  07-Jul..28-Aug=1.640
+  snaps  n=4: 22-Jun..06-Jul=1.640  07-Jul..28-Aug=1.590
+  snaps  n=5: 22-Jun..06-Jul=1.590

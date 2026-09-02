@@ -1,0 +1,8 @@
+DRAX OIS Runs 31Aug26 |  |  |  |  |  |  | 
+ |  |  |  |  |  |  | 
+ECB closing run |  |  |  |  |  |  | 
+€STR fixing (rebased) | 1.995 |  |  |  |  |  | 
+StartDate | Maturity | Mid | Priced (bp) | Step (bp) | Δ 1d (bp) | Δ 1w (bp) | Δ 1m (bp)
+25-Oct-26 | 13-Dec-26 | 1.930 | -6.5 |  | +23.0 | +23.0 | +23.0
+13-Dec-26 | 31-Jan-27 | 1.860 | -13.5 | -7.0 | +22.0 | +22.0 | +22.0
+31-Jan-27 | 21-Mar-27 | 1.800 | -19.5 | -6.0 | +21.0 | +21.0 | +21.0

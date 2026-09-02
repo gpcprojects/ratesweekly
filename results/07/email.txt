@@ -1,0 +1,13 @@
+
+CB Front Meeting Market Pricing
+Central Bank	Decision Date	Start Date	OIS Mid	Fixing	Priced (bp)
+RBA AUD	12-Oct-26	13-Oct-26	3.450	3.600	-15.0
+
+Central Bank OIS Meetings
+
+RBA · AUD  fixing 3.600 (rebased)
+StartDate	Mid	Priced	Step	1d Chg	1w Chg	1m Chg
+13-Oct-26	3.450	-15.0		-2.0	-2.0	-2.0
+24-Nov-26	3.300	-30.0	-15.0	-2.0	-2.0	-2.0
+05-Jan-27	3.150	-45.0	-15.0	-2.0	-2.0	-2.0
+16-Feb-27	3.000	-60.0	-15.0	-2.0	-2.0	-2.0

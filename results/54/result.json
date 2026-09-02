@@ -1,0 +1,12 @@
+{
+  "id": 54,
+  "name": "The day after a Fed cut: what is Priced measured against?",
+  "question": "EFFR is published a day in arrears, so the morning after a cut the fixing still prints the old rate. Does Priced still use it?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "FOMC: on 20-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 741
+}

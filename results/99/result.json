@@ -1,0 +1,28 @@
+{
+  "id": 99,
+  "name": "POSITIVE CONTROL - the harness must be able to fail",
+  "question": "Fed a deliberately wrong expectation, does the harness report it? A suite that cannot go red proves nothing.",
+  "mustFail": true,
+  "pass": true,
+  "failures": [
+    "FOMC: fixing 3.900 != expected 1.111",
+    "FOMC: fixing re-based flag is False, expected True",
+    "FOMC front: decision 21-Sep-26 != expected 02-Nov-26",
+    "FOMC front: start 21-Sep-26 != expected 02-Nov-26",
+    "FOMC front: mid 3.750 != expected 9.999",
+    "FOMC front fixing: \u002B3.9 != expected \u002B1.1",
+    "FOMC front Priced: -15.0 != expected \u002B99.9",
+    "FOMC front: re-based flag is False, expected True",
+    "FOMC row 1 (21-Sep-26): mid 3.750 != expected 9.999",
+    "FOMC row 1 (21-Sep-26) Priced: -15.0 != expected \u002B99.9",
+    "FOMC row 1 (21-Sep-26) Step: blank, expected \u002B99.9",
+    "FOMC row 1 (21-Sep-26) d1: 0.0 != expected \u002B99.9",
+    "FOMC row 1 (21-Sep-26) w1: 0.0 != expected \u002B99.9",
+    "FOMC row 1 (21-Sep-26) m1: 0.0 != expected \u002B99.9",
+    "expected a note containing \u0027a note that will never exist\u0027; notes were: FOMC: on 20-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "notes": [
+    "FOMC: on 20-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 737
+}

@@ -1,0 +1,16 @@
+{
+  "id": 13,
+  "name": "BOJ hiked 36 days ago - the 1m anchor lands inside the old mixed-state window",
+  "question": "When same-day-last-month falls between an announcement and its period start, does the walk-back skip the whole ambiguous window, land on the announcement-day snap under the old numbering, and survive ChangeToBp\u0027s 10-day cap rather than blanking the cell?",
+  "mustFail": false,
+  "pass": false,
+  "failures": [
+    "BOJ row 1 (19-Sep-26) d1: \u002B1.5 != expected \u002B0.5",
+    "BOJ row 2 (07-Nov-26) d1: \u002B1.5 != expected \u002B1.0",
+    "BOJ row 3 (26-Dec-26) d1: \u002B1.0 != expected \u002B0.5"
+  ],
+  "notes": [
+    "BOJ: ticker re-pointed between 28-Aug-26 and 31-Aug-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output"
+  ],
+  "ms": 676
+}

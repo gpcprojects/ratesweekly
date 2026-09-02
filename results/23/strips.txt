@@ -1,0 +1,4 @@
+MPC: 3 row(s)  asOf 28-Aug-26
+   12-Oct-26 mid=3.750 1w=3.750 1m=3.750 turn=False tk=GPSF2A Curncy
+   23-Nov-26 mid=3.600 1w=3.600 1m=3.600 turn=False tk=GPSF3A Curncy
+   04-Jan-27 mid=3.450 1w=3.450 1m=3.450 turn=False tk=GPSF4A Curncy

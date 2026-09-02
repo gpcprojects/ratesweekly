@@ -1,0 +1,17 @@
+{
+  "id": 12,
+  "name": "NORGES cut 7 days ago - period running, NOWA prints the new rate",
+  "question": "Once the decided period has started, is the re-base off, is Priced measured against the new o/n print, and does Delta 1w - which straddles the announcement - compare the same contract on both sides?",
+  "mustFail": false,
+  "pass": false,
+  "failures": [
+    "NORGES row 1 (12-Oct-26) d1: -5.0 != expected -2.0",
+    "NORGES row 2 (30-Nov-26) d1: -5.5 != expected -1.5",
+    "NORGES row 3 (18-Jan-27) d1: -5.0 != expected -1.0"
+  ],
+  "notes": [
+    "NORGES: on 24-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "NORGES: ticker re-pointed between 28-Aug-26 and 31-Aug-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output"
+  ],
+  "ms": 884
+}

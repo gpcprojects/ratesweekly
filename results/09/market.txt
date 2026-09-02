@@ -1,0 +1,38 @@
+scenario 9: Two announced decisions on the board at once, and a run out of meetings
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== ECB (EUR) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 03-Jul-26, 20-Aug-26, 06-Sep-26, 25-Oct-26, 13-Dec-26, 31-Jan-27, 21-Mar-27
+  past      : 03-Jul-26, 20-Aug-26
+  decisions : 14-Aug-26, 31-Aug-26, 19-Oct-26, 07-Dec-26, 25-Jan-27, 15-Mar-27
+  app boundaries: 27-Jun-26, 14-Aug-26, 31-Aug-26, 19-Oct-26, 07-Dec-26, 25-Jan-27, 15-Mar-27
+  fixing ESTRON Index = 2.150
+  quote  n=0  spell=Both      mid=2.150   prev=2.150   eff=03-Jul-26  mat=20-Aug-26  age=-
+  quote  n=1  spell=Both      mid=2.150   prev=2.150   eff=20-Aug-26  mat=06-Sep-26  age=-
+  quote  n=2  spell=Both      mid=2.400   prev=2.390   eff=06-Sep-26  mat=25-Oct-26  age=-
+  quote  n=3  spell=Both      mid=2.550   prev=2.540   eff=25-Oct-26  mat=13-Dec-26  age=-
+  quote  n=4  spell=Both      mid=2.700   prev=2.690   eff=13-Dec-26  mat=31-Jan-27  age=-
+  quote  n=5  spell=Both      mid=2.850   prev=2.840   eff=31-Jan-27  mat=21-Mar-27  age=-
+  quote  n=6  spell=Both      mid=3.000   prev=2.990   eff=21-Mar-27  mat=09-May-27  age=-
+  closes n=1: 22-Jun..26-Jun=2.000  29-Jun..14-Aug=2.150  17-Aug..28-Aug=2.390
+  closes n=2: 22-Jun..26-Jun=2.150  29-Jun..14-Aug=2.390  17-Aug..28-Aug=2.540
+  closes n=3: 22-Jun..26-Jun=2.390  29-Jun..14-Aug=2.540  17-Aug..28-Aug=2.690
+  closes n=4: 22-Jun..26-Jun=2.540  29-Jun..14-Aug=2.690  17-Aug..28-Aug=2.840
+  closes n=5: 22-Jun..26-Jun=2.690  29-Jun..14-Aug=2.840  17-Aug..28-Aug=2.990
+  closes n=6: 22-Jun..26-Jun=2.840  29-Jun..14-Aug=2.990
+  closes n=7: 22-Jun..26-Jun=2.990
+  snaps  n=1: 22-Jun..26-Jun=2.000  29-Jun..14-Aug=2.150  17-Aug..28-Aug=2.390
+  snaps  n=2: 22-Jun..26-Jun=2.150  29-Jun..14-Aug=2.390  17-Aug..28-Aug=2.540
+  snaps  n=3: 22-Jun..26-Jun=2.390  29-Jun..14-Aug=2.540  17-Aug..28-Aug=2.690
+  snaps  n=4: 22-Jun..26-Jun=2.540  29-Jun..14-Aug=2.690  17-Aug..28-Aug=2.840
+  snaps  n=5: 22-Jun..26-Jun=2.690  29-Jun..14-Aug=2.840  17-Aug..28-Aug=2.990
+  snaps  n=6: 22-Jun..26-Jun=2.840  29-Jun..14-Aug=2.990
+  snaps  n=7: 22-Jun..26-Jun=2.990
+
+=== NORGES (NOK) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 08-Jun-26, 20-Jul-26, 01-Sep-26
+  past      : 08-Jun-26, 20-Jul-26
+  decisions : 31-Aug-26
+  app boundaries: 07-Jun-26, 19-Jul-26, 31-Aug-26
+  fixing NOWA Index = 3.900
+  quote  n=0  spell=Both      mid=3.900   prev=3.900   eff=20-Jul-26  mat=01-Sep-26  age=-

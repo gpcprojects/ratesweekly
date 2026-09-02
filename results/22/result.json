@@ -1,0 +1,10 @@
+{
+  "id": 22,
+  "name": "Phantom-step trap: flat market across a renumber inside 1w and 1m",
+  "question": "The decision was three business days ago and not one contract has repriced since. Do \u03941d, \u03941w and \u03941m all print 0.0, or does the 20bp gap between neighbouring contracts leak into the change columns?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [],
+  "ms": 556
+}

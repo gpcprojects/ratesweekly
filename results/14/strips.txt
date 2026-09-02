@@ -1,0 +1,4 @@
+ECB: 2 row(s)  asOf 28-Aug-26
+   22-Oct-26 mid=2.720 1w=2.720 1m=2.720 turn=False tk=EESF1A Curncy
+   10-Dec-26 mid=2.780 1w=2.780 1m=2.780 turn=False tk=EESF2A Curncy
+   note: 1 roll(s) inside the 1m window — changes are measured against the ticker that pointed at the same contract then, not against this ticker's own close

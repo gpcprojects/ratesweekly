@@ -1,0 +1,9 @@
+ECB: on 07-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers' own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.
+CHECK: ECB 18-Sep-26 Δ1d -46.0bp exceeds the 12bp sanity bar — verify before distribution
+CHECK: ECB 06-Nov-26 Δ1d -49.0bp exceeds the 12bp sanity bar — verify before distribution
+CHECK: ECB 25-Dec-26 Δ1d -50.5bp exceeds the 12bp sanity bar — verify before distribution
+CHECK: ECB 18-Sep-26 Δ1w -46.0bp exceeds the 30bp sanity bar — verify before distribution
+CHECK: ECB 06-Nov-26 Δ1w -49.0bp exceeds the 30bp sanity bar — verify before distribution
+CHECK: ECB 25-Dec-26 Δ1w -50.5bp exceeds the 30bp sanity bar — verify before distribution
+CHECK: ECB 25-Dec-26 Δ1m -50.5bp exceeds the 50bp sanity bar — verify before distribution
+ECB: ticker re-pointed between 06-Jul-26 and 07-Jul-26 with no calendar boundary in that window — check the calendars against tools\..\dodgeball probe output

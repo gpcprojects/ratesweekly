@@ -1,0 +1,13 @@
+{EU} {GB} {AU} {NZ} {US} {CA} {JN} {NO} {SW} London EOD OIS Run — 31-Aug-26
+
+{GB} MPC Run   (SONIA 3.750 rebased)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+12-Oct-26    3.650   -10.0      —   +4.0   +4.0   +4.0
+23-Nov-26    3.550   -20.0  -10.0   +4.0   +4.0   +4.0
+04-Jan-27    3.500   -25.0   -5.0   +4.0   +4.0   +4.0
+
+{AU} RBA Run   (RBA cash 3.600 rebased)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+13-Oct-26    3.500   -10.0      —   +4.0   +4.0   +4.0
+24-Nov-26    3.400   -20.0  -10.0   +4.0   +4.0   +4.0
+05-Jan-27    3.350   -25.0   -5.0   +4.0   +4.0   +4.0

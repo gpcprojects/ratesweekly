@@ -1,0 +1,13 @@
+{
+  "id": 16,
+  "name": "ECB hikes 25bp TODAY, fully priced (lagged start)",
+  "question": "When the market had the hike right, does the board print a front Priced of a basis point instead of the whole delivered 25bp, and does every Priced/Step/change cell down the strip tie out?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "ECB: on 06-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "ECB: ticker re-pointed between 06-Jul-26 and 07-Jul-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output"
+  ],
+  "ms": 718
+}

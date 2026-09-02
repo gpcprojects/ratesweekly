@@ -250,10 +250,15 @@ public static class Group09_WholeEmail
             var reb = s.Report.Fronts.Where(f => f.RefRebased).Select(f => f.Bank).ToList();
             if (!reb.SequenceEqual(new[] { "ECB" }))
                 msgs.Add($"re-based front lines are [{string.Join(", ", reb)}], expected [ECB]");
-            int daggers = s.SheetHtml.Split('†').Length - 1;   // one cell + one footnote
-            if (daggers != 2)
-                msgs.Add($"the sheet email carries {daggers} dagger mark(s), expected 2 " +
-                         "(the ECB fixing cell and the footnote)");
+            // the * convention (desk 2026-09-02): the front-table fixing cell and the ECB
+            // runs-block fixing cell are the two starred italics; the disclaimer rides once
+            // under each table
+            int stars = s.SheetHtml.Split("*</i>").Length - 1;
+            if (stars != 2)
+                msgs.Add($"the sheet email carries {stars} starred fixing cell(s), expected 2 " +
+                         "(the ECB front cell and its runs-block cell)");
+            if (!s.SheetHtml.Contains("has been adjusted to reflect hike/cut"))
+                msgs.Add("the * disclaimer is missing from the sheet email");
             // every one of the nine must reach every daily surface
             if (s.Report.Runs.Count != 9) msgs.Add($"{s.Report.Runs.Count} runs published, expected 9");
             if (s.Report.Fronts.Count != 9) msgs.Add($"{s.Report.Fronts.Count} front lines, expected 9");
@@ -537,7 +542,7 @@ public static class Group09_WholeEmail
                 msgs.Add("the ECB front line invented a decision date from an empty calendar");
             if (!s.SheetHtml.Contains("swap-period start shown"))
                 msgs.Add("the '*' footnote is missing from the sheet email");
-            if (s.SheetHtml.Contains('†'))
+            if (s.SheetHtml.Contains("*</i>"))
                 msgs.Add("a re-based dagger appeared although no decision is on file");
             if (s.Run("ECB")!.Rows.Count != 3)
                 msgs.Add($"ECB published {s.Run("ECB")!.Rows.Count} row(s) - an empty decision " +

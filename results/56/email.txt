@@ -1,0 +1,12 @@
+
+CB Front Meeting Market Pricing
+Central Bank	Decision Date	Start Date	OIS Mid	Fixing	Priced (bp)
+BOJ JPY	25-Sep-26	28-Sep-26	0.560	0.500	+6.0
+
+Central Bank OIS Meetings
+
+BOJ · JPY  fixing 0.500
+StartDate	Mid	Priced	Step	1d Chg	1w Chg	1m Chg
+28-Sep-26	0.560	+6.0		0.0	0.0	0.0
+15-Nov-26	0.610	+11.0	+5.0	0.0	0.0	0.0
+02-Jan-27	0.650	+15.0	+4.0	0.0	0.0	0.0

@@ -1,0 +1,26 @@
+scenario 43: FUTURES GUARD disagrees — FF a full step away from the blend
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:25
+
+=== FOMC (USD) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 21-Dec-26, 01-Feb-27, 15-Mar-27
+  past      : 08-Jun-26, 20-Jul-26, 31-Aug-26
+  decisions : 31-Aug-26, 12-Oct-26, 21-Dec-26, 01-Feb-27, 15-Mar-27
+  app boundaries: 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 21-Dec-26, 01-Feb-27, 15-Mar-27
+  fixing FEDL01 Index = 3.900
+  quote  n=0  spell=Both      mid=3.900   prev=3.900   eff=20-Jul-26  mat=31-Aug-26  age=-
+  quote  n=1  spell=Both      mid=4.150   prev=4.140   eff=31-Aug-26  mat=12-Oct-26  age=-
+  quote  n=2  spell=Both      mid=4.250   prev=4.240   eff=12-Oct-26  mat=21-Dec-26  age=-
+  quote  n=3  spell=Both      mid=4.350   prev=4.340   eff=21-Dec-26  mat=01-Feb-27  age=-
+  quote  n=4  spell=Both      mid=4.400   prev=4.390   eff=01-Feb-27  mat=15-Mar-27  age=-
+  closes n=1: 22-Jun..20-Jul=3.900  21-Jul..28-Aug=4.140  31-Aug..31-Aug=4.150
+  closes n=2: 22-Jun..20-Jul=4.140  21-Jul..28-Aug=4.240  31-Aug..31-Aug=4.250
+  closes n=3: 22-Jun..20-Jul=4.240  21-Jul..28-Aug=4.340  31-Aug..31-Aug=4.350
+  closes n=4: 22-Jun..20-Jul=4.340  21-Jul..28-Aug=4.390  31-Aug..31-Aug=4.400
+  closes n=5: 22-Jun..20-Jul=4.390  21-Jul..28-Aug=4.420  31-Aug..31-Aug=4.430
+  closes n=6: 22-Jun..20-Jul=4.420
+  snaps  n=1: 22-Jun..20-Jul=3.900  21-Jul..28-Aug=4.140  31-Aug..31-Aug=4.150
+  snaps  n=2: 22-Jun..20-Jul=4.140  21-Jul..28-Aug=4.240  31-Aug..31-Aug=4.250
+  snaps  n=3: 22-Jun..20-Jul=4.240  21-Jul..28-Aug=4.340  31-Aug..31-Aug=4.350
+  snaps  n=4: 22-Jun..20-Jul=4.340  21-Jul..28-Aug=4.390  31-Aug..31-Aug=4.400
+  snaps  n=5: 22-Jun..20-Jul=4.390  21-Jul..28-Aug=4.420  31-Aug..31-Aug=4.430
+  snaps  n=6: 22-Jun..20-Jul=4.420

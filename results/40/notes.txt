@@ -1,0 +1,4 @@
+FOMC: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers' own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.
+CHECK: FOMC 12-Oct-26 Δ1d +15.0bp exceeds the 12bp sanity bar — verify before distribution
+CHECK: FOMC 12-Oct-26 Δ1w +35.0bp exceeds the 30bp sanity bar — verify before distribution
+CHECK: FOMC 12-Oct-26 Δ1m +55.0bp exceeds the 50bp sanity bar — verify before distribution

@@ -1,0 +1,27 @@
+scenario 7: RBA cuts 25bp TODAY, period starts TOMORROW (1-day lag)
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== RBA (AUD) source='NABZ' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 08-Jun-26, 20-Jul-26, 01-Sep-26, 13-Oct-26, 24-Nov-26, 05-Jan-27, 16-Feb-27
+  past      : 08-Jun-26, 20-Jul-26
+  decisions : 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  app boundaries: 07-Jun-26, 19-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  fixing RBACOR Index = 3.850
+  quote  n=0  spell=Both      mid=3.850   prev=3.850   eff=20-Jul-26  mat=01-Sep-26  age=-
+  quote  n=1  spell=Both      mid=3.600   prev=3.620   eff=01-Sep-26  mat=13-Oct-26  age=-
+  quote  n=2  spell=Both      mid=3.450   prev=3.470   eff=13-Oct-26  mat=24-Nov-26  age=-
+  quote  n=3  spell=Both      mid=3.300   prev=3.320   eff=24-Nov-26  mat=05-Jan-27  age=-
+  quote  n=4  spell=Both      mid=3.150   prev=3.170   eff=05-Jan-27  mat=16-Feb-27  age=-
+  quote  n=5  spell=Both      mid=3.000   prev=3.020   eff=16-Feb-27  mat=30-Mar-27  age=-
+  closes n=1: 22-Jun..17-Jul=3.850  20-Jul..28-Aug=3.620
+  closes n=2: 22-Jun..17-Jul=3.620  20-Jul..28-Aug=3.470
+  closes n=3: 22-Jun..17-Jul=3.470  20-Jul..28-Aug=3.320
+  closes n=4: 22-Jun..17-Jul=3.320  20-Jul..28-Aug=3.170
+  closes n=5: 22-Jun..17-Jul=3.170  20-Jul..28-Aug=3.020
+  closes n=6: 22-Jun..17-Jul=3.020
+  snaps  n=1: 22-Jun..17-Jul=3.850  20-Jul..28-Aug=3.620
+  snaps  n=2: 22-Jun..17-Jul=3.620  20-Jul..28-Aug=3.470
+  snaps  n=3: 22-Jun..17-Jul=3.470  20-Jul..28-Aug=3.320
+  snaps  n=4: 22-Jun..17-Jul=3.320  20-Jul..28-Aug=3.170
+  snaps  n=5: 22-Jun..17-Jul=3.170  20-Jul..28-Aug=3.020
+  snaps  n=6: 22-Jun..17-Jul=3.020

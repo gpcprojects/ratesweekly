@@ -1,0 +1,12 @@
+{
+  "id": 63,
+  "name": "Emergency cut, price history only - no maturity records at all",
+  "question": "On a machine whose store holds the 45-day price seed and nothing else, does an inter-meeting decision still leave every change column reading its own contract?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "ECB: on 20-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the strip\u0027s own prices instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 558
+}

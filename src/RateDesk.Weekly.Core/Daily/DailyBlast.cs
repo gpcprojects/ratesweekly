@@ -50,7 +50,7 @@ namespace RateDesk.Weekly.Core.Daily
                 sb.AppendLine();
                 sb.Append($"{flag} {runName} Run");
                 if (run.RefPct is { } rp)
-                    sb.Append($"   ({fixing} {rp.ToString("0.000", inv)}{run.RebasedLabel.Replace(" (", " ").Replace(")", "")})");
+                    sb.Append($"   ({fixing} {rp.ToString("0.000", inv)}{(run.RefRebased ? "*" : "")})");
                 sb.AppendLine();
                 // same table as the workbook's Runs sheet, minus Maturity (IB window widths —
                 // desk 2026-08-25); Mid | Priced | Step everywhere (desk 2026-08-26)
@@ -69,6 +69,12 @@ namespace RateDesk.Weekly.Core.Daily
                         $"{start,-10} {m.MidPct.ToString("0.000", inv),7} " +
                         $"{Bp(m.PricedBp),7} {Bp(m.StepBp),6} {Bp(m.D1Bp),6} {Bp(m.W1Bp),6} {Bp(m.M1Bp),6}");
                 }
+            }
+            // the * disclaimer, snug under the last OIS block (desk 2026-09-02)
+            if (rep.Runs.Any(r0 => r0.RefRebased))
+            {
+                sb.AppendLine();
+                sb.AppendLine(RunsTable.RebaseNote);
             }
             return sb.ToString();
         }
@@ -107,8 +113,10 @@ namespace RateDesk.Weekly.Core.Daily
                 if (run == null || run.Rows.Count == 0) continue;
 
                 sb.Append("<tr>" + Wide($"<b>{runName} closing run</b>") + "</tr>");
-                sb.Append("<tr>" + Td($"{fixing} fixing" + run.RebasedLabel)
-                    + Td(run.RefPct is { } rp ? rp.ToString("0.000", inv) : "&nbsp;", "text-align:right;")
+                sb.Append("<tr>" + Td($"{fixing} fixing")
+                    + Td(run.RefPct is { } rp
+                        ? (run.RefRebased ? $"<i>{rp.ToString("0.000", inv)}*</i>" : rp.ToString("0.000", inv))
+                        : "&nbsp;", "text-align:right;")
                     + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + Td("&nbsp;") + "</tr>");
                 sb.Append("<tr>");
                 foreach (var h in new[]
@@ -131,6 +139,9 @@ namespace RateDesk.Weekly.Core.Daily
                 }
                 sb.Append(Blank());
             }
+            // the * disclaimer, snug under the last OIS block (desk 2026-09-02)
+            if (rep.Runs.Any(r0 => r0.RefRebased))
+                sb.Append("<tr>" + Wide($"<i>{RunsTable.RebaseNote}</i>") + "</tr>");
             sb.Append("</table>");
             return sb.ToString();
         }

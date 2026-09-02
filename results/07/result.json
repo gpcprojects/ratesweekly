@@ -1,0 +1,10 @@
+{
+  "id": 7,
+  "name": "RBA cuts 25bp TODAY, period starts TOMORROW (1-day lag)",
+  "question": "On the shortest lag there is, do BOTH mechanisms fire in the same run - the decided period off the board, and Priced re-based onto its own OIS instead of a cash rate that is still yesterday\u0027s?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [],
+  "ms": 952
+}

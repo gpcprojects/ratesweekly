@@ -945,6 +945,14 @@ namespace RateDesk.Core
                             // moved print must never carry the delta a second time); the
                             // calendar windowEnd above remains the hard stop either way.
                             bool polResolved = false;
+                            // set when the target PRINTED Δ = 0 on the decision day itself: a
+                            // HOLD must publish the plain fixing, never a re-based stub — "they
+                            // didn't do anything so it isn't rebased, it's just the same fixing"
+                            // (desk 2026-09-02, the BOC hold). The stub bridge below then only
+                            // fires when the market says a MOVE happened that the target print
+                            // has not caught up with (≥ 8bp — above corridor noise, under half
+                            // of the smallest odd move, BOJ's 15bp).
+                            double? holdBridgeFix = null;
                             if (!string.IsNullOrEmpty(sched.PolicyTicker)
                                 && res.RefPct is { } fixPrint
                                 && Snapshot.Get(sched.PolicyTicker)?.Mid is { } polNow
@@ -978,9 +986,11 @@ namespace RateDesk.Core
                                     // IS the base — no re-base, no dagger
                                     else if (kickedIn || today != dec)
                                         polResolved = true;
-                                    // Δ == 0 ON the decision day falls through: the target
-                                    // print can lag the statement by minutes, and the stub
-                                    // bridge below still beats a stale base in that gap
+                                    // Δ == 0 ON the decision day falls through GUARDED: the
+                                    // target print can lag the statement by minutes, so a real
+                                    // move still bridges via the stub — but a genuine hold
+                                    // (stub ≈ fixing) publishes the plain print, no re-base
+                                    else holdBridgeFix = fixPrint;
                                 }
                             }
                             if (!polResolved)
@@ -1031,7 +1041,8 @@ namespace RateDesk.Core
                                         if (pending is not null) { stale = true; break; }
                                     }
                             }
-                            if (pending is { } pv)
+                            if (pending is { } pv
+                                && (holdBridgeFix is not { } hb || Math.Abs(pv - hb) >= 0.08))
                             {
                                 res.RefPct = pv;
                                 res.RefRebased = true;

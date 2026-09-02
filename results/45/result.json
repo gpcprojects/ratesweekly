@@ -1,0 +1,17 @@
+{
+  "id": 45,
+  "name": "NOTES ARE NOT CONTENT \u2014 four note families, none of them in the output",
+  "question": "With a CHECK bar, a STALE feed, a triggered futures guard and a bank missing all firing on one decision day, does any of that internal text leak into the blast, the workbook, the sheet email or the plaintext?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "STALE: FOMC \u2014 1 published rung(s) off a feed quiet \u003E1h (INCLUDING THE FRONT, worst 12-Oct-26 at 90m) \u2014 consider another contributor (SOURCES)",
+    "FOMC: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "ECB: no future meetings resolved \u2014 check config\\meetings.json",
+    "CHECK: ECB produced NO rows \u2014 the run is missing from every surface; verify before distribution",
+    "CHECK: FUTURES GUARD TRIGGERED \u2014 FOMC: FFX6 Comdty Nov-26 implies 4.500 but the meeting rows blend to 4.250 (\u0394\u002B25.0bp \u003E 2.5bp tolerance). The futures share nothing with the OIS machinery \u2014 treat this as a roll/calendar/re-base fault until proven otherwise (run tools\\verify_strip_changes.py).",
+    "CHECK: FOMC 12-Oct-26 \u03941d \u002B20.0bp exceeds the 12bp sanity bar \u2014 verify before distribution"
+  ],
+  "ms": 754
+}

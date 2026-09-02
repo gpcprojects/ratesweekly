@@ -1,0 +1,54 @@
+scenario 35: Nobody prices the decided rung - the re-base falls back to closes
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== RBA (AUD) source='NABZ' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 08-Jun-26, 20-Jul-26, 01-Sep-26, 13-Oct-26, 24-Nov-26, 05-Jan-27
+  past      : 08-Jun-26, 20-Jul-26
+  decisions : 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27
+  app boundaries: 07-Jun-26, 19-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27
+  fixing RBACOR Index = 3.850
+  quote  n=0  spell=Composite mid=-       prev=-       eff=20-Jul-26  mat=01-Sep-26  age=-
+  quote  n=0  spell=Active    mid=3.850   prev=3.850   eff=-          mat=-          age=-
+  quote  n=1  spell=Composite mid=-       prev=-       eff=01-Sep-26  mat=13-Oct-26  age=-
+  quote  n=2  spell=Composite mid=-       prev=-       eff=13-Oct-26  mat=24-Nov-26  age=-
+  quote  n=2  spell=Active    mid=3.500   prev=3.460   eff=-          mat=-          age=-
+  quote  n=3  spell=Composite mid=-       prev=-       eff=24-Nov-26  mat=05-Jan-27  age=-
+  quote  n=3  spell=Active    mid=3.400   prev=3.360   eff=-          mat=-          age=-
+  quote  n=4  spell=Composite mid=-       prev=-       eff=05-Jan-27  mat=16-Feb-27  age=-
+  quote  n=4  spell=Active    mid=3.350   prev=3.310   eff=-          mat=-          age=-
+  closes n=1: 22-Jun..17-Jul=3.850  20-Jul..28-Aug=3.560  31-Aug..31-Aug=3.600
+  closes n=2: 22-Jun..17-Jul=3.560  20-Jul..28-Aug=3.460  31-Aug..31-Aug=3.500
+  closes n=3: 22-Jun..17-Jul=3.460  20-Jul..28-Aug=3.360  31-Aug..31-Aug=3.400
+  closes n=4: 22-Jun..17-Jul=3.360  20-Jul..28-Aug=3.310  31-Aug..31-Aug=3.350
+  closes n=5: 22-Jun..17-Jul=3.310
+  snaps  n=1: 22-Jun..17-Jul=3.850  20-Jul..28-Aug=3.560  31-Aug..31-Aug=3.600
+  snaps  n=2: 22-Jun..17-Jul=3.560  20-Jul..28-Aug=3.460  31-Aug..31-Aug=3.500
+  snaps  n=3: 22-Jun..17-Jul=3.460  20-Jul..28-Aug=3.360  31-Aug..31-Aug=3.400
+  snaps  n=4: 22-Jun..17-Jul=3.360  20-Jul..28-Aug=3.310  31-Aug..31-Aug=3.350
+  snaps  n=5: 22-Jun..17-Jul=3.310
+
+=== BOC (CAD) source='BMOD' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 25-May-26, 13-Jul-26, 01-Sep-26, 20-Oct-26, 08-Dec-26, 26-Jan-27
+  past      : 25-May-26, 13-Jul-26
+  decisions : 31-Aug-26, 19-Oct-26, 07-Dec-26, 25-Jan-27
+  app boundaries: 24-May-26, 12-Jul-26, 31-Aug-26, 19-Oct-26, 07-Dec-26, 25-Jan-27
+  fixing CAONREPO Index = 2.500
+  quote  n=0  spell=Composite mid=-       prev=-       eff=13-Jul-26  mat=01-Sep-26  age=-
+  quote  n=0  spell=Active    mid=2.500   prev=2.500   eff=-          mat=-          age=-
+  quote  n=1  spell=Composite mid=-       prev=-       eff=01-Sep-26  mat=20-Oct-26  age=-
+  quote  n=2  spell=Composite mid=-       prev=-       eff=20-Oct-26  mat=08-Dec-26  age=-
+  quote  n=2  spell=Active    mid=2.800   prev=2.760   eff=-          mat=-          age=-
+  quote  n=3  spell=Composite mid=-       prev=-       eff=08-Dec-26  mat=26-Jan-27  age=-
+  quote  n=3  spell=Active    mid=2.870   prev=2.830   eff=-          mat=-          age=-
+  quote  n=4  spell=Composite mid=-       prev=-       eff=26-Jan-27  mat=16-Mar-27  age=-
+  quote  n=4  spell=Active    mid=2.900   prev=2.860   eff=-          mat=-          age=-
+  closes n=1: 22-Jun..10-Jul=2.500  13-Jul..28-Aug=2.710  31-Aug..31-Aug=2.750
+  closes n=2: 22-Jun..10-Jul=2.710  13-Jul..28-Aug=2.760  31-Aug..31-Aug=2.800
+  closes n=3: 22-Jun..10-Jul=2.760  13-Jul..28-Aug=2.830  31-Aug..31-Aug=2.870
+  closes n=4: 22-Jun..10-Jul=2.830  13-Jul..28-Aug=2.860  31-Aug..31-Aug=2.900
+  closes n=5: 22-Jun..10-Jul=2.860
+  snaps  n=1: 22-Jun..10-Jul=2.500  13-Jul..28-Aug=2.710  31-Aug..31-Aug=2.750
+  snaps  n=2: 22-Jun..10-Jul=2.710  13-Jul..28-Aug=2.760  31-Aug..31-Aug=2.800
+  snaps  n=3: 22-Jun..10-Jul=2.760  13-Jul..28-Aug=2.830  31-Aug..31-Aug=2.870
+  snaps  n=4: 22-Jun..10-Jul=2.830  13-Jul..28-Aug=2.860  31-Aug..31-Aug=2.900
+  snaps  n=5: 22-Jun..10-Jul=2.860

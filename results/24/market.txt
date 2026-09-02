@@ -1,0 +1,19 @@
+scenario 24: Staleness cap: a three-week hole must blank the 1w, not stretch it
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== BOC (CAD) source='BMOD' decisionTime=14:45 rollsAtPeriodStart=False turn=False
+  starts    : 08-Jun-26, 20-Jul-26, 21-Sep-26, 02-Nov-26, 14-Dec-26, 25-Jan-27
+  past      : 08-Jun-26, 20-Jul-26
+  decisions : 07-Jun-26, 19-Jul-26, 20-Sep-26, 01-Nov-26, 13-Dec-26, 24-Jan-27
+  app boundaries: 07-Jun-26, 19-Jul-26, 20-Sep-26, 01-Nov-26, 13-Dec-26, 24-Jan-27
+  fixing CAONREPO Index = 3.900
+  quote  n=0  spell=Both      mid=3.900   prev=3.900   eff=20-Jul-26  mat=21-Sep-26  age=-
+  quote  n=1  spell=Both      mid=3.750   prev=3.745   eff=21-Sep-26  mat=02-Nov-26  age=-
+  quote  n=2  spell=Both      mid=3.600   prev=3.595   eff=02-Nov-26  mat=14-Dec-26  age=-
+  quote  n=3  spell=Both      mid=3.450   prev=3.445   eff=14-Dec-26  mat=25-Jan-27  age=-
+  closes n=1: 22-Jul..12-Aug=3.700
+  closes n=2: 22-Jul..12-Aug=3.550
+  closes n=3: 22-Jul..12-Aug=3.400
+  snaps  n=1: 22-Jul..12-Aug=3.700
+  snaps  n=2: 22-Jul..12-Aug=3.550
+  snaps  n=3: 22-Jul..12-Aug=3.400

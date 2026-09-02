@@ -1,0 +1,19 @@
+
+CB Front Meeting Market Pricing
+Central Bank	Decision Date	Start Date	OIS Mid	Fixing	Priced (bp)
+FOMC USD	08-Oct-26	08-Oct-26	3.800	3.900	-10.0
+MPC GBP	08-Oct-26	08-Oct-26	3.800	3.900	-10.0
+
+Central Bank OIS Meetings
+
+FOMC · USD  fixing 3.900
+StartDate	Mid	Priced	Step	1d Chg	1w Chg	1m Chg
+08-Oct-26	3.800	-10.0		+5.0	+10.0	+10.0
+19-Nov-26	3.600	-30.0	-20.0	+10.0	+10.0	+10.0
+31-Dec-26	3.400	-50.0	-20.0	+10.0	+10.0	+10.0
+
+MPC · GBP  fixing 3.900
+StartDate	Mid	Priced	Step	1d Chg	1w Chg	1m Chg
+08-Oct-26	3.800	-10.0		+10.0	+10.0	+10.0
+19-Nov-26	3.600	-30.0	-20.0	+10.0	+10.0	+10.0
+31-Dec-26	3.400	-50.0	-20.0	+10.0	+10.0	+10.0

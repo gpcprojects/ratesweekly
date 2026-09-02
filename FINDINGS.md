@@ -1,3 +1,31 @@
+## v0.19.1 (2026-09-02) — the * convention, and a hold never re-bases
+
+Desk dictations off the 02-Sep-26 board (RBNZ hiked overnight; BOC held):
+
+1. **A HOLD never re-bases** ("they didn't do anything so it isn't rebased — it's just the same
+   fixing", the CORRA case). The decision-day stub bridge now fires ONLY when the market says a
+   move happened that the target print has not caught up with (|stub − fixing| ≥ 8bp — above
+   corridor noise, under half of BOJ's 15bp); a genuine hold publishes the plain print, no star.
+   Δ = 0 on any later day was already the print. Applies to every bank via the shared window
+   logic; RBNZ's hike (stub 2.751 vs OCR 2.500 = 25bp) still bridges correctly on its decision
+   day, because its target IS its fixing and reads Δ = 0 until the OCR re-prints.
+2. **The wordy "(rebased, pre-statement)" label is retired everywhere.** The fixing renders as
+   the NUMBER with a `*`, italic where markup allows, on: the sheet email (front table + run
+   blocks), the card email, the plaintext, the chat blast `(FEDL01 4.330*)`, the xlsx Runs sheet
+   (text cell, italic) — and ONE shared disclaimer line (`RunsTable.RebaseNote`, italic) sits
+   snug under the OIS tables, before the inflation runs, on starred days only:
+   `* = has been adjusted to reflect hike/cut prior to new fixing`. Column widths are back to
+   their originals — the long label was what stretched them. The guard-synthesized-mid dagger
+   (a different, standing convention) is untouched. Harness parsers + Invariants + the custom
+   scenario checks all speak the new grammar.
+3. **The RBNZ Δ columns were verified CORRECT against the feed's own numbers**: the family
+   re-pointed overnight and yesterday's close of each CONTRACT (today's rung N = yesterday's
+   N+1) shows the strip genuinely gave back 15–26bp — Δ1d −15.4 on the front = 2.756 − 2.910
+   (old 2A close) to the tick. A dovish-hike repricing, not a mis-roll.
+
+347/347 tests; scenarios 78/80 (14 + 47, the standing date fragility). Seed refreshed
+(179,978 closes to 01-Sep-26, 40,592 fixings) per the release ritual.
+
 ## v0.19.0 (2026-09-02) — the history ships INSIDE the app (desk order)
 
 Desk: "the app is STANDALONE. incorporate the history INTO the app. that way it can't be missed.

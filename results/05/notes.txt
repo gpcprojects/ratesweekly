@@ -1,0 +1,4 @@
+FOMC: on 20-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers' own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.
+ECB: on 06-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers' own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.
+ECB: ticker period starting 09-May-27 is not in config\meetings.json — grid drifted or missing (phantom-meeting risk)
+ECB: ticker re-pointed between 06-Jul-26 and 07-Jul-26 with no calendar boundary in that window — check the calendars against tools\..\dodgeball probe output

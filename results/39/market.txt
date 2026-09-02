@@ -1,0 +1,51 @@
+scenario 39: The o/n fixing ticker is unquoted on a decision day
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:25
+
+=== MPC (GBP) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27
+  past      : 08-Jun-26, 20-Jul-26, 31-Aug-26
+  decisions : 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27
+  app boundaries: 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27
+  fixing SONIO/N Index = (unquoted)
+  quote  n=0  spell=Both      mid=4.000   prev=4.000   eff=20-Jul-26  mat=31-Aug-26  age=-
+  quote  n=1  spell=Both      mid=3.750   prev=3.710   eff=31-Aug-26  mat=12-Oct-26  age=-
+  quote  n=2  spell=Both      mid=3.650   prev=3.610   eff=12-Oct-26  mat=23-Nov-26  age=-
+  quote  n=3  spell=Both      mid=3.550   prev=3.510   eff=23-Nov-26  mat=04-Jan-27  age=-
+  quote  n=4  spell=Both      mid=3.500   prev=3.460   eff=04-Jan-27  mat=15-Feb-27  age=-
+  closes n=1: 22-Jun..20-Jul=4.000  21-Jul..28-Aug=3.710  31-Aug..31-Aug=3.750
+  closes n=2: 22-Jun..20-Jul=3.710  21-Jul..28-Aug=3.610  31-Aug..31-Aug=3.650
+  closes n=3: 22-Jun..20-Jul=3.610  21-Jul..28-Aug=3.510  31-Aug..31-Aug=3.550
+  closes n=4: 22-Jun..20-Jul=3.510  21-Jul..28-Aug=3.460  31-Aug..31-Aug=3.500
+  closes n=5: 22-Jun..20-Jul=3.460
+  snaps  n=1: 22-Jun..20-Jul=4.000  21-Jul..28-Aug=3.710  31-Aug..31-Aug=3.750
+  snaps  n=2: 22-Jun..20-Jul=3.710  21-Jul..28-Aug=3.610  31-Aug..31-Aug=3.650
+  snaps  n=3: 22-Jun..20-Jul=3.610  21-Jul..28-Aug=3.510  31-Aug..31-Aug=3.550
+  snaps  n=4: 22-Jun..20-Jul=3.510  21-Jul..28-Aug=3.460  31-Aug..31-Aug=3.500
+  snaps  n=5: 22-Jun..20-Jul=3.460
+
+=== RBA (AUD) source='NABZ' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 08-Jun-26, 20-Jul-26, 01-Sep-26, 13-Oct-26, 24-Nov-26, 05-Jan-27
+  past      : 08-Jun-26, 20-Jul-26
+  decisions : 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27
+  app boundaries: 07-Jun-26, 19-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27
+  fixing RBACOR Index = (unquoted)
+  quote  n=0  spell=Composite mid=-       prev=-       eff=20-Jul-26  mat=01-Sep-26  age=-
+  quote  n=0  spell=Active    mid=3.850   prev=3.850   eff=-          mat=-          age=-
+  quote  n=1  spell=Composite mid=-       prev=-       eff=01-Sep-26  mat=13-Oct-26  age=-
+  quote  n=1  spell=Active    mid=3.600   prev=3.560   eff=-          mat=-          age=-
+  quote  n=2  spell=Composite mid=-       prev=-       eff=13-Oct-26  mat=24-Nov-26  age=-
+  quote  n=2  spell=Active    mid=3.500   prev=3.460   eff=-          mat=-          age=-
+  quote  n=3  spell=Composite mid=-       prev=-       eff=24-Nov-26  mat=05-Jan-27  age=-
+  quote  n=3  spell=Active    mid=3.400   prev=3.360   eff=-          mat=-          age=-
+  quote  n=4  spell=Composite mid=-       prev=-       eff=05-Jan-27  mat=16-Feb-27  age=-
+  quote  n=4  spell=Active    mid=3.350   prev=3.310   eff=-          mat=-          age=-
+  closes n=1: 22-Jun..17-Jul=3.850  20-Jul..28-Aug=3.560  31-Aug..31-Aug=3.600
+  closes n=2: 22-Jun..17-Jul=3.560  20-Jul..28-Aug=3.460  31-Aug..31-Aug=3.500
+  closes n=3: 22-Jun..17-Jul=3.460  20-Jul..28-Aug=3.360  31-Aug..31-Aug=3.400
+  closes n=4: 22-Jun..17-Jul=3.360  20-Jul..28-Aug=3.310  31-Aug..31-Aug=3.350
+  closes n=5: 22-Jun..17-Jul=3.310
+  snaps  n=1: 22-Jun..17-Jul=3.850  20-Jul..28-Aug=3.560  31-Aug..31-Aug=3.600
+  snaps  n=2: 22-Jun..17-Jul=3.560  20-Jul..28-Aug=3.460  31-Aug..31-Aug=3.500
+  snaps  n=3: 22-Jun..17-Jul=3.460  20-Jul..28-Aug=3.360  31-Aug..31-Aug=3.400
+  snaps  n=4: 22-Jun..17-Jul=3.360  20-Jul..28-Aug=3.310  31-Aug..31-Aug=3.350
+  snaps  n=5: 22-Jun..17-Jul=3.310

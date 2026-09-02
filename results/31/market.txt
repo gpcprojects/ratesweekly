@@ -1,0 +1,28 @@
+scenario 31: RIKSBANK step chain skips the Y/E turn row
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== RIKSBANK (SEK) source='' decisionTime=08:30 rollsAtPeriodStart=True turn=True
+  starts    : 11-May-26, 22-Jun-26, 03-Aug-26, 14-Sep-26, 26-Oct-26, 07-Dec-26, 18-Jan-27, 01-Mar-27
+  past      : 11-May-26, 22-Jun-26, 03-Aug-26
+  decisions : 28-Jul-26, 08-Sep-26, 20-Oct-26, 01-Dec-26, 12-Jan-27, 23-Feb-27
+  app boundaries: 11-May-26, 22-Jun-26, 03-Aug-26, 14-Sep-26, 26-Oct-26, 07-Dec-26, 18-Jan-27, 01-Mar-27
+  fixing SWESTR Index = 2.000
+  quote  n=0  spell=Both      mid=2.000   prev=2.000   eff=03-Aug-26  mat=14-Sep-26  age=-
+  quote  n=1  spell=Both      mid=2.050   prev=2.050   eff=14-Sep-26  mat=26-Oct-26  age=-
+  quote  n=2  spell=Both      mid=2.150   prev=2.150   eff=26-Oct-26  mat=07-Dec-26  age=-
+  quote  n=3  spell=Both      mid=1.550   prev=1.550   eff=07-Dec-26  mat=18-Jan-27  age=-
+  quote  n=4  spell=Both      mid=2.450   prev=2.450   eff=18-Jan-27  mat=01-Mar-27  age=-
+  closes n=1: 17-Jun..22-Jun=1.950  23-Jun..03-Aug=2.000  04-Aug..31-Aug=2.050
+  closes n=2: 17-Jun..22-Jun=2.000  23-Jun..03-Aug=2.050  04-Aug..31-Aug=2.150
+  closes n=3: 17-Jun..22-Jun=2.050  23-Jun..03-Aug=2.150  04-Aug..31-Aug=1.550
+  closes n=4: 17-Jun..22-Jun=2.150  23-Jun..03-Aug=1.550  04-Aug..31-Aug=2.450
+  closes n=5: 17-Jun..22-Jun=1.550  23-Jun..03-Aug=2.450  04-Aug..31-Aug=2.500
+  closes n=6: 17-Jun..22-Jun=2.450  23-Jun..03-Aug=2.500
+  closes n=7: 17-Jun..22-Jun=2.500
+  snaps  n=1: 17-Jun..22-Jun=1.950  23-Jun..03-Aug=2.000  04-Aug..31-Aug=2.050
+  snaps  n=2: 17-Jun..22-Jun=2.000  23-Jun..03-Aug=2.050  04-Aug..31-Aug=2.150
+  snaps  n=3: 17-Jun..22-Jun=2.050  23-Jun..03-Aug=2.150  04-Aug..31-Aug=1.550
+  snaps  n=4: 17-Jun..22-Jun=2.150  23-Jun..03-Aug=1.550  04-Aug..31-Aug=2.450
+  snaps  n=5: 17-Jun..22-Jun=1.550  23-Jun..03-Aug=2.450  04-Aug..31-Aug=2.500
+  snaps  n=6: 17-Jun..22-Jun=2.450  23-Jun..03-Aug=2.500
+  snaps  n=7: 17-Jun..22-Jun=2.500

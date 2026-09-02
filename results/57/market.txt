@@ -1,0 +1,25 @@
+scenario 57: Save-down history tables across a decision
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:25
+
+=== ECB (EUR) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 10-Jul-26, 28-Aug-26, 16-Oct-26, 04-Dec-26, 22-Jan-27, 12-Mar-27
+  past      : 10-Jul-26, 28-Aug-26
+  decisions : 22-Aug-26, 10-Oct-26, 28-Nov-26, 16-Jan-27, 06-Mar-27
+  app boundaries: 04-Jul-26, 22-Aug-26, 10-Oct-26, 28-Nov-26, 16-Jan-27, 06-Mar-27
+  fixing ESTRON Index = 2.250
+  quote  n=0  spell=Both      mid=2.250   prev=2.250   eff=28-Aug-26  mat=16-Oct-26  age=-
+  quote  n=1  spell=Both      mid=2.300   prev=2.300   eff=16-Oct-26  mat=04-Dec-26  age=-
+  quote  n=2  spell=Both      mid=2.330   prev=2.330   eff=04-Dec-26  mat=22-Jan-27  age=-
+  quote  n=3  spell=Both      mid=2.350   prev=2.350   eff=22-Jan-27  mat=12-Mar-27  age=-
+  closes n=1: 06-Jul..21-Aug=2.240  24-Aug..28-Aug=2.300
+  closes n=2: 22-Jun..03-Jul=2.240  06-Jul..21-Aug=2.290  24-Aug..28-Aug=2.330
+  closes n=3: 22-Jun..03-Jul=2.290  06-Jul..21-Aug=2.320  24-Aug..28-Aug=2.350
+  closes n=4: 22-Jun..03-Jul=2.320  06-Jul..21-Aug=2.340  24-Aug..28-Aug=2.370
+  closes n=5: 22-Jun..03-Jul=2.340  06-Jul..21-Aug=2.360
+  closes n=6: 22-Jun..03-Jul=2.360
+  snaps  n=1: 06-Jul..21-Aug=2.240  24-Aug..28-Aug=2.300
+  snaps  n=2: 22-Jun..03-Jul=2.240  06-Jul..21-Aug=2.290  24-Aug..28-Aug=2.330
+  snaps  n=3: 22-Jun..03-Jul=2.290  06-Jul..21-Aug=2.320  24-Aug..28-Aug=2.350
+  snaps  n=4: 22-Jun..03-Jul=2.320  06-Jul..21-Aug=2.340  24-Aug..28-Aug=2.370
+  snaps  n=5: 22-Jun..03-Jul=2.340  06-Jul..21-Aug=2.360
+  snaps  n=6: 22-Jun..03-Jul=2.360

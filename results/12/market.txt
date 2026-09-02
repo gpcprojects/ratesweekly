@@ -1,0 +1,23 @@
+scenario 12: NORGES cut 7 days ago - period running, NOWA prints the new rate
+today = 31-Aug-26 Mon   London now = 31-Aug-26 12:49
+
+=== NORGES (NOK) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 19-May-26, 07-Jul-26, 25-Aug-26, 12-Oct-26, 30-Nov-26, 18-Jan-27
+  past      : 19-May-26, 07-Jul-26, 25-Aug-26
+  decisions : 24-Aug-26, 11-Oct-26, 29-Nov-26, 17-Jan-27
+  app boundaries: 18-May-26, 06-Jul-26, 24-Aug-26, 11-Oct-26, 29-Nov-26, 17-Jan-27
+  fixing NOWA Index = 4.000
+  quote  n=0  spell=Both      mid=4.000   prev=4.000   eff=25-Aug-26  mat=12-Oct-26  age=-
+  quote  n=1  spell=Both      mid=3.880   prev=3.900   eff=12-Oct-26  mat=30-Nov-26  age=-
+  quote  n=2  spell=Both      mid=3.800   prev=3.815   eff=30-Nov-26  mat=18-Jan-27  age=-
+  quote  n=3  spell=Both      mid=3.750   prev=3.760   eff=18-Jan-27  mat=08-Mar-27  age=-
+  closes n=1: 22-Jun..06-Jul=4.250  07-Jul..21-Aug=4.070  24-Aug..24-Aug=4.010  25-Aug..28-Aug=3.930
+  closes n=2: 22-Jun..06-Jul=4.070  07-Jul..21-Aug=4.010  24-Aug..24-Aug=3.930  25-Aug..28-Aug=3.855
+  closes n=3: 22-Jun..06-Jul=4.010  07-Jul..21-Aug=3.930  24-Aug..24-Aug=3.855  25-Aug..28-Aug=3.800
+  closes n=4: 22-Jun..06-Jul=3.930  07-Jul..21-Aug=3.870  24-Aug..24-Aug=3.800
+  closes n=5: 22-Jun..06-Jul=3.870
+  snaps  n=1: 22-Jun..06-Jul=4.250  07-Jul..21-Aug=4.070  24-Aug..24-Aug=4.010  25-Aug..28-Aug=3.930
+  snaps  n=2: 22-Jun..06-Jul=4.070  07-Jul..21-Aug=4.010  24-Aug..24-Aug=3.930  25-Aug..28-Aug=3.855
+  snaps  n=3: 22-Jun..06-Jul=4.010  07-Jul..21-Aug=3.930  24-Aug..24-Aug=3.855  25-Aug..28-Aug=3.800
+  snaps  n=4: 22-Jun..06-Jul=3.930  07-Jul..21-Aug=3.870  24-Aug..24-Aug=3.800
+  snaps  n=5: 22-Jun..06-Jul=3.870

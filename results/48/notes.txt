@@ -1,0 +1,3 @@
+ECB: on 23-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers' own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.
+MPC: on 30-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers' own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.
+CHECK: ECB has NO decisionDates in config\meetings.json - the decision-day front roll AND the Priced re-base are both disabled for this run

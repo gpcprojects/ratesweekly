@@ -1,0 +1,12 @@
+{
+  "id": 29,
+  "name": "RIKSBANK period-start day \u2014 SKSF renumbers, decision was 6 days ago",
+  "question": "On the day SKSF actually renumbers, does the change-on-day correction fire, or does the 15bp inter-contract gap print as a market move?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "RIKSBANK: on 20-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 796
+}

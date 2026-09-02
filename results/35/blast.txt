@@ -1,0 +1,13 @@
+{EU} {GB} {AU} {NZ} {US} {CA} {JN} {NO} {SW} London EOD OIS Run — 31-Aug-26
+
+{AU} RBA Run   (RBA cash 3.560 rebased, pre-statement)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+13-Oct-26    3.500    -6.0      —   +4.0   +4.0   +4.0
+24-Nov-26    3.400   -16.0  -10.0   +4.0   +4.0   +4.0
+05-Jan-27    3.350   -21.0   -5.0   +4.0   +4.0   +4.0
+
+{CA} BOC Run   (CORRA 2.710 rebased, pre-statement)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+20-Oct-26    2.800    +9.0      —   +4.0   +4.0   +4.0
+08-Dec-26    2.870   +16.0   +7.0   +4.0   +4.0   +4.0
+26-Jan-27    2.900   +19.0   +3.0   +4.0   +4.0   +4.0

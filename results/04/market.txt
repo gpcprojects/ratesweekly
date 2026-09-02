@@ -1,0 +1,48 @@
+scenario 4: Decision TODAY but BEFORE the announcement time
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== ECB (EUR) source='' decisionTime=23:50 rollsAtPeriodStart=False turn=False
+  starts    : 31-May-26, 12-Jul-26, 06-Sep-26, 25-Oct-26, 13-Dec-26, 31-Jan-27
+  past      : 31-May-26, 12-Jul-26
+  decisions : 31-Aug-26, 19-Oct-26, 07-Dec-26, 25-Jan-27
+  app boundaries: 25-May-26, 06-Jul-26, 31-Aug-26, 19-Oct-26, 07-Dec-26, 25-Jan-27
+  fixing ESTRON Index = 2.000
+  quote  n=0  spell=Both      mid=2.000   prev=2.000   eff=12-Jul-26  mat=06-Sep-26  age=-
+  quote  n=1  spell=Both      mid=2.240   prev=2.240   eff=06-Sep-26  mat=25-Oct-26  age=-
+  quote  n=2  spell=Both      mid=2.390   prev=2.390   eff=25-Oct-26  mat=13-Dec-26  age=-
+  quote  n=3  spell=Both      mid=2.540   prev=2.540   eff=13-Dec-26  mat=31-Jan-27  age=-
+  quote  n=4  spell=Both      mid=2.690   prev=2.690   eff=31-Jan-27  mat=21-Mar-27  age=-
+  closes n=1: 22-Jun..06-Jul=2.000  07-Jul..28-Aug=2.240
+  closes n=2: 22-Jun..06-Jul=2.240  07-Jul..28-Aug=2.390
+  closes n=3: 22-Jun..06-Jul=2.390  07-Jul..28-Aug=2.540
+  closes n=4: 22-Jun..06-Jul=2.540  07-Jul..28-Aug=2.690
+  closes n=5: 22-Jun..06-Jul=2.690
+  snaps  n=1: 22-Jun..06-Jul=2.000  07-Jul..28-Aug=2.240
+  snaps  n=2: 22-Jun..06-Jul=2.240  07-Jul..28-Aug=2.390
+  snaps  n=3: 22-Jun..06-Jul=2.390  07-Jul..28-Aug=2.540
+  snaps  n=4: 22-Jun..06-Jul=2.540  07-Jul..28-Aug=2.690
+  snaps  n=5: 22-Jun..06-Jul=2.690
+
+=== MPC (GBP) source='' decisionTime=23:50 rollsAtPeriodStart=False turn=False
+  starts    : 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  past      : 08-Jun-26, 20-Jul-26, 31-Aug-26
+  decisions : 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  app boundaries: 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  fixing SONIO/N Index = 3.900
+  quote  n=0  spell=Both      mid=3.900   prev=3.900   eff=20-Jul-26  mat=31-Aug-26  age=-
+  quote  n=1  spell=Both      mid=3.680   prev=3.680   eff=31-Aug-26  mat=12-Oct-26  age=-
+  quote  n=2  spell=Both      mid=3.530   prev=3.530   eff=12-Oct-26  mat=23-Nov-26  age=-
+  quote  n=3  spell=Both      mid=3.380   prev=3.380   eff=23-Nov-26  mat=04-Jan-27  age=-
+  quote  n=4  spell=Both      mid=3.230   prev=3.230   eff=04-Jan-27  mat=15-Feb-27  age=-
+  closes n=1: 22-Jun..20-Jul=3.900  21-Jul..28-Aug=3.680
+  closes n=2: 22-Jun..20-Jul=3.680  21-Jul..28-Aug=3.530
+  closes n=3: 22-Jun..20-Jul=3.530  21-Jul..28-Aug=3.380
+  closes n=4: 22-Jun..20-Jul=3.380  21-Jul..28-Aug=3.230
+  closes n=5: 22-Jun..20-Jul=3.230  21-Jul..28-Aug=3.080
+  closes n=6: 22-Jun..20-Jul=3.080
+  snaps  n=1: 22-Jun..20-Jul=3.900  21-Jul..28-Aug=3.680
+  snaps  n=2: 22-Jun..20-Jul=3.680  21-Jul..28-Aug=3.530
+  snaps  n=3: 22-Jun..20-Jul=3.530  21-Jul..28-Aug=3.380
+  snaps  n=4: 22-Jun..20-Jul=3.380  21-Jul..28-Aug=3.230
+  snaps  n=5: 22-Jun..20-Jul=3.230  21-Jul..28-Aug=3.080
+  snaps  n=6: 22-Jun..20-Jul=3.080

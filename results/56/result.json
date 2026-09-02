@@ -1,0 +1,14 @@
+{
+  "id": 56,
+  "name": "Unstable settlement lag (BOJ shape): a 1w anchor inside the gap",
+  "question": "For a bank whose lag varies, the past roll boundary is taken as the period start rather than the announcement. What does a change anchor landing between the two read?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "BOJ: on 24-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "BOJ: ticker re-pointed between 02-Jul-26 and 03-Jul-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output",
+    "BOJ: ticker re-pointed between 28-Aug-26 and 31-Aug-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output"
+  ],
+  "ms": 735
+}

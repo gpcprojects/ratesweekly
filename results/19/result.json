@@ -1,0 +1,22 @@
+{
+  "id": 19,
+  "name": "ECB SURPRISE 50bp cut - twice the size, nothing priced",
+  "question": "Does anything clip, reject or interpolate away a genuine 50bp move - and how many CHECK notes does one honest emergency-sized decision produce?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "ECB: on 06-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "CHECK: ECB 25-Oct-26 \u03941d -51.0bp exceeds the 12bp sanity bar \u2014 verify before distribution",
+    "CHECK: ECB 13-Dec-26 \u03941d -53.0bp exceeds the 12bp sanity bar \u2014 verify before distribution",
+    "CHECK: ECB 31-Jan-27 \u03941d -55.5bp exceeds the 12bp sanity bar \u2014 verify before distribution",
+    "CHECK: ECB 25-Oct-26 \u03941w -51.0bp exceeds the 30bp sanity bar \u2014 verify before distribution",
+    "CHECK: ECB 13-Dec-26 \u03941w -53.0bp exceeds the 30bp sanity bar \u2014 verify before distribution",
+    "CHECK: ECB 31-Jan-27 \u03941w -55.5bp exceeds the 30bp sanity bar \u2014 verify before distribution",
+    "CHECK: ECB 25-Oct-26 \u03941m -51.0bp exceeds the 50bp sanity bar \u2014 verify before distribution",
+    "CHECK: ECB 13-Dec-26 \u03941m -53.0bp exceeds the 50bp sanity bar \u2014 verify before distribution",
+    "CHECK: ECB 31-Jan-27 \u03941m -55.5bp exceeds the 50bp sanity bar \u2014 verify before distribution",
+    "ECB: ticker re-pointed between 06-Jul-26 and 07-Jul-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output"
+  ],
+  "ms": 766
+}

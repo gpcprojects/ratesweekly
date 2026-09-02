@@ -1,0 +1,3 @@
+FOMC: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers' own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.
+ECB: no future meetings resolved — check config\meetings.json
+CHECK: ECB produced NO rows — the run is missing from every surface; verify before distribution

@@ -1,0 +1,27 @@
+scenario 8: BOJ hikes 25bp TODAY, period starts in 6 days (non-contiguous family)
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== BOJ (JPY) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 31-May-26, 12-Jul-26, 06-Sep-26, 25-Oct-26, 13-Dec-26, 31-Jan-27, 21-Mar-27, 09-May-27
+  past      : 31-May-26, 12-Jul-26
+  decisions : 31-Aug-26, 19-Oct-26, 07-Dec-26, 25-Jan-27, 15-Mar-27, 03-May-27
+  app boundaries: 25-May-26, 06-Jul-26, 31-Aug-26, 19-Oct-26, 07-Dec-26, 25-Jan-27, 15-Mar-27, 03-May-27
+  fixing MUTKCALM Index = 0.480
+  quote  n=0  spell=Both      mid=0.480   prev=0.480   eff=12-Jul-26  mat=31-Aug-26  age=-
+  quote  n=1  spell=Both      mid=0.730   prev=0.720   eff=06-Sep-26  mat=19-Oct-26  age=-
+  quote  n=2  spell=Both      mid=0.880   prev=0.870   eff=25-Oct-26  mat=07-Dec-26  age=-
+  quote  n=3  spell=Both      mid=1.030   prev=1.020   eff=13-Dec-26  mat=25-Jan-27  age=-
+  quote  n=4  spell=Both      mid=1.180   prev=1.170   eff=31-Jan-27  mat=15-Mar-27  age=-
+  quote  n=5  spell=Both      mid=1.330   prev=1.320   eff=21-Mar-27  mat=03-May-27  age=-
+  closes n=1: 22-Jun..06-Jul=0.480  07-Jul..28-Aug=0.720
+  closes n=2: 22-Jun..06-Jul=0.720  07-Jul..28-Aug=0.870
+  closes n=3: 22-Jun..06-Jul=0.870  07-Jul..28-Aug=1.020
+  closes n=4: 22-Jun..06-Jul=1.020  07-Jul..28-Aug=1.170
+  closes n=5: 22-Jun..06-Jul=1.170  07-Jul..28-Aug=1.320
+  closes n=6: 22-Jun..06-Jul=1.320
+  snaps  n=1: 22-Jun..06-Jul=0.480  07-Jul..28-Aug=0.720
+  snaps  n=2: 22-Jun..06-Jul=0.720  07-Jul..28-Aug=0.870
+  snaps  n=3: 22-Jun..06-Jul=0.870  07-Jul..28-Aug=1.020
+  snaps  n=4: 22-Jun..06-Jul=1.020  07-Jul..28-Aug=1.170
+  snaps  n=5: 22-Jun..06-Jul=1.170  07-Jul..28-Aug=1.320
+  snaps  n=6: 22-Jun..06-Jul=1.320

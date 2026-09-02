@@ -1,0 +1,10 @@
+{
+  "id": 25,
+  "name": "Boundary-day sources: the 16:15 snap anchors, the close never does",
+  "question": "Two families, one identical close tape, one difference: only one snapped the boundary day. Does the published \u03941d follow the snap, and does the family without one step back a day rather than use the close?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [],
+  "ms": 574
+}

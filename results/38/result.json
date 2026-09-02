@@ -1,0 +1,16 @@
+{
+  "id": 38,
+  "name": "Neighbour misprint guard on a decision day - interior yes, FRONT never",
+  "question": "Does an impossible interior print get replaced by the neighbour midpoint, flagged and noted - while a front row that legitimately gaps on the day is published exactly as it printed?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "RBA: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "CHECK: RBA 24-Nov-26 publishes NO mid \u2014 rejected (ticker -45.0bp off its neighbours). The row is labelled \u0027n/a\u0027 on every surface; nothing was invented in its place. Verify the contributor (SOURCES).",
+    "RBNZ: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "CHECK: RBNZ 20-Oct-26 \u03941d -33.0bp exceeds the 12bp sanity bar \u2014 verify before distribution",
+    "CHECK: RBNZ 20-Oct-26 \u03941w -33.0bp exceeds the 30bp sanity bar \u2014 verify before distribution"
+  ],
+  "ms": 1203
+}

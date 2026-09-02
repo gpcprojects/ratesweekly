@@ -1,0 +1,20 @@
+scenario 27: No pre-roll history: 1d falls back to CoD, 1w and 1m stay blank
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== FOMC (USD) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  past      : 08-Jun-26, 20-Jul-26, 31-Aug-26
+  decisions : 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  app boundaries: 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  fixing FEDL01 Index = 3.900
+  quote  n=0  spell=Both      mid=3.690   prev=3.900   eff=31-Aug-26  mat=12-Oct-26  age=-
+  quote  n=1  spell=Both      mid=3.530   prev=3.700   eff=12-Oct-26  mat=23-Nov-26  age=-
+  quote  n=2  spell=Both      mid=3.370   prev=3.550   eff=23-Nov-26  mat=04-Jan-27  age=-
+  quote  n=3  spell=Both      mid=3.210   prev=3.400   eff=04-Jan-27  mat=15-Feb-27  age=-
+  quote  n=4  spell=Both      mid=-       prev=3.250   eff=-          mat=29-Mar-27  age=-
+  closes n=1: 22-Jul..28-Aug=3.700
+  closes n=2: 22-Jul..28-Aug=3.550
+  closes n=3: 22-Jul..28-Aug=3.400
+  snaps  n=1: 22-Jul..28-Aug=3.700
+  snaps  n=2: 22-Jul..28-Aug=3.550
+  snaps  n=3: 22-Jul..28-Aug=3.400

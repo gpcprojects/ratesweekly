@@ -1,0 +1,21 @@
+scenario 26: Weekend walk-back: Friday decision, run after the weekend
+today = 28-Aug-26 Fri   London now = 28-Aug-26 15:04
+
+=== FOMC (USD) source='' decisionTime=19:00 rollsAtPeriodStart=False turn=False
+  starts    : 29-May-26, 10-Jul-26, 21-Aug-26, 02-Oct-26, 13-Nov-26, 25-Dec-26, 05-Feb-27
+  past      : 29-May-26, 10-Jul-26, 21-Aug-26
+  decisions : 21-Aug-26, 02-Oct-26, 13-Nov-26, 25-Dec-26, 05-Feb-27
+  app boundaries: 29-May-26, 10-Jul-26, 21-Aug-26, 02-Oct-26, 13-Nov-26, 25-Dec-26, 05-Feb-27
+  fixing FEDL01 Index = 3.750
+  quote  n=0  spell=Both      mid=3.750   prev=3.750   eff=21-Aug-26  mat=02-Oct-26  age=-
+  quote  n=1  spell=Both      mid=3.530   prev=3.550   eff=02-Oct-26  mat=13-Nov-26  age=-
+  quote  n=2  spell=Both      mid=3.330   prev=3.350   eff=13-Nov-26  mat=25-Dec-26  age=-
+  quote  n=3  spell=Both      mid=3.130   prev=3.150   eff=25-Dec-26  mat=05-Feb-27  age=-
+  closes n=1: 20-Jul..20-Aug=3.900  21-Aug..21-Aug=3.750
+  closes n=2: 20-Jul..20-Aug=3.700  21-Aug..21-Aug=3.550
+  closes n=3: 20-Jul..20-Aug=3.500  21-Aug..21-Aug=3.350
+  closes n=4: 20-Jul..20-Aug=3.300  21-Aug..21-Aug=3.150
+  snaps  n=1: 20-Jul..20-Aug=3.900  21-Aug..21-Aug=3.750
+  snaps  n=2: 20-Jul..20-Aug=3.700  21-Aug..21-Aug=3.550
+  snaps  n=3: 20-Jul..20-Aug=3.500  21-Aug..21-Aug=3.350
+  snaps  n=4: 20-Jul..20-Aug=3.300  21-Aug..21-Aug=3.150

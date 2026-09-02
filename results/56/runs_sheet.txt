@@ -1,0 +1,8 @@
+DRAX OIS Runs 31Aug26 |  |  |  |  |  |  | 
+ |  |  |  |  |  |  | 
+BOJ closing run |  |  |  |  |  |  | 
+TONA fixing | 0.500 |  |  |  |  |  | 
+StartDate | Maturity | Mid | Priced (bp) | Step (bp) | Δ 1d (bp) | Δ 1w (bp) | Δ 1m (bp)
+28-Sep-26 | 15-Nov-26 | 0.560 | +6.0 |  | 0.0 | 0.0 | 0.0
+15-Nov-26 | 02-Jan-27 | 0.610 | +11.0 | +5.0 | 0.0 | 0.0 | 0.0
+02-Jan-27 | 19-Feb-27 | 0.650 | +15.0 | +4.0 | 0.0 | 0.0 | 0.0

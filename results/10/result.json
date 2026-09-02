@@ -1,0 +1,16 @@
+{
+  "id": 10,
+  "name": "ECB hiked YESTERDAY, the decided period starts in 5 days (mixed state)",
+  "question": "A day after the statement and still five days before the new rate bites: is Priced still re-based onto the decided period\u0027s own OIS now that the contract has left the board, and does Delta 1d anchor on the announcement day under the OLD numbering instead of a half-renumbered rung?",
+  "mustFail": false,
+  "pass": false,
+  "failures": [
+    "ECB row 1 (24-Oct-26) d1: \u002B11.0 != expected \u002B3.0",
+    "ECB row 2 (12-Dec-26) d1: \u002B10.0 != expected \u002B2.0",
+    "ECB row 3 (30-Jan-27) d1: \u002B8.0 != expected \u002B1.0"
+  ],
+  "notes": [
+    "ECB: ticker re-pointed between 10-Jul-26 and 13-Jul-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output"
+  ],
+  "ms": 724
+}

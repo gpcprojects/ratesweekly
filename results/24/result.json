@@ -1,0 +1,10 @@
+{
+  "id": 24,
+  "name": "Staleness cap: a three-week hole must blank the 1w, not stretch it",
+  "question": "The tape stops nineteen days ago. Does the 1w column go blank, or does it publish a three-week move under a one-week label?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [],
+  "ms": 571
+}

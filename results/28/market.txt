@@ -1,0 +1,24 @@
+scenario 28: RIKSBANK hikes TODAY, SKSF renumbers in 6 days (announcement day)
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== RIKSBANK (SEK) source='' decisionTime=00:05 rollsAtPeriodStart=True turn=False
+  starts    : 27-Apr-26, 08-Jun-26, 20-Jul-26, 06-Sep-26, 18-Oct-26, 29-Nov-26, 10-Jan-27, 21-Feb-27
+  past      : 27-Apr-26, 08-Jun-26, 20-Jul-26
+  decisions : 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  app boundaries: 27-Apr-26, 08-Jun-26, 20-Jul-26, 06-Sep-26, 18-Oct-26, 29-Nov-26, 10-Jan-27, 21-Feb-27
+  fixing SWESTR Index = 1.750
+  quote  n=0  spell=Both      mid=1.750   prev=1.750   eff=20-Jul-26  mat=06-Sep-26  age=-
+  quote  n=1  spell=Both      mid=2.000   prev=1.990   eff=06-Sep-26  mat=18-Oct-26  age=-
+  quote  n=2  spell=Both      mid=2.150   prev=2.140   eff=18-Oct-26  mat=29-Nov-26  age=-
+  quote  n=3  spell=Both      mid=2.300   prev=2.290   eff=29-Nov-26  mat=10-Jan-27  age=-
+  quote  n=4  spell=Both      mid=2.450   prev=2.440   eff=10-Jan-27  mat=21-Feb-27  age=-
+  closes n=1: 17-Jun..20-Jul=1.750  21-Jul..28-Aug=1.990  31-Aug..31-Aug=2.000
+  closes n=2: 17-Jun..20-Jul=1.990  21-Jul..28-Aug=2.140  31-Aug..31-Aug=2.150
+  closes n=3: 17-Jun..20-Jul=2.140  21-Jul..28-Aug=2.290  31-Aug..31-Aug=2.300
+  closes n=4: 17-Jun..20-Jul=2.290  21-Jul..28-Aug=2.440  31-Aug..31-Aug=2.450
+  closes n=5: 17-Jun..20-Jul=2.440
+  snaps  n=1: 17-Jun..20-Jul=1.750  21-Jul..28-Aug=1.990  31-Aug..31-Aug=2.000
+  snaps  n=2: 17-Jun..20-Jul=1.990  21-Jul..28-Aug=2.140  31-Aug..31-Aug=2.150
+  snaps  n=3: 17-Jun..20-Jul=2.140  21-Jul..28-Aug=2.290  31-Aug..31-Aug=2.300
+  snaps  n=4: 17-Jun..20-Jul=2.290  21-Jul..28-Aug=2.440  31-Aug..31-Aug=2.450
+  snaps  n=5: 17-Jun..20-Jul=2.440

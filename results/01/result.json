@@ -1,0 +1,12 @@
+{
+  "id": 1,
+  "name": "Quiet week, no decision in the window",
+  "question": "With no decision anywhere near, does the run publish the right three rows, flat changes, and a front line pointing at the next meeting?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "FOMC: on 20-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 738
+}

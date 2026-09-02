@@ -1,0 +1,10 @@
+{
+  "id": 27,
+  "name": "No pre-roll history: 1d falls back to CoD, 1w and 1m stay blank",
+  "question": "One row\u0027s contract has no stored history at all. Does its \u03941d fall back to the row\u0027s own roll-aware change-on-day, and do 1w and 1m stay blank rather than being manufactured from whatever is nearest?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [],
+  "ms": 552
+}

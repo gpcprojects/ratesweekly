@@ -297,7 +297,7 @@ public static class Group04_MoveSizes
             // a silently swapped base is worse than no base: the re-base must be visible
             if (Render.Blast(s.BlastText).GetValueOrDefault("ECB") is { Rebased: false })
                 msgs.Add("the blast fixing line does not say 'rebased'");
-            if (!s.SheetHtml.Contains('†'))
+            if (!s.SheetHtml.Contains("*</i>"))
                 msgs.Add("the re-based fixing carries no dagger in the email");
             return msgs;
         });

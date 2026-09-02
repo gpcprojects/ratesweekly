@@ -1,0 +1,25 @@
+scenario 11: FOMC cut YESTERDAY (same-day start) - the naive change-on-day is right again
+today = 31-Aug-26 Mon   London now = 31-Aug-26 12:49
+
+=== FOMC (USD) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 08-Jun-26, 20-Jul-26, 30-Aug-26, 11-Oct-26, 22-Nov-26, 03-Jan-27, 14-Feb-27
+  past      : 08-Jun-26, 20-Jul-26, 30-Aug-26
+  decisions : 30-Aug-26, 11-Oct-26, 22-Nov-26, 03-Jan-27, 14-Feb-27
+  app boundaries: 08-Jun-26, 20-Jul-26, 30-Aug-26, 11-Oct-26, 22-Nov-26, 03-Jan-27, 14-Feb-27
+  fixing FEDL01 Index = 3.650
+  quote  n=0  spell=Both      mid=3.650   prev=3.650   eff=30-Aug-26  mat=11-Oct-26  age=-
+  quote  n=1  spell=Both      mid=3.520   prev=3.550   eff=11-Oct-26  mat=22-Nov-26  age=-
+  quote  n=2  spell=Both      mid=3.460   prev=3.480   eff=22-Nov-26  mat=03-Jan-27  age=-
+  quote  n=3  spell=Both      mid=3.410   prev=3.420   eff=03-Jan-27  mat=14-Feb-27  age=-
+  closes n=1: 22-Jun..20-Jul=3.900  21-Jul..28-Aug=3.660
+  closes n=2: 22-Jun..20-Jul=3.660  21-Jul..28-Aug=3.560
+  closes n=3: 22-Jun..20-Jul=3.560  21-Jul..28-Aug=3.490
+  closes n=4: 22-Jun..20-Jul=3.490  21-Jul..28-Aug=3.430
+  closes n=5: 22-Jun..20-Jul=3.430  21-Jul..28-Aug=3.400
+  closes n=6: 22-Jun..20-Jul=3.400
+  snaps  n=1: 22-Jun..20-Jul=3.900  21-Jul..28-Aug=3.660
+  snaps  n=2: 22-Jun..20-Jul=3.660  21-Jul..28-Aug=3.560
+  snaps  n=3: 22-Jun..20-Jul=3.560  21-Jul..28-Aug=3.490
+  snaps  n=4: 22-Jun..20-Jul=3.490  21-Jul..28-Aug=3.430
+  snaps  n=5: 22-Jun..20-Jul=3.430  21-Jul..28-Aug=3.400
+  snaps  n=6: 22-Jun..20-Jul=3.400

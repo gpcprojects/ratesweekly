@@ -1,0 +1,13 @@
+{
+  "id": 39,
+  "name": "The o/n fixing ticker is unquoted on a decision day",
+  "question": "With no fixing print, do Priced, Step and \u0027% of 25bp\u0027 go BLANK on every surface instead of being invented - while the mids still publish?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "MPC: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "RBA: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 1080
+}

@@ -1,0 +1,13 @@
+{EU} {GB} {AU} {NZ} {US} {CA} {JN} {NO} {SW} London EOD OIS Run — 31-Aug-26
+
+{GB} MPC Run   (SONIA 3.900)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+08-Oct-26    3.800   -10.0      —  +10.0  +10.0  +10.0
+19-Nov-26    3.600   -30.0  -20.0  +10.0  +10.0  +10.0
+31-Dec-26    3.400   -50.0  -20.0  +10.0  +10.0  +10.0
+
+{US} FOMC Run   (EFFR 3.900)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+08-Oct-26    3.800   -10.0      —   +5.0  +10.0  +10.0
+19-Nov-26    3.600   -30.0  -20.0  +10.0  +10.0  +10.0
+31-Dec-26    3.400   -50.0  -20.0  +10.0  +10.0  +10.0

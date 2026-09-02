@@ -1,0 +1,25 @@
+MPC: 3 row(s)  asOf 28-Aug-26
+   09-Sep-26 mid=4.125 1w=4.125 1m=4.125 turn=False tk=GPSF1A Curncy
+   21-Oct-26 mid=4.225 1w=4.225 1m=4.225 turn=False tk=GPSF2A Curncy
+   02-Dec-26 mid=4.325 1w=4.325 1m=4.325 turn=False tk=GPSF3A Curncy
+   note: 1 roll(s) inside the 1m window — changes are measured against the ticker that pointed at the same contract then, not against this ticker's own close
+FOMC: 3 row(s)  asOf 28-Aug-26
+   16-Sep-26 mid=3.775 1w=3.775 1m=3.775 turn=False tk=USSOFED1 Curncy
+   28-Oct-26 mid=3.675 1w=3.675 1m=3.675 turn=False tk=USSOFED2 Curncy
+   09-Dec-26 mid=3.575 1w=3.575 1m=3.575 turn=False tk=USSOFED3 Curncy
+   note: 1 roll(s) inside the 1m window — changes are measured against the ticker that pointed at the same contract then, not against this ticker's own close
+ECB: 3 row(s)  asOf 28-Aug-26
+   26-Sep-26 mid=2.250 1w=2.250 1m=2.250 turn=False tk=EESF1A Curncy
+   14-Nov-26 mid=2.170 1w=2.170 1m=2.170 turn=False tk=EESF2A Curncy
+   02-Jan-27 mid=2.090 1w=2.090 1m=2.090 turn=False tk=EESF3A Curncy
+   note: 1 roll(s) inside the 1m window — changes are measured against the ticker that pointed at the same contract then, not against this ticker's own close
+RBNZ: 3 row(s)  asOf 28-Aug-26
+   21-Sep-26 mid=2.825 1w=2.825 1m=2.825 turn=False tk=NDSF1A NABZ Curncy
+   02-Nov-26 mid=2.925 1w=2.925 1m=2.925 turn=False tk=NDSF2A NABZ Curncy
+   14-Dec-26 mid=3.025 1w=3.025 1m=3.025 turn=False tk=NDSF3A NABZ Curncy
+   note: 1 roll(s) inside the 1m window — changes are measured against the ticker that pointed at the same contract then, not against this ticker's own close
+RBA: 3 row(s)  asOf 28-Aug-26
+   24-Sep-26 mid=3.600 1w=3.600 1m=3.600 turn=False tk=ADSF1A NABZ Curncy
+   05-Nov-26 mid=3.700 1w=3.700 1m=3.700 turn=False tk=ADSF2A NABZ Curncy
+   17-Dec-26 mid=3.800 1w=3.800 1m=3.800 turn=False tk=ADSF3A NABZ Curncy
+   note: 1 roll(s) inside the 1m window — changes are measured against the ticker that pointed at the same contract then, not against this ticker's own close

@@ -1,0 +1,206 @@
+scenario 46: Nine banks, ONE decides today (ECB cuts) - the report as sent
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:25
+
+=== MPC (GBP) source='' decisionTime=12:00 rollsAtPeriodStart=False turn=False
+  starts    : 20-Jun-26, 01-Aug-26, 12-Sep-26, 24-Oct-26, 05-Dec-26, 16-Jan-27
+  past      : 20-Jun-26, 01-Aug-26
+  decisions : 12-Sep-26, 24-Oct-26, 05-Dec-26, 16-Jan-27
+  app boundaries: 20-Jun-26, 01-Aug-26, 12-Sep-26, 24-Oct-26, 05-Dec-26, 16-Jan-27
+  fixing SONIO/N Index = 4.000
+  quote  n=0  spell=Both      mid=4.000   prev=4.000   eff=01-Aug-26  mat=12-Sep-26  age=-
+  quote  n=1  spell=Both      mid=3.900   prev=3.900   eff=12-Sep-26  mat=24-Oct-26  age=-
+  quote  n=2  spell=Both      mid=3.800   prev=3.800   eff=24-Oct-26  mat=05-Dec-26  age=-
+  quote  n=3  spell=Both      mid=3.700   prev=3.700   eff=05-Dec-26  mat=16-Jan-27  age=-
+  closes n=1: 22-Jun..31-Jul=4.000  03-Aug..28-Aug=3.900
+  closes n=2: 22-Jun..31-Jul=3.900  03-Aug..28-Aug=3.800
+  closes n=3: 22-Jun..31-Jul=3.800  03-Aug..28-Aug=3.700
+  closes n=4: 22-Jun..31-Jul=3.700  03-Aug..28-Aug=3.600
+  closes n=5: 22-Jun..31-Jul=3.600
+  snaps  n=1: 22-Jun..31-Jul=4.000  03-Aug..28-Aug=3.900
+  snaps  n=2: 22-Jun..31-Jul=3.900  03-Aug..28-Aug=3.800
+  snaps  n=3: 22-Jun..31-Jul=3.800  03-Aug..28-Aug=3.700
+  snaps  n=4: 22-Jun..31-Jul=3.700  03-Aug..28-Aug=3.600
+  snaps  n=5: 22-Jun..31-Jul=3.600
+
+=== RBA (AUD) source='NABZ' decisionTime=05:30 rollsAtPeriodStart=False turn=False
+  starts    : 24-Jun-26, 05-Aug-26, 16-Sep-26, 28-Oct-26, 09-Dec-26, 20-Jan-27
+  past      : 24-Jun-26, 05-Aug-26
+  decisions : 15-Sep-26, 27-Oct-26, 08-Dec-26, 19-Jan-27
+  app boundaries: 23-Jun-26, 04-Aug-26, 15-Sep-26, 27-Oct-26, 08-Dec-26, 19-Jan-27
+  fixing RBACOR Index = 3.600
+  quote  n=0  spell=Both      mid=3.600   prev=3.600   eff=05-Aug-26  mat=16-Sep-26  age=-
+  quote  n=1  spell=Both      mid=3.650   prev=3.650   eff=16-Sep-26  mat=28-Oct-26  age=-
+  quote  n=2  spell=Both      mid=3.700   prev=3.700   eff=28-Oct-26  mat=09-Dec-26  age=-
+  quote  n=3  spell=Both      mid=3.750   prev=3.750   eff=09-Dec-26  mat=20-Jan-27  age=-
+  closes n=1: 24-Jun..04-Aug=3.600  05-Aug..28-Aug=3.650
+  closes n=2: 22-Jun..23-Jun=3.600  24-Jun..04-Aug=3.650  05-Aug..28-Aug=3.700
+  closes n=3: 22-Jun..23-Jun=3.650  24-Jun..04-Aug=3.700  05-Aug..28-Aug=3.750
+  closes n=4: 22-Jun..23-Jun=3.700  24-Jun..04-Aug=3.750  05-Aug..28-Aug=3.800
+  closes n=5: 22-Jun..23-Jun=3.750  24-Jun..04-Aug=3.800
+  closes n=6: 22-Jun..23-Jun=3.800
+  snaps  n=1: 24-Jun..04-Aug=3.600  05-Aug..28-Aug=3.650
+  snaps  n=2: 22-Jun..23-Jun=3.600  24-Jun..04-Aug=3.650  05-Aug..28-Aug=3.700
+  snaps  n=3: 22-Jun..23-Jun=3.650  24-Jun..04-Aug=3.700  05-Aug..28-Aug=3.750
+  snaps  n=4: 22-Jun..23-Jun=3.700  24-Jun..04-Aug=3.750  05-Aug..28-Aug=3.800
+  snaps  n=5: 22-Jun..23-Jun=3.750  24-Jun..04-Aug=3.800
+  snaps  n=6: 22-Jun..23-Jun=3.800
+
+=== RBNZ (NZD) source='NABZ' decisionTime=03:00 rollsAtPeriodStart=False turn=False
+  starts    : 27-Jun-26, 08-Aug-26, 19-Sep-26, 31-Oct-26, 12-Dec-26, 23-Jan-27
+  past      : 27-Jun-26, 08-Aug-26
+  decisions : 18-Sep-26, 30-Oct-26, 11-Dec-26, 22-Jan-27
+  app boundaries: 26-Jun-26, 07-Aug-26, 18-Sep-26, 30-Oct-26, 11-Dec-26, 22-Jan-27
+  fixing NZOCRS Index = 2.750
+  quote  n=0  spell=Both      mid=2.750   prev=2.750   eff=08-Aug-26  mat=19-Sep-26  age=-
+  quote  n=1  spell=Both      mid=2.700   prev=2.700   eff=19-Sep-26  mat=31-Oct-26  age=-
+  quote  n=2  spell=Both      mid=2.650   prev=2.650   eff=31-Oct-26  mat=12-Dec-26  age=-
+  quote  n=3  spell=Both      mid=2.600   prev=2.600   eff=12-Dec-26  mat=23-Jan-27  age=-
+  closes n=1: 29-Jun..07-Aug=2.750  10-Aug..28-Aug=2.700
+  closes n=2: 22-Jun..26-Jun=2.750  29-Jun..07-Aug=2.700  10-Aug..28-Aug=2.650
+  closes n=3: 22-Jun..26-Jun=2.700  29-Jun..07-Aug=2.650  10-Aug..28-Aug=2.600
+  closes n=4: 22-Jun..26-Jun=2.650  29-Jun..07-Aug=2.600  10-Aug..28-Aug=2.550
+  closes n=5: 22-Jun..26-Jun=2.600  29-Jun..07-Aug=2.550
+  closes n=6: 22-Jun..26-Jun=2.550
+  snaps  n=1: 29-Jun..07-Aug=2.750  10-Aug..28-Aug=2.700
+  snaps  n=2: 22-Jun..26-Jun=2.750  29-Jun..07-Aug=2.700  10-Aug..28-Aug=2.650
+  snaps  n=3: 22-Jun..26-Jun=2.700  29-Jun..07-Aug=2.650  10-Aug..28-Aug=2.600
+  snaps  n=4: 22-Jun..26-Jun=2.650  29-Jun..07-Aug=2.600  10-Aug..28-Aug=2.550
+  snaps  n=5: 22-Jun..26-Jun=2.600  29-Jun..07-Aug=2.550
+  snaps  n=6: 22-Jun..26-Jun=2.550
+
+=== FOMC (USD) source='' decisionTime=19:00 rollsAtPeriodStart=False turn=False
+  starts    : 29-Jun-26, 10-Aug-26, 21-Sep-26, 02-Nov-26, 14-Dec-26, 25-Jan-27
+  past      : 29-Jun-26, 10-Aug-26
+  decisions : 21-Sep-26, 02-Nov-26, 14-Dec-26, 25-Jan-27
+  app boundaries: 29-Jun-26, 10-Aug-26, 21-Sep-26, 02-Nov-26, 14-Dec-26, 25-Jan-27
+  fixing FEDL01 Index = 3.900
+  quote  n=0  spell=Both      mid=3.900   prev=3.900   eff=10-Aug-26  mat=21-Sep-26  age=-
+  quote  n=1  spell=Both      mid=3.780   prev=3.780   eff=21-Sep-26  mat=02-Nov-26  age=-
+  quote  n=2  spell=Both      mid=3.660   prev=3.660   eff=02-Nov-26  mat=14-Dec-26  age=-
+  quote  n=3  spell=Both      mid=3.540   prev=3.540   eff=14-Dec-26  mat=25-Jan-27  age=-
+  closes n=1: 30-Jun..10-Aug=3.900  11-Aug..28-Aug=3.780
+  closes n=2: 22-Jun..29-Jun=3.900  30-Jun..10-Aug=3.780  11-Aug..28-Aug=3.660
+  closes n=3: 22-Jun..29-Jun=3.780  30-Jun..10-Aug=3.660  11-Aug..28-Aug=3.540
+  closes n=4: 22-Jun..29-Jun=3.660  30-Jun..10-Aug=3.540  11-Aug..28-Aug=3.420
+  closes n=5: 22-Jun..29-Jun=3.540  30-Jun..10-Aug=3.420
+  closes n=6: 22-Jun..29-Jun=3.420
+  snaps  n=1: 30-Jun..10-Aug=3.900  11-Aug..28-Aug=3.780
+  snaps  n=2: 22-Jun..29-Jun=3.900  30-Jun..10-Aug=3.780  11-Aug..28-Aug=3.660
+  snaps  n=3: 22-Jun..29-Jun=3.780  30-Jun..10-Aug=3.660  11-Aug..28-Aug=3.540
+  snaps  n=4: 22-Jun..29-Jun=3.660  30-Jun..10-Aug=3.540  11-Aug..28-Aug=3.420
+  snaps  n=5: 22-Jun..29-Jun=3.540  30-Jun..10-Aug=3.420
+  snaps  n=6: 22-Jun..29-Jun=3.420
+
+=== BOC (CAD) source='BMOD' decisionTime=14:45 rollsAtPeriodStart=False turn=False
+  starts    : 03-Jul-26, 14-Aug-26, 25-Sep-26, 06-Nov-26, 18-Dec-26, 29-Jan-27
+  past      : 03-Jul-26, 14-Aug-26
+  decisions : 24-Sep-26, 05-Nov-26, 17-Dec-26, 28-Jan-27
+  app boundaries: 02-Jul-26, 13-Aug-26, 24-Sep-26, 05-Nov-26, 17-Dec-26, 28-Jan-27
+  fixing CAONREPO Index = 2.250
+  quote  n=0  spell=Both      mid=2.250   prev=2.250   eff=14-Aug-26  mat=25-Sep-26  age=-
+  quote  n=1  spell=Both      mid=2.325   prev=2.325   eff=25-Sep-26  mat=06-Nov-26  age=-
+  quote  n=2  spell=Both      mid=2.400   prev=2.400   eff=06-Nov-26  mat=18-Dec-26  age=-
+  quote  n=3  spell=Both      mid=2.475   prev=2.475   eff=18-Dec-26  mat=29-Jan-27  age=-
+  closes n=1: 03-Jul..13-Aug=2.250  14-Aug..28-Aug=2.325
+  closes n=2: 22-Jun..02-Jul=2.250  03-Jul..13-Aug=2.325  14-Aug..28-Aug=2.400
+  closes n=3: 22-Jun..02-Jul=2.325  03-Jul..13-Aug=2.400  14-Aug..28-Aug=2.475
+  closes n=4: 22-Jun..02-Jul=2.400  03-Jul..13-Aug=2.475  14-Aug..28-Aug=2.550
+  closes n=5: 22-Jun..02-Jul=2.475  03-Jul..13-Aug=2.550
+  closes n=6: 22-Jun..02-Jul=2.550
+  snaps  n=1: 03-Jul..13-Aug=2.250  14-Aug..28-Aug=2.325
+  snaps  n=2: 22-Jun..02-Jul=2.250  03-Jul..13-Aug=2.325  14-Aug..28-Aug=2.400
+  snaps  n=3: 22-Jun..02-Jul=2.325  03-Jul..13-Aug=2.400  14-Aug..28-Aug=2.475
+  snaps  n=4: 22-Jun..02-Jul=2.400  03-Jul..13-Aug=2.475  14-Aug..28-Aug=2.550
+  snaps  n=5: 22-Jun..02-Jul=2.475  03-Jul..13-Aug=2.550
+  snaps  n=6: 22-Jun..02-Jul=2.550
+
+=== NORGES (NOK) source='' decisionTime=09:00 rollsAtPeriodStart=False turn=False
+  starts    : 06-Jul-26, 17-Aug-26, 28-Sep-26, 09-Nov-26, 21-Dec-26, 01-Feb-27
+  past      : 06-Jul-26, 17-Aug-26
+  decisions : 27-Sep-26, 08-Nov-26, 20-Dec-26, 31-Jan-27
+  app boundaries: 05-Jul-26, 16-Aug-26, 27-Sep-26, 08-Nov-26, 20-Dec-26, 31-Jan-27
+  fixing NOWA Index = 4.250
+  quote  n=0  spell=Both      mid=4.250   prev=4.250   eff=17-Aug-26  mat=28-Sep-26  age=-
+  quote  n=1  spell=Both      mid=4.180   prev=4.180   eff=28-Sep-26  mat=09-Nov-26  age=-
+  quote  n=2  spell=Both      mid=4.110   prev=4.110   eff=09-Nov-26  mat=21-Dec-26  age=-
+  quote  n=3  spell=Both      mid=4.040   prev=4.040   eff=21-Dec-26  mat=01-Feb-27  age=-
+  closes n=1: 06-Jul..14-Aug=4.250  17-Aug..28-Aug=4.180
+  closes n=2: 22-Jun..03-Jul=4.250  06-Jul..14-Aug=4.180  17-Aug..28-Aug=4.110
+  closes n=3: 22-Jun..03-Jul=4.180  06-Jul..14-Aug=4.110  17-Aug..28-Aug=4.040
+  closes n=4: 22-Jun..03-Jul=4.110  06-Jul..14-Aug=4.040  17-Aug..28-Aug=3.970
+  closes n=5: 22-Jun..03-Jul=4.040  06-Jul..14-Aug=3.970
+  closes n=6: 22-Jun..03-Jul=3.970
+  snaps  n=1: 06-Jul..14-Aug=4.250  17-Aug..28-Aug=4.180
+  snaps  n=2: 22-Jun..03-Jul=4.250  06-Jul..14-Aug=4.180  17-Aug..28-Aug=4.110
+  snaps  n=3: 22-Jun..03-Jul=4.180  06-Jul..14-Aug=4.110  17-Aug..28-Aug=4.040
+  snaps  n=4: 22-Jun..03-Jul=4.110  06-Jul..14-Aug=4.040  17-Aug..28-Aug=3.970
+  snaps  n=5: 22-Jun..03-Jul=4.040  06-Jul..14-Aug=3.970
+  snaps  n=6: 22-Jun..03-Jul=3.970
+
+=== BOJ (JPY) source='' decisionTime=04:00 rollsAtPeriodStart=False turn=False
+  starts    : 04-Jul-26, 15-Aug-26, 26-Sep-26, 07-Nov-26, 19-Dec-26, 30-Jan-27
+  past      : 04-Jul-26, 15-Aug-26
+  decisions : 20-Sep-26, 01-Nov-26, 13-Dec-26, 24-Jan-27
+  app boundaries: 28-Jun-26, 09-Aug-26, 20-Sep-26, 01-Nov-26, 13-Dec-26, 24-Jan-27
+  fixing MUTKCALM Index = 0.500
+  quote  n=0  spell=Both      mid=0.500   prev=0.500   eff=15-Aug-26  mat=26-Sep-26  age=-
+  quote  n=1  spell=Both      mid=0.560   prev=0.560   eff=26-Sep-26  mat=07-Nov-26  age=-
+  quote  n=2  spell=Both      mid=0.620   prev=0.620   eff=07-Nov-26  mat=19-Dec-26  age=-
+  quote  n=3  spell=Both      mid=0.680   prev=0.680   eff=19-Dec-26  mat=30-Jan-27  age=-
+  closes n=1: 29-Jun..07-Aug=0.500  10-Aug..28-Aug=0.560
+  closes n=2: 22-Jun..26-Jun=0.500  29-Jun..07-Aug=0.560  10-Aug..28-Aug=0.620
+  closes n=3: 22-Jun..26-Jun=0.560  29-Jun..07-Aug=0.620  10-Aug..28-Aug=0.680
+  closes n=4: 22-Jun..26-Jun=0.620  29-Jun..07-Aug=0.680  10-Aug..28-Aug=0.740
+  closes n=5: 22-Jun..26-Jun=0.680  29-Jun..07-Aug=0.740
+  closes n=6: 22-Jun..26-Jun=0.740
+  snaps  n=1: 29-Jun..07-Aug=0.500  10-Aug..28-Aug=0.560
+  snaps  n=2: 22-Jun..26-Jun=0.500  29-Jun..07-Aug=0.560  10-Aug..28-Aug=0.620
+  snaps  n=3: 22-Jun..26-Jun=0.560  29-Jun..07-Aug=0.620  10-Aug..28-Aug=0.680
+  snaps  n=4: 22-Jun..26-Jun=0.620  29-Jun..07-Aug=0.680  10-Aug..28-Aug=0.740
+  snaps  n=5: 22-Jun..26-Jun=0.680  29-Jun..07-Aug=0.740
+  snaps  n=6: 22-Jun..26-Jun=0.740
+
+=== RIKSBANK (SEK) source='' decisionTime=08:30 rollsAtPeriodStart=True turn=True
+  starts    : 16-Jul-26, 15-Aug-26, 14-Sep-26, 14-Oct-26, 13-Nov-26, 13-Dec-26
+  past      : 16-Jul-26, 15-Aug-26
+  decisions : 08-Sep-26, 08-Oct-26, 07-Nov-26, 07-Dec-26
+  app boundaries: 16-Jul-26, 15-Aug-26, 14-Sep-26, 14-Oct-26, 13-Nov-26, 13-Dec-26
+  fixing SWESTR Index = 1.900
+  quote  n=0  spell=Both      mid=1.900   prev=1.900   eff=15-Aug-26  mat=14-Sep-26  age=-
+  quote  n=1  spell=Both      mid=1.815   prev=1.815   eff=14-Sep-26  mat=14-Oct-26  age=-
+  quote  n=2  spell=Both      mid=1.730   prev=1.730   eff=14-Oct-26  mat=13-Nov-26  age=-
+  quote  n=3  spell=Both      mid=1.645   prev=1.645   eff=13-Nov-26  mat=13-Dec-26  age=-
+  closes n=1: 17-Jul..14-Aug=1.900  17-Aug..28-Aug=1.815
+  closes n=2: 22-Jun..16-Jul=1.900  17-Jul..14-Aug=1.815  17-Aug..28-Aug=1.730
+  closes n=3: 22-Jun..16-Jul=1.815  17-Jul..14-Aug=1.730  17-Aug..28-Aug=1.645
+  closes n=4: 22-Jun..16-Jul=1.730  17-Jul..14-Aug=1.645  17-Aug..28-Aug=1.560
+  closes n=5: 22-Jun..16-Jul=1.645  17-Jul..14-Aug=1.560
+  closes n=6: 22-Jun..16-Jul=1.560
+  snaps  n=1: 17-Jul..14-Aug=1.900  17-Aug..28-Aug=1.815
+  snaps  n=2: 22-Jun..16-Jul=1.900  17-Jul..14-Aug=1.815  17-Aug..28-Aug=1.730
+  snaps  n=3: 22-Jun..16-Jul=1.815  17-Jul..14-Aug=1.730  17-Aug..28-Aug=1.645
+  snaps  n=4: 22-Jun..16-Jul=1.730  17-Jul..14-Aug=1.645  17-Aug..28-Aug=1.560
+  snaps  n=5: 22-Jun..16-Jul=1.645  17-Jul..14-Aug=1.560
+  snaps  n=6: 22-Jun..16-Jul=1.560
+
+=== ECB (EUR) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 31-May-26, 12-Jul-26, 06-Sep-26, 25-Oct-26, 13-Dec-26, 31-Jan-27
+  past      : 31-May-26, 12-Jul-26
+  decisions : 31-Aug-26, 19-Oct-26, 07-Dec-26, 25-Jan-27
+  app boundaries: 25-May-26, 06-Jul-26, 31-Aug-26, 19-Oct-26, 07-Dec-26, 25-Jan-27
+  fixing ESTRON Index = 2.500
+  quote  n=0  spell=Both      mid=2.500   prev=2.500   eff=12-Jul-26  mat=06-Sep-26  age=-
+  quote  n=1  spell=Both      mid=2.250   prev=2.260   eff=06-Sep-26  mat=25-Oct-26  age=-
+  quote  n=2  spell=Both      mid=2.200   prev=2.210   eff=25-Oct-26  mat=13-Dec-26  age=-
+  quote  n=3  spell=Both      mid=2.150   prev=2.160   eff=13-Dec-26  mat=31-Jan-27  age=-
+  quote  n=4  spell=Both      mid=2.100   prev=2.110   eff=31-Jan-27  mat=21-Mar-27  age=-
+  closes n=1: 22-Jun..06-Jul=2.500  07-Jul..28-Aug=2.260  31-Aug..31-Aug=2.250
+  closes n=2: 22-Jun..06-Jul=2.260  07-Jul..28-Aug=2.210  31-Aug..31-Aug=2.200
+  closes n=3: 22-Jun..06-Jul=2.210  07-Jul..28-Aug=2.160  31-Aug..31-Aug=2.150
+  closes n=4: 22-Jun..06-Jul=2.160  07-Jul..28-Aug=2.110  31-Aug..31-Aug=2.100
+  closes n=5: 22-Jun..06-Jul=2.110
+  snaps  n=1: 22-Jun..06-Jul=2.500  07-Jul..28-Aug=2.260  31-Aug..31-Aug=2.250
+  snaps  n=2: 22-Jun..06-Jul=2.260  07-Jul..28-Aug=2.210  31-Aug..31-Aug=2.200
+  snaps  n=3: 22-Jun..06-Jul=2.210  07-Jul..28-Aug=2.160  31-Aug..31-Aug=2.150
+  snaps  n=4: 22-Jun..06-Jul=2.160  07-Jul..28-Aug=2.110  31-Aug..31-Aug=2.100
+  snaps  n=5: 22-Jun..06-Jul=2.110

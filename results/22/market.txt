@@ -1,0 +1,21 @@
+scenario 22: Phantom-step trap: flat market across a renumber inside 1w and 1m
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== FOMC (USD) source='' decisionTime=19:00 rollsAtPeriodStart=False turn=False
+  starts    : 05-Jun-26, 17-Jul-26, 26-Aug-26, 09-Oct-26, 20-Nov-26, 01-Jan-27, 12-Feb-27
+  past      : 05-Jun-26, 17-Jul-26, 26-Aug-26
+  decisions : 26-Aug-26, 09-Oct-26, 20-Nov-26, 01-Jan-27, 12-Feb-27
+  app boundaries: 05-Jun-26, 17-Jul-26, 26-Aug-26, 09-Oct-26, 20-Nov-26, 01-Jan-27, 12-Feb-27
+  fixing FEDL01 Index = 3.900
+  quote  n=0  spell=Both      mid=3.900   prev=3.900   eff=26-Aug-26  mat=09-Oct-26  age=-
+  quote  n=1  spell=Both      mid=3.700   prev=3.700   eff=09-Oct-26  mat=20-Nov-26  age=-
+  quote  n=2  spell=Both      mid=3.500   prev=3.500   eff=20-Nov-26  mat=01-Jan-27  age=-
+  quote  n=3  spell=Both      mid=3.300   prev=3.300   eff=01-Jan-27  mat=12-Feb-27  age=-
+  closes n=1: 22-Jul..26-Aug=3.900  27-Aug..28-Aug=3.700
+  closes n=2: 22-Jul..26-Aug=3.700  27-Aug..28-Aug=3.500
+  closes n=3: 22-Jul..26-Aug=3.500  27-Aug..28-Aug=3.300
+  closes n=4: 22-Jul..26-Aug=3.300  27-Aug..28-Aug=3.100
+  snaps  n=1: 22-Jul..26-Aug=3.900  27-Aug..28-Aug=3.700
+  snaps  n=2: 22-Jul..26-Aug=3.700  27-Aug..28-Aug=3.500
+  snaps  n=3: 22-Jul..26-Aug=3.500  27-Aug..28-Aug=3.300
+  snaps  n=4: 22-Jul..26-Aug=3.300  27-Aug..28-Aug=3.100

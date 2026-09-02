@@ -1,0 +1,4 @@
+ECB: on 14-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers' own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.
+NORGES: every resolved meeting is already decided — top up config\meetings.json
+CHECK: NORGES produced NO rows — the run is missing from every surface; verify before distribution
+ECB: ticker re-pointed between 26-Jun-26 and 29-Jun-26 with no calendar boundary in that window — check the calendars against tools\..\dodgeball probe output

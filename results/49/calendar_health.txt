@@ -1,0 +1,4 @@
+ECB: ticker re-pointed between 31-Jul-26 and 03-Aug-26 with no calendar boundary in that window — check the calendars against tools\..\dodgeball probe output
+ECB: ticker re-pointed between 28-Aug-26 and 31-Aug-26 with no calendar boundary in that window — check the calendars against tools\..\dodgeball probe output
+CHECK: RBNZ has NO decisionDates in config\meetings.json - the decision-day front roll AND the Priced re-base are both disabled for this run
+RBA: ticker re-pointed between 28-Aug-26 and 31-Aug-26 with no calendar boundary in that window — check the calendars against tools\..\dodgeball probe output

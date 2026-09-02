@@ -1,0 +1,7 @@
+RIKSBANK: 5 row(s)  asOf 28-Aug-26
+   14-Sep-26 mid=2.050 1w=2.050 1m=2.050 turn=False tk=SKSF1A Curncy
+   26-Oct-26 mid=2.150 1w=2.150 1m=2.150 turn=False tk=SKSF2A Curncy
+   07-Dec-26 mid=1.550 1w=1.550 1m=1.550 turn=True tk=SKSF3A Curncy
+   18-Jan-27 mid=2.450 1w=2.450 1m=2.450 turn=False tk=SKSF4A Curncy
+   01-Mar-27 mid=2.500 1w=2.500 1m=2.500 turn=False tk=SKSF5A Curncy
+   note: 1 roll(s) inside the 1m window — changes are measured against the ticker that pointed at the same contract then, not against this ticker's own close

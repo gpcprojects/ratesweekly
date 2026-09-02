@@ -1,0 +1,4 @@
+FOMC: 2 row(s)  asOf 28-Aug-26
+   09-Oct-26 mid=3.560 1w=3.560 1m=3.560 turn=False tk=USSOFED1 Curncy
+   20-Nov-26 mid=3.500 1w=3.500 1m=3.500 turn=False tk=USSOFED2 Curncy
+   note: 1 roll(s) inside the 1m window — changes are measured against the ticker that pointed at the same contract then, not against this ticker's own close

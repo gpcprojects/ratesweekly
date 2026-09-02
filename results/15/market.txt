@@ -1,0 +1,23 @@
+scenario 15: TWO FOMC decisions inside the 1m window - the anchor crosses two renumbers
+today = 31-Aug-26 Mon   London now = 31-Aug-26 12:49
+
+=== FOMC (USD) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 12-May-26, 23-Jun-26, 04-Aug-26, 21-Aug-26, 05-Oct-26, 16-Nov-26, 28-Dec-26, 08-Feb-27
+  past      : 12-May-26, 23-Jun-26, 04-Aug-26, 21-Aug-26
+  decisions : 04-Aug-26, 21-Aug-26, 05-Oct-26, 16-Nov-26, 28-Dec-26, 08-Feb-27
+  app boundaries: 12-May-26, 23-Jun-26, 04-Aug-26, 21-Aug-26, 05-Oct-26, 16-Nov-26, 28-Dec-26, 08-Feb-27
+  fixing FEDL01 Index = 3.650
+  quote  n=0  spell=Both      mid=3.650   prev=3.650   eff=21-Aug-26  mat=05-Oct-26  age=-
+  quote  n=1  spell=Both      mid=3.480   prev=3.470   eff=05-Oct-26  mat=16-Nov-26  age=-
+  quote  n=2  spell=Both      mid=3.380   prev=3.375   eff=16-Nov-26  mat=28-Dec-26  age=-
+  quote  n=3  spell=Both      mid=3.320   prev=3.315   eff=28-Dec-26  mat=08-Feb-27  age=-
+  closes n=1: 02-Jul..03-Aug=3.910  04-Aug..04-Aug=3.900  05-Aug..20-Aug=3.680  21-Aug..21-Aug=3.650  24-Aug..28-Aug=3.500
+  closes n=2: 02-Jul..03-Aug=3.790  04-Aug..04-Aug=3.700  05-Aug..20-Aug=3.590  21-Aug..21-Aug=3.520  24-Aug..28-Aug=3.400
+  closes n=3: 02-Jul..03-Aug=3.700  04-Aug..04-Aug=3.620  05-Aug..20-Aug=3.510  21-Aug..21-Aug=3.440  24-Aug..28-Aug=3.350
+  closes n=4: 02-Jul..03-Aug=3.620  04-Aug..04-Aug=3.545  05-Aug..20-Aug=3.455  21-Aug..21-Aug=3.390
+  closes n=5: 02-Jul..03-Aug=3.560  04-Aug..04-Aug=3.490
+  snaps  n=1: 02-Jul..03-Aug=3.910  04-Aug..04-Aug=3.900  05-Aug..20-Aug=3.680  21-Aug..21-Aug=3.650  24-Aug..28-Aug=3.500
+  snaps  n=2: 02-Jul..03-Aug=3.790  04-Aug..04-Aug=3.700  05-Aug..20-Aug=3.590  21-Aug..21-Aug=3.520  24-Aug..28-Aug=3.400
+  snaps  n=3: 02-Jul..03-Aug=3.700  04-Aug..04-Aug=3.620  05-Aug..20-Aug=3.510  21-Aug..21-Aug=3.440  24-Aug..28-Aug=3.350
+  snaps  n=4: 02-Jul..03-Aug=3.620  04-Aug..04-Aug=3.545  05-Aug..20-Aug=3.455  21-Aug..21-Aug=3.390
+  snaps  n=5: 02-Jul..03-Aug=3.560  04-Aug..04-Aug=3.490

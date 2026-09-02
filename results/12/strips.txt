@@ -1,0 +1,5 @@
+NORGES: 3 row(s)  asOf 28-Aug-26
+   12-Oct-26 mid=3.930 1w=4.010 1m=4.010 turn=False tk=NKSF1A Curncy
+   30-Nov-26 mid=3.855 1w=3.930 1m=3.930 turn=False tk=NKSF2A Curncy
+   18-Jan-27 mid=3.800 1w=3.870 1m=3.870 turn=False tk=NKSF3A Curncy
+   note: 1 roll(s) inside the 1m window — changes are measured against the ticker that pointed at the same contract then, not against this ticker's own close

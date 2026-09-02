@@ -87,9 +87,9 @@ namespace RateDesk.Core
         /// contain whatever the decision surprised the market with. Surfaces say so instead of
         /// claiming the base is the decided period's current OIS (fix 2026-08-27).</summary>
         public bool RefRebasedStale { get; set; }
-        /// <summary>ONE definition of the suffix every surface prints beside a re-based fixing.</summary>
-        public string RebasedLabel =>
-            !RefRebased ? "" : RefRebasedStale ? " (rebased, pre-statement)" : " (rebased)";
+        // the wordy "(rebased...)" suffix was retired 2026-09-02: every surface now stars the
+        // fixing NUMBER (italic where markup allows) with one shared disclaimer line
+        // (RunsTable.RebaseNote); RefRebased/RefRebasedStale stay the flags of record.
         public List<WeeklyMeeting> Rows { get; } = new();
     }
 

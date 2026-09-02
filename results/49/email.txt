@@ -1,0 +1,40 @@
+
+CB Front Meeting Market Pricing
+Central Bank	Decision Date	Start Date	OIS Mid	Fixing	Priced (bp)
+MPC GBP	09-Sep-26	09-Sep-26	4.125	4.000	+12.5
+FOMC USD	16-Sep-26	16-Sep-26	3.775	3.900	-12.5
+ECB EUR	20-Sep-26	26-Sep-26	2.250	2.500	-25.0
+RBNZ NZD	21-Sep-26 *	21-Sep-26	2.825	2.750	+7.5
+RBA AUD	23-Sep-26	24-Sep-26	3.600	3.600	0.0
+
+Central Bank OIS Meetings
+
+MPC · GBP  fixing 4.000
+StartDate	Mid	Priced	Step	1d Chg	1w Chg	1m Chg
+09-Sep-26	4.125	+12.5		0.0	0.0	0.0
+21-Oct-26	4.225	+22.5	+10.0	0.0	0.0	0.0
+02-Dec-26	4.325	+32.5	+10.0	0.0	0.0	0.0
+
+FOMC · USD  fixing 3.900
+StartDate	Mid	Priced	Step	1d Chg	1w Chg	1m Chg
+16-Sep-26	3.775	-12.5		0.0	0.0	0.0
+28-Oct-26	3.675	-22.5	-10.0	0.0	0.0	0.0
+09-Dec-26	3.575	-32.5	-10.0	0.0	0.0	0.0
+
+ECB · EUR  fixing 2.500
+StartDate	Mid	Priced	Step	1d Chg	1w Chg	1m Chg
+26-Sep-26	2.250	-25.0		0.0	0.0	0.0
+14-Nov-26	2.170	-33.0	-8.0	0.0	0.0	0.0
+02-Jan-27	2.090	-41.0	-8.0	0.0	0.0	0.0
+
+RBNZ · NZD  fixing 2.750
+StartDate	Mid	Priced	Step	1d Chg	1w Chg	1m Chg
+21-Sep-26	2.825	+7.5		0.0	0.0	0.0
+02-Nov-26	2.925	+17.5	+10.0	0.0	0.0	0.0
+14-Dec-26	3.025	+27.5	+10.0	0.0	0.0	0.0
+
+RBA · AUD  fixing 3.600
+StartDate	Mid	Priced	Step	1d Chg	1w Chg	1m Chg
+24-Sep-26	3.600	0.0		0.0	0.0	0.0
+05-Nov-26	3.700	+10.0	+10.0	0.0	0.0	0.0
+17-Dec-26	3.800	+20.0	+10.0	0.0	0.0	0.0

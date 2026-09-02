@@ -1,0 +1,19 @@
+{EU} {GB} {AU} {NZ} {US} {CA} {JN} {NO} {SW} London EOD OIS Run — 28-Aug-26
+
+{US} FOMC Run   (EFFR 3.900)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+18-Sep-26    3.780   -12.0      —    0.0    0.0    0.0
+30-Oct-26    3.660   -24.0  -12.0    0.0    0.0    0.0
+11-Dec-26    3.540   -36.0  -12.0    0.0    0.0    0.0
+
+{NO} NORGES Run   (NOWA 4.250 rebased)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+10-Oct-26    4.310    +6.0      —   +2.0   +2.0   +2.0
+21-Nov-26    4.360   +11.0   +5.0   +2.0   +2.0   +2.0
+02-Jan-27    4.400   +15.0   +4.0   +2.0   +2.0   +2.0
+
+{SW} RIKSBANK Run   (SWESTR 1.250 rebased)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+03-Oct-26    1.170    -8.0      —   -2.0   -2.0   -2.0
+02-Nov-26    1.120   -13.0   -5.0   -2.0   -2.0   -2.0
+02-Dec-26  Y/E Turn

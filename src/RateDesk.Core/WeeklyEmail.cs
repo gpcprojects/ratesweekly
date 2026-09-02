@@ -147,9 +147,15 @@ namespace RateDesk.Core
             sb.Append("<tr>" + FH("Central Bank") + FH("Decision Date") + FH("Start Date")
                 + FH("OIS Mid", true) + FH("Fixing", true) + FH("Priced (bp)", true)
                 + FH("% 25bp", true) + "</tr>");
-            // † marks a fixing cell that is NOT the printed fixing (auto re-based onto the
-            // just-decided period's OIS until the new rate prints, or manually overridden)
-            string Reb(bool r) { if (r) anyRebasedFront = true; return r ? "†" : ""; }
+            // * on the fixing NUMBER, italic, marks a fixing manually adjusted for a delivered
+            // hike/cut the print has not caught up with (desk 2026-09-02 — replaces the wordy
+            // dagger). The date column's own * (start-only) is a different, standing marker.
+            string RebFix(double v, bool r)
+            {
+                if (!r) return v.ToString("0.000");
+                anyRebasedFront = true;
+                return $"<i>{v:0.000}*</i>";
+            }
             int fr = 0;
             foreach (var f in rep.Fronts)
             {
@@ -168,10 +174,10 @@ namespace RateDesk.Core
                     // label it rather than publish a number that reads as a cut (desk 2026-08-20)
                     (f.Masked
                         ? Td($"<i>{f.MaskLabel.Replace(" ", "&nbsp;")}</i>", $"text-align:right;color:{EmMut};{rb}") +
-                          Td(f.RefPct is double rp3 ? rp3.ToString("0.000") + Reb(f.RefRebased) : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
+                          Td(f.RefPct is double rp3 ? RebFix(rp3, f.RefRebased) : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
                           Td("&nbsp;", rb) + Td("&nbsp;", rb)
                         : Td($"<b>{f.MidPct:0.000}</b>", $"text-align:right;{rb}") +
-                          Td(f.RefPct is double rp2 ? rp2.ToString("0.000") + Reb(f.RefRebased) : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
+                          Td(f.RefPct is double rp2 ? RebFix(rp2, f.RefRebased) : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
                           Td(f.PricedBp is double p2 ? p2.ToString("+0.0;-0.0;0.0") : "&nbsp;", $"text-align:right;color:{EmMut};{rb}") +
                           Td($"<b>{pct}</b>", $"text-align:right;{rb}")) +
                     "</tr>");
@@ -181,8 +187,8 @@ namespace RateDesk.Core
                 sb.Append($"<div style=\"{EmFont}font-size:10px;color:{EmMut};margin:-10px 0 14px 2px;\">" +
                           "* swap-period start shown (no decision calendar for this bank)</div>");
             if (anyRebasedFront)
-                sb.Append($"<div style=\"{EmFont}font-size:10px;color:{EmMut};margin:{(anyStartOnly ? "0" : "-10px")} 0 14px 2px;\">" +
-                          "† fixing re-based for the just-announced decision — the new rate has not printed yet</div>");
+                sb.Append($"<div style=\"{EmFont}font-size:10px;color:{EmMut};font-style:italic;margin:{(anyStartOnly ? "0" : "-10px")} 0 14px 2px;\">" +
+                          "* = has been adjusted to reflect hike/cut prior to new fixing</div>");
         }
 
         // ---- 2. Central Bank OIS Meetings (3 cards per row) ----
@@ -211,9 +217,9 @@ namespace RateDesk.Core
                 // the compounded value stays IN the report (mechanics for a later install) but
                 // renders NOWHERE — desk 2026-08-26: "no mention of compounded rates anywhere"
                 // † = not the printed fixing (re-based onto the just-decided period's OIS)
-                string rebMark = run.RefRebased ? "†&nbsp;" + run.RebasedLabel.Trim().Replace(" ", "&nbsp;") : "";
+                string rebMark = run.RefRebased ? "*" : "";
                 sb.Append($"<div style=\"{EmFont}font-weight:bold;font-size:12.5px;color:{EmTxt};margin:0 0 3px 1px;\">{run.Title}" +
-                          (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">fixing {rp:0.000}{rebMark}</span>" : "")
+                          (run.RefPct is double rp ? $" <span style=\"font-weight:normal;color:{EmMut};font-size:10px;\">fixing {(run.RefRebased ? $"<i>{rp:0.000}*</i>" : rp.ToString("0.000"))}</span>" : "")
                           + "</div>");
                 sb.Append(TableOpen(new[] { 76, 56, 58, 52, 56, 60, 60 }, "0"));
                 // RATESWEEKLY DIVERGENCE (desk 2026-08-25): widths live ON every card cell —
@@ -273,6 +279,13 @@ namespace RateDesk.Core
             }
             sb.Append("</tr></table>");
         }
+
+        // the * disclaimer, snug under the OIS cards and before everything that follows
+        // (desk 2026-09-02) — starred days only
+        if (runs.Any(r0 => r0.RefRebased))
+            sb.Append($"<div style=\"{EmFont}font-size:10px;color:{EmMut};font-style:italic;" +
+                      "margin:-10px 0 14px 2px;\">* = has been adjusted to reflect hike/cut " +
+                      "prior to new fixing</div>");
 
         // ---- 3. Forward Rates Summary ----
         // RATESWEEKLY DIVERGENCE (desk spec 2026-08-11): one table per grid LINE — DM, EM · LATAM,
@@ -401,7 +414,7 @@ namespace RateDesk.Core
         {
             sb.AppendLine();
             sb.AppendLine(run.Title
-                + (run.RefPct is double rp ? $"  fixing {rp:0.000}{run.RebasedLabel}" : ""));
+                + (run.RefPct is double rp ? $"  fixing {rp:0.000}{(run.RefRebased ? "*" : "")}" : ""));
             sb.AppendLine("StartDate\tMid\tPriced\tStep\t1d Chg\t1w Chg\t1m Chg");
             foreach (var m in run.Rows)
                 sb.AppendLine(m.Masked
@@ -409,6 +422,12 @@ namespace RateDesk.Core
                     : $"{m.Date.ToString("dd-MMM-yy", inv)}\t{m.MidPct:0.000}\t{m.PricedBp:+0.0;-0.0;0.0}\t{m.StepBp:+0.0;-0.0;0.0}\t" +
                       $"{(m.D1Bp is double d1 ? d1.ToString("+0.0;-0.0;0.0") : "")}\t" +
                       $"{(m.W1Bp is double w ? w.ToString("+0.0;-0.0;0.0") : "")}\t{(m.M1Bp is double m1 ? m1.ToString("+0.0;-0.0;0.0") : "")}");
+        }
+        // the * disclaimer under the OIS tables (desk 2026-09-02), starred days only
+        if (truns.Any(r0 => r0.RefRebased) || rep.Fronts.Any(f0 => f0.RefRebased))
+        {
+            sb.AppendLine();
+            sb.AppendLine("* = has been adjusted to reflect hike/cut prior to new fixing");
         }
 
         var tsecs = parts.Grid ? rep.Sections : new List<WeeklySection>();

@@ -1,0 +1,14 @@
+FOMC: 3 row(s)  asOf 27-Aug-26
+   18-Sep-26 mid=3.780 1w=3.780 1m=3.780 turn=False tk=USSOFED1 Curncy
+   30-Oct-26 mid=3.660 1w=3.660 1m=3.660 turn=False tk=USSOFED2 Curncy
+   11-Dec-26 mid=3.540 1w=3.540 1m=3.540 turn=False tk=USSOFED3 Curncy
+   note: 1 roll(s) inside the 1m window — changes are measured against the ticker that pointed at the same contract then, not against this ticker's own close
+NORGES: 3 row(s)  asOf 27-Aug-26
+   10-Oct-26 mid=4.290 1w=4.290 1m=4.290 turn=False tk=NKSF2A Curncy
+   21-Nov-26 mid=4.340 1w=4.340 1m=4.340 turn=False tk=NKSF3A Curncy
+   02-Jan-27 mid=4.380 1w=4.380 1m=4.380 turn=False tk=NKSF4A Curncy
+RIKSBANK: 3 row(s)  asOf 27-Aug-26
+   03-Oct-26 mid=1.190 1w=1.190 1m=1.190 turn=False tk=SKSF2A Curncy
+   02-Nov-26 mid=1.140 1w=1.140 1m=1.140 turn=False tk=SKSF3A Curncy
+   02-Dec-26 mid=1.100 1w=1.100 1m=1.100 turn=True tk=SKSF4A Curncy
+   note: 1 roll(s) inside the 1m window — changes are measured against the ticker that pointed at the same contract then, not against this ticker's own close

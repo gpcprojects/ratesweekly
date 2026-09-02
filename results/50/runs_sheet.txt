@@ -1,0 +1,23 @@
+DRAX OIS Runs 31Aug26 |  |  |  |  |  |  | 
+ |  |  |  |  |  |  | 
+ECB closing run |  |  |  |  |  |  | 
+€STR fixing (rebased) | 2.250 |  |  |  |  |  | 
+StartDate | Maturity | Mid | Priced (bp) | Step (bp) | Δ 1d (bp) | Δ 1w (bp) | Δ 1m (bp)
+25-Oct-26 | 13-Dec-26 | 2.200 | -5.0 |  | -20.0 | -20.0 | -20.0
+13-Dec-26 | 31-Jan-27 | 2.150 | -10.0 | -5.0 | -20.0 | -20.0 | -20.0
+31-Jan-27 | 21-Mar-27 | 2.100 | -15.0 | -5.0 | -20.0 | -20.0 | -20.0
+ |  |  |  |  |  |  | 
+BOJ closing run |  |  |  |  |  |  | 
+TONA fixing | 0.500 |  |  |  |  |  | 
+StartDate | Maturity | Mid | Priced (bp) | Step (bp) | Δ 1d (bp) | Δ 1w (bp) | Δ 1m (bp)
+26-Sep-26 | 07-Nov-26 | 0.560 | +6.0 |  | 0.0 | 0.0 | 0.0
+07-Nov-26 | 19-Dec-26 | 0.620 | +12.0 | +6.0 | 0.0 | 0.0 | 0.0
+19-Dec-26 |  | 0.680 | +18.0 | +6.0 | 0.0 | 0.0 | 0.0
+ |  |  |  |  |  |  | 
+RIKSBANK closing run |  |  |  |  |  |  | 
+SWESTR fixing | 1.950 |  |  |  |  |  | 
+StartDate | Maturity | Mid | Priced (bp) | Step (bp) | Δ 1d (bp) | Δ 1w (bp) | Δ 1m (bp)
+12-Sep-26 | 24-Oct-26 | 1.900 | -5.0 |  | 0.0 | 0.0 | 0.0
+24-Oct-26 | 05-Dec-26 | 1.850 | -10.0 | -5.0 | 0.0 | 0.0 | 0.0
+05-Dec-26 | 16-Jan-27 | Y/E Turn |  |  |  |  | 
+16-Jan-27 | 27-Feb-27 | 1.800 | -15.0 | -5.0 | 0.0 | 0.0 | 0.0

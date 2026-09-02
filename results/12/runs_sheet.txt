@@ -1,0 +1,8 @@
+DRAX OIS Runs 31Aug26 |  |  |  |  |  |  | 
+ |  |  |  |  |  |  | 
+NORGES closing run |  |  |  |  |  |  | 
+NOWA fixing | 4.000 |  |  |  |  |  | 
+StartDate | Maturity | Mid | Priced (bp) | Step (bp) | Δ 1d (bp) | Δ 1w (bp) | Δ 1m (bp)
+12-Oct-26 | 30-Nov-26 | 3.880 | -12.0 |  | -5.0 | -5.0 | -13.0
+30-Nov-26 | 18-Jan-27 | 3.800 | -20.0 | -8.0 | -5.5 | -5.5 | -13.0
+18-Jan-27 | 08-Mar-27 | 3.750 | -25.0 | -5.0 | -5.0 | -5.0 | -12.0

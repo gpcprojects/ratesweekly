@@ -1,0 +1,7 @@
+FOMC: 6 row(s)  asOf 28-Aug-26
+   12-Oct-26 mid=4.350 1w=4.200 1m=4.170 turn=False tk=USSOFED2 Curncy
+   23-Nov-26 mid=4.340 1w=4.300 1m=4.270 turn=False tk=USSOFED3 Curncy
+   04-Jan-27 mid=4.440 1w=4.400 1m=4.370 turn=False tk=USSOFED4 Curncy
+   15-Feb-27 mid=4.460 1w=4.500 1m=4.470 turn=False tk=USSOFED5 Curncy
+   29-Mar-27 mid=4.630 1w=4.600 1m=4.570 turn=False tk=USSOFED6 Curncy
+   10-May-27 mid=4.680 1w=4.650 1m=4.620 turn=False tk=USSOFED7 Curncy

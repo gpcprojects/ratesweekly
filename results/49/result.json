@@ -1,0 +1,19 @@
+{
+  "id": 49,
+  "name": "Front table: order by decision-or-start, and the sign of \u0027% of 25bp\u0027",
+  "question": "Does the front table sort on the DECISION (not the period start), and does \u0027% 25bp\u0027 render a hike, a cut and a flat front correctly?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "MPC: on 29-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "FOMC: on 05-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "RBNZ: on 10-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "RBA: on 12-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "ECB: ticker re-pointed between 31-Jul-26 and 03-Aug-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output",
+    "ECB: ticker re-pointed between 28-Aug-26 and 31-Aug-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output",
+    "CHECK: RBNZ has NO decisionDates in config\\meetings.json - the decision-day front roll AND the Priced re-base are both disabled for this run",
+    "RBA: ticker re-pointed between 28-Aug-26 and 31-Aug-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output"
+  ],
+  "ms": 3248
+}

@@ -1,0 +1,13 @@
+{
+  "id": 41,
+  "name": "OutlierGuard CROSS-SECTIONAL \u2014 one body row flags, the front is exempt",
+  "question": "With four body rows moving together and one far off the median, does exactly that row earn a CHECK note \u2014 and does a front row decoupling twice as hard in the opposite direction stay silent, as the exemption intends?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "FOMC: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "CHECK: FOMC 15-Feb-27 \u03941d \u002B9.0bp vs run median \u002B1.5bp \u2014 verify before distribution"
+  ],
+  "ms": 854
+}

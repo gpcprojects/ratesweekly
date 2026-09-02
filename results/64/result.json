@@ -1,0 +1,10 @@
+{
+  "id": 64,
+  "name": "No emergency, price history only - the detector stays out of the way",
+  "question": "With the calendar correct and no maturity records, does the price scan leave a sound run untouched and unremarked?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [],
+  "ms": 557
+}

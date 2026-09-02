@@ -1,0 +1,4 @@
+RIKSBANK: 3 row(s)  asOf 28-Aug-26
+   18-Oct-26 mid=2.140 1w=2.140 1m=2.140 turn=False tk=SKSF2A Curncy
+   29-Nov-26 mid=2.290 1w=2.290 1m=2.290 turn=False tk=SKSF3A Curncy
+   10-Jan-27 mid=2.440 1w=2.440 1m=2.440 turn=False tk=SKSF4A Curncy

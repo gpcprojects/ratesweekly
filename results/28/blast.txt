@@ -1,0 +1,7 @@
+{EU} {GB} {AU} {NZ} {US} {CA} {JN} {NO} {SW} London EOD OIS Run — 31-Aug-26
+
+{SW} RIKSBANK Run   (SWESTR 2.000 rebased)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+18-Oct-26    2.150   +15.0      —   +1.0   +1.0   +1.0
+29-Nov-26    2.300   +30.0  +15.0   +1.0   +1.0   +1.0
+10-Jan-27    2.450   +45.0  +15.0   +1.0   +1.0   +1.0

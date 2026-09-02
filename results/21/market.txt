@@ -1,0 +1,24 @@
+scenario 21: ECB INTER-MEETING emergency cut, 12 days before the scheduled meeting
+today = 31-Aug-26 Mon   London now = 31-Aug-26 12:49
+
+=== ECB (EUR) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 31-May-26, 12-Jul-26, 06-Sep-26, 18-Sep-26, 06-Nov-26, 25-Dec-26
+  past      : 31-May-26, 12-Jul-26
+  decisions : 31-Aug-26, 12-Sep-26, 31-Oct-26, 19-Dec-26
+  app boundaries: 25-May-26, 06-Jul-26, 31-Aug-26, 18-Sep-26, 31-Oct-26, 19-Dec-26
+  fixing ESTRON Index = 2.000
+  quote  n=0  spell=Both      mid=2.000   prev=2.000   eff=12-Jul-26  mat=06-Sep-26  age=-
+  quote  n=1  spell=Both      mid=1.500   prev=1.930   eff=06-Sep-26  mat=18-Sep-26  age=-
+  quote  n=2  spell=Both      mid=1.470   prev=1.890   eff=18-Sep-26  mat=06-Nov-26  age=-
+  quote  n=3  spell=Both      mid=1.400   prev=1.850   eff=06-Nov-26  mat=25-Dec-26  age=-
+  quote  n=4  spell=Both      mid=1.345   prev=1.820   eff=25-Dec-26  mat=12-Feb-27  age=-
+  closes n=1: 22-Jun..06-Jul=2.000  07-Jul..28-Aug=1.930
+  closes n=2: 22-Jun..06-Jul=1.930  07-Jul..28-Aug=1.890
+  closes n=3: 22-Jun..06-Jul=1.890  07-Jul..28-Aug=1.850
+  closes n=4: 22-Jun..06-Jul=1.850  07-Jul..28-Aug=1.820
+  closes n=5: 22-Jun..06-Jul=1.820
+  snaps  n=1: 22-Jun..06-Jul=2.000  07-Jul..28-Aug=1.930
+  snaps  n=2: 22-Jun..06-Jul=1.930  07-Jul..28-Aug=1.890
+  snaps  n=3: 22-Jun..06-Jul=1.890  07-Jul..28-Aug=1.850
+  snaps  n=4: 22-Jun..06-Jul=1.850  07-Jul..28-Aug=1.820
+  snaps  n=5: 22-Jun..06-Jul=1.820

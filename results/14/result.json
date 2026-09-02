@@ -1,0 +1,13 @@
+{
+  "id": 14,
+  "name": "ECB hiked 3 days ago - the run sits INSIDE the mixed-state window",
+  "question": "With every day since the announcement per-rung ambiguous and seeded with visibly wrong prints, does any published change read them - and does the re-base still hold three days in?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "ECB: on 28-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "ECB: ticker re-pointed between 10-Jul-26 and 13-Jul-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output"
+  ],
+  "ms": 721
+}

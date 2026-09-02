@@ -1,0 +1,15 @@
+{
+  "id": 37,
+  "name": "A published rung\u0027s feed is \u003E1h quiet on decision day",
+  "question": "Does the STALE watch fire on the right rung, name it, and say so loudly when the quiet feed is the FRONT - the number the whole desk reads?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "STALE: RBA \u2014 1 published rung(s) off a feed quiet \u003E1h (INCLUDING THE FRONT, worst 13-Oct-26 at 195m) \u2014 consider another contributor (SOURCES)",
+    "RBA: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "STALE: RBNZ \u2014 1 published rung(s) off a feed quiet \u003E1h (worst 08-Dec-26 at 195m) \u2014 consider another contributor (SOURCES)",
+    "RBNZ: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 1199
+}

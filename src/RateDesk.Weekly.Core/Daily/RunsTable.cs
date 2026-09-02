@@ -60,7 +60,18 @@ namespace RateDesk.Weekly.Core.Daily
         }
 
         public sealed record Block(string Bank, string Flag, string FixingLabel, double? FixingPct,
-            bool Rebased, List<Row> Rows, string RebasedLabel = " (rebased)");
+            bool Rebased, List<Row> Rows)
+        {
+            /// <summary>The fixing as every surface prints it: the number, with a * when it
+            /// has been manually adjusted for a delivered hike/cut the print has not caught up
+            /// with (desk 2026-09-02 — no wordy labels, no stretched columns).</summary>
+            public string FixingText => FixingPct is { } fp
+                ? RateText(fp) + (Rebased ? "*" : "") : "";
+        }
+
+        /// <summary>The one-line disclaimer under the OIS tables, italic where markup allows,
+        /// rendered only when a * is on the board (desk 2026-09-02).</summary>
+        public const string RebaseNote = "* = has been adjusted to reflect hike/cut prior to new fixing";
 
         public static string Title(DateTime asOf) =>
             $"DRAX OIS Runs {asOf.ToString("dMMMyy", Inv)}";
@@ -83,8 +94,7 @@ namespace RateDesk.Weekly.Core.Daily
                     rows.Add(new Row(m.Date, end, m.MidPct, m.PricedBp, m.StepBp,
                         m.D1Bp, m.W1Bp, m.M1Bp, m.MaskLabel));
                 }
-                blocks.Add(new Block(runName, flag, fixing, run.RefPct, run.RefRebased, rows,
-                    run.RebasedLabel));
+                blocks.Add(new Block(runName, flag, fixing, run.RefPct, run.RefRebased, rows));
             }
             return blocks;
         }

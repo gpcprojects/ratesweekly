@@ -1,0 +1,26 @@
+scenario 40: OutlierGuard ABSOLUTE bars — a surprise hike breaches 12/30/50bp
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:25
+
+=== FOMC (USD) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  past      : 08-Jun-26, 20-Jul-26, 31-Aug-26
+  decisions : 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  app boundaries: 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  fixing FEDL01 Index = 3.900
+  quote  n=0  spell=Both      mid=3.900   prev=3.900   eff=20-Jul-26  mat=31-Aug-26  age=-
+  quote  n=1  spell=Both      mid=4.400   prev=4.050   eff=31-Aug-26  mat=12-Oct-26  age=-
+  quote  n=2  spell=Both      mid=4.250   prev=4.100   eff=12-Oct-26  mat=23-Nov-26  age=-
+  quote  n=3  spell=Both      mid=4.350   prev=4.250   eff=23-Nov-26  mat=04-Jan-27  age=-
+  quote  n=4  spell=Both      mid=4.450   prev=4.370   eff=04-Jan-27  mat=15-Feb-27  age=-
+  closes n=1: 22-Jun..20-Jul=3.900  21-Jul..04-Aug=3.650  05-Aug..24-Aug=3.850  25-Aug..28-Aug=4.050  31-Aug..31-Aug=4.400
+  closes n=2: 22-Jun..20-Jul=3.650  21-Jul..04-Aug=3.700  05-Aug..24-Aug=3.900  25-Aug..28-Aug=4.100  31-Aug..31-Aug=4.250
+  closes n=3: 22-Jun..20-Jul=3.700  21-Jul..04-Aug=3.900  05-Aug..24-Aug=4.070  25-Aug..28-Aug=4.250  31-Aug..31-Aug=4.350
+  closes n=4: 22-Jun..20-Jul=3.900  21-Jul..04-Aug=4.050  05-Aug..24-Aug=4.230  25-Aug..28-Aug=4.370  31-Aug..31-Aug=4.450
+  closes n=5: 22-Jun..20-Jul=4.050  21-Jul..04-Aug=4.150  05-Aug..24-Aug=4.310  25-Aug..28-Aug=4.470  31-Aug..31-Aug=4.550
+  closes n=6: 22-Jun..20-Jul=4.150
+  snaps  n=1: 22-Jun..20-Jul=3.900  21-Jul..04-Aug=3.650  05-Aug..24-Aug=3.850  25-Aug..28-Aug=4.050  31-Aug..31-Aug=4.400
+  snaps  n=2: 22-Jun..20-Jul=3.650  21-Jul..04-Aug=3.700  05-Aug..24-Aug=3.900  25-Aug..28-Aug=4.100  31-Aug..31-Aug=4.250
+  snaps  n=3: 22-Jun..20-Jul=3.700  21-Jul..04-Aug=3.900  05-Aug..24-Aug=4.070  25-Aug..28-Aug=4.250  31-Aug..31-Aug=4.350
+  snaps  n=4: 22-Jun..20-Jul=3.900  21-Jul..04-Aug=4.050  05-Aug..24-Aug=4.230  25-Aug..28-Aug=4.370  31-Aug..31-Aug=4.450
+  snaps  n=5: 22-Jun..20-Jul=4.050  21-Jul..04-Aug=4.150  05-Aug..24-Aug=4.310  25-Aug..28-Aug=4.470  31-Aug..31-Aug=4.550
+  snaps  n=6: 22-Jun..20-Jul=4.150

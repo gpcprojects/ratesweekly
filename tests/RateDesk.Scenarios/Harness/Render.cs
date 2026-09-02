@@ -38,7 +38,7 @@ public static class Render
         for (int i = 0; i < lines.Length; i++)
         {
             var line = lines[i];
-            var m = Regex.Match(line, @"^\{[A-Z]{2}\}\s+(\S+) Run(?:\s+\((.+?)\s+([\d.]+)(\s+rebased[^)]*)?\))?\s*$");
+            var m = Regex.Match(line, @"^\{[A-Z]{2}\}\s+(\S+) Run(?:\s+\((.+?)\s+([\d.]+)(\*)?\))?\s*$");
             if (m.Success)
             {
                 cur = new Block
@@ -83,9 +83,10 @@ public static class Render
             if (cur == null) continue;
             if (c0.Contains(" fixing"))
             {
-                cur.Rebased = c0.Contains("(rebased");
                 cur.FixingLabel = c0.Substring(0, c0.IndexOf(" fixing", StringComparison.Ordinal));
-                cur.FixingValue = row.Count > 1 ? row[1].Trim() : "";
+                var fv = row.Count > 1 ? row[1].Trim() : "";
+                cur.Rebased = fv.EndsWith("*", StringComparison.Ordinal);   // desk 2026-09-02
+                cur.FixingValue = fv.TrimEnd('*');
                 continue;
             }
             if (c0 == "StartDate") { afterHeader = true; continue; }
@@ -134,9 +135,10 @@ public static class Render
             if (cur == null) continue;
             if (c0.Contains(" fixing"))
             {
-                cur.Rebased = c0.Contains("(rebased");
                 cur.FixingLabel = c0.Substring(0, c0.IndexOf(" fixing", StringComparison.Ordinal));
-                cur.FixingValue = row.Length > 1 ? row[1].Trim() : "";
+                var fv = row.Length > 1 ? row[1].Trim() : "";
+                cur.Rebased = fv.EndsWith("*", StringComparison.Ordinal);   // desk 2026-09-02
+                cur.FixingValue = fv.TrimEnd('*');
                 continue;
             }
             if (c0 == "StartDate") { afterHeader = true; continue; }
@@ -164,8 +166,8 @@ public static class Render
             var m = Regex.Match(text, @"^(\S+)\s*·");
             if (!m.Success) continue;
             var blk = new Block { Bank = m.Groups[1].Value };
-            var fx = Regex.Match(text, @"fixing\s+([\d.]+)(†)?");
-            if (fx.Success) { blk.FixingValue = fx.Groups[1].Value; blk.Rebased = text.Contains("(rebased"); }
+            var fx = Regex.Match(text, @"fixing\s+([\d.]+)(\*)?");
+            if (fx.Success) { blk.FixingValue = fx.Groups[1].Value; blk.Rebased = fx.Groups[2].Success; }
 
             int from = titles[i].Index + titles[i].Length;
             int to = i + 1 < titles.Count ? titles[i + 1].Index : html.Length;

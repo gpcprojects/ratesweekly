@@ -1,0 +1,14 @@
+{
+  "id": 23,
+  "name": "Renumber day, feed re-pointed: mid(N) vs PrevClose(N\u002B1)",
+  "question": "The MPC has cut by surprise and the generics have already re-pointed. Is the change-on-day differenced against the SAME contract\u0027s close, or against the close of the contract that ticker number used to be?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "CHECK: MPC 12-Oct-26 \u03941d -22.0bp exceeds the 12bp sanity bar \u2014 verify before distribution",
+    "CHECK: MPC 23-Nov-26 \u03941d -22.0bp exceeds the 12bp sanity bar \u2014 verify before distribution",
+    "CHECK: MPC 04-Jan-27 \u03941d -22.0bp exceeds the 12bp sanity bar \u2014 verify before distribution"
+  ],
+  "ms": 561
+}

@@ -1,0 +1,55 @@
+{EU} {GB} {AU} {NZ} {US} {CA} {JN} {NO} {SW} London EOD OIS Run — 31-Aug-26
+
+{EU} ECB Run   (€STR 2.250 rebased)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+25-Oct-26    2.200    -5.0      —   -1.0   -1.0   -1.0
+13-Dec-26    2.150   -10.0   -5.0   -1.0   -1.0   -1.0
+31-Jan-27    2.100   -15.0   -5.0   -1.0   -1.0   -1.0
+
+{GB} MPC Run   (SONIA 4.000)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+12-Sep-26    3.900   -10.0      —    0.0    0.0    0.0
+24-Oct-26    3.800   -20.0  -10.0    0.0    0.0    0.0
+05-Dec-26    3.700   -30.0  -10.0    0.0    0.0    0.0
+
+{AU} RBA Run   (RBA cash 3.600)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+16-Sep-26    3.650    +5.0      —    0.0    0.0    0.0
+28-Oct-26    3.700   +10.0   +5.0    0.0    0.0    0.0
+09-Dec-26    3.750   +15.0   +5.0    0.0    0.0    0.0
+
+{NZ} RBNZ Run   (NZ OCR 2.750)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+19-Sep-26    2.700    -5.0      —    0.0    0.0    0.0
+31-Oct-26    2.650   -10.0   -5.0    0.0    0.0    0.0
+12-Dec-26    2.600   -15.0   -5.0    0.0    0.0    0.0
+
+{US} FOMC Run   (EFFR 3.900)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+21-Sep-26    3.780   -12.0      —    0.0    0.0    0.0
+02-Nov-26    3.660   -24.0  -12.0    0.0    0.0    0.0
+14-Dec-26    3.540   -36.0  -12.0    0.0    0.0    0.0
+
+{CA} BOC Run   (CORRA 2.250)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+25-Sep-26    2.325    +7.5      —    0.0    0.0    0.0
+06-Nov-26    2.400   +15.0   +7.5    0.0    0.0    0.0
+18-Dec-26    2.475   +22.5   +7.5    0.0    0.0    0.0
+
+{NO} NORGES Run   (NOWA 4.250)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+28-Sep-26    4.180    -7.0      —    0.0    0.0    0.0
+09-Nov-26    4.110   -14.0   -7.0    0.0    0.0    0.0
+21-Dec-26    4.040   -21.0   -7.0    0.0    0.0    0.0
+
+{JN} BOJ Run   (TONA 0.500)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+26-Sep-26    0.560    +6.0      —    0.0    0.0    0.0
+07-Nov-26    0.620   +12.0   +6.0    0.0    0.0    0.0
+19-Dec-26    0.680   +18.0   +6.0    0.0    0.0    0.0
+
+{SW} RIKSBANK Run   (SWESTR 1.900)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+14-Sep-26    1.815    -8.5      —    0.0    0.0    0.0
+14-Oct-26    1.730   -17.0   -8.5    0.0    0.0    0.0
+13-Nov-26    1.645   -25.5   -8.5    0.0    0.0    0.0

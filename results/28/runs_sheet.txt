@@ -1,0 +1,8 @@
+DRAX OIS Runs 31Aug26 |  |  |  |  |  |  | 
+ |  |  |  |  |  |  | 
+RIKSBANK closing run |  |  |  |  |  |  | 
+SWESTR fixing (rebased) | 2.000 |  |  |  |  |  | 
+StartDate | Maturity | Mid | Priced (bp) | Step (bp) | Δ 1d (bp) | Δ 1w (bp) | Δ 1m (bp)
+18-Oct-26 | 29-Nov-26 | 2.150 | +15.0 |  | +1.0 | +1.0 | +1.0
+29-Nov-26 | 10-Jan-27 | 2.300 | +30.0 | +15.0 | +1.0 | +1.0 | +1.0
+10-Jan-27 | 21-Feb-27 | 2.450 | +45.0 | +15.0 | +1.0 | +1.0 | +1.0

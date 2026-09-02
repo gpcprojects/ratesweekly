@@ -1,0 +1,21 @@
+scenario 13: BOJ hiked 36 days ago - the 1m anchor lands inside the old mixed-state window
+today = 31-Aug-26 Mon   London now = 31-Aug-26 12:49
+
+=== BOJ (JPY) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 25-Apr-26, 13-Jun-26, 01-Aug-26, 19-Sep-26, 07-Nov-26, 26-Dec-26
+  past      : 25-Apr-26, 13-Jun-26, 01-Aug-26
+  decisions : 26-Jul-26, 13-Sep-26, 01-Nov-26, 20-Dec-26
+  app boundaries: 19-Apr-26, 07-Jun-26, 26-Jul-26, 13-Sep-26, 01-Nov-26, 20-Dec-26
+  fixing MUTKCALM Index = 0.750
+  quote  n=0  spell=Both      mid=0.750   prev=0.750   eff=01-Aug-26  mat=19-Sep-26  age=-
+  quote  n=1  spell=Both      mid=0.930   prev=0.925   eff=19-Sep-26  mat=07-Nov-26  age=-
+  quote  n=2  spell=Both      mid=1.010   prev=1.000   eff=07-Nov-26  mat=26-Dec-26  age=-
+  quote  n=3  spell=Both      mid=1.060   prev=1.055   eff=26-Dec-26  mat=13-Feb-27  age=-
+  closes n=1: 22-Jun..24-Jul=0.700  27-Jul..31-Jul=0.870  03-Aug..28-Aug=0.915
+  closes n=2: 22-Jun..24-Jul=0.860  27-Jul..31-Jul=0.960  03-Aug..28-Aug=0.995
+  closes n=3: 22-Jun..24-Jul=0.940  27-Jul..31-Jul=1.020  03-Aug..28-Aug=1.050
+  closes n=4: 22-Jun..24-Jul=1.000
+  snaps  n=1: 22-Jun..24-Jul=0.700  27-Jul..31-Jul=0.870  03-Aug..28-Aug=0.915
+  snaps  n=2: 22-Jun..24-Jul=0.860  27-Jul..31-Jul=0.960  03-Aug..28-Aug=0.995
+  snaps  n=3: 22-Jun..24-Jul=0.940  27-Jul..31-Jul=1.020  03-Aug..28-Aug=1.050
+  snaps  n=4: 22-Jun..24-Jul=1.000

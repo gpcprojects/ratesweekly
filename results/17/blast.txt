@@ -1,0 +1,7 @@
+{EU} {GB} {AU} {NZ} {US} {CA} {JN} {NO} {SW} London EOD OIS Run — 31-Aug-26
+
+{EU} ECB Run   (€STR 1.750 rebased)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+25-Oct-26    1.740    -1.0      —   -0.5   -0.5   -5.0
+13-Dec-26    1.675    -7.5   -6.5   -0.5   -0.5   -4.5
+31-Jan-27    1.575   -17.5  -10.0   -0.5   -0.5   -4.5

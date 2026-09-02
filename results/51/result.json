@@ -1,0 +1,12 @@
+{
+  "id": 51,
+  "name": "Dashboard strip on a decision day",
+  "question": "On the day the Fed cuts, does the published per-currency dashboard strip carry each meeting period\u0027s own level and its own 1w/1m change?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "FOMC: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 774
+}

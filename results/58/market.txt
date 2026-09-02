@@ -1,0 +1,26 @@
+scenario 58: FOMC day: the 16:15 close precedes the 19:00 statement
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:25
+
+=== FOMC (USD) source='' decisionTime=19:00 rollsAtPeriodStart=False turn=False
+  starts    : 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  past      : 08-Jun-26, 20-Jul-26, 31-Aug-26
+  decisions : 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  app boundaries: 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  fixing FEDL01 Index = 3.900
+  quote  n=0  spell=Both      mid=3.900   prev=3.900   eff=20-Jul-26  mat=31-Aug-26  age=-
+  quote  n=1  spell=Both      mid=3.660   prev=3.660   eff=31-Aug-26  mat=12-Oct-26  age=-
+  quote  n=2  spell=Both      mid=3.560   prev=3.560   eff=12-Oct-26  mat=23-Nov-26  age=-
+  quote  n=3  spell=Both      mid=3.500   prev=3.500   eff=23-Nov-26  mat=04-Jan-27  age=-
+  quote  n=4  spell=Both      mid=3.460   prev=3.460   eff=04-Jan-27  mat=15-Feb-27  age=-
+  closes n=1: 22-Jun..20-Jul=3.900  21-Jul..28-Aug=3.660
+  closes n=2: 22-Jun..20-Jul=3.660  21-Jul..28-Aug=3.560
+  closes n=3: 22-Jun..20-Jul=3.560  21-Jul..28-Aug=3.500
+  closes n=4: 22-Jun..20-Jul=3.500  21-Jul..28-Aug=3.460
+  closes n=5: 22-Jun..20-Jul=3.460  21-Jul..28-Aug=3.430
+  closes n=6: 22-Jun..20-Jul=3.430
+  snaps  n=1: 22-Jun..20-Jul=3.900  21-Jul..28-Aug=3.660
+  snaps  n=2: 22-Jun..20-Jul=3.660  21-Jul..28-Aug=3.560
+  snaps  n=3: 22-Jun..20-Jul=3.560  21-Jul..28-Aug=3.500
+  snaps  n=4: 22-Jun..20-Jul=3.500  21-Jul..28-Aug=3.460
+  snaps  n=5: 22-Jun..20-Jul=3.460  21-Jul..28-Aug=3.430
+  snaps  n=6: 22-Jun..20-Jul=3.430

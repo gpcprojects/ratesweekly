@@ -1,0 +1,12 @@
+{
+  "id": 59,
+  "name": "Dashboard strip after an ECB announcement, feed not re-pointed by the close",
+  "question": "The render\u0027s asOf is the announcement day\u0027s close and the family had not renumbered by then. Which contract does each strip row carry?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "ECB: on 28-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 692
+}

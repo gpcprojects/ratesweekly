@@ -1,0 +1,22 @@
+scenario 23: Renumber day, feed re-pointed: mid(N) vs PrevClose(N+1)
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== MPC (GBP) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  past      : 08-Jun-26, 20-Jul-26, 31-Aug-26
+  decisions : 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  app boundaries: 08-Jun-26, 20-Jul-26, 31-Aug-26, 12-Oct-26, 23-Nov-26, 04-Jan-27, 15-Feb-27
+  fixing SONIO/N Index = 3.900
+  quote  n=0  spell=Both      mid=3.680   prev=3.900   eff=31-Aug-26  mat=12-Oct-26  age=-
+  quote  n=1  spell=Both      mid=3.530   prev=3.900   eff=12-Oct-26  mat=23-Nov-26  age=-
+  quote  n=2  spell=Both      mid=3.380   prev=3.750   eff=23-Nov-26  mat=04-Jan-27  age=-
+  quote  n=3  spell=Both      mid=3.230   prev=3.600   eff=04-Jan-27  mat=15-Feb-27  age=-
+  quote  n=4  spell=Both      mid=-       prev=3.450   eff=-          mat=29-Mar-27  age=-
+  closes n=1: 22-Jul..28-Aug=3.900
+  closes n=2: 22-Jul..28-Aug=3.750
+  closes n=3: 22-Jul..28-Aug=3.600
+  closes n=4: 22-Jul..28-Aug=3.450
+  snaps  n=1: 22-Jul..28-Aug=3.900
+  snaps  n=2: 22-Jul..28-Aug=3.750
+  snaps  n=3: 22-Jul..28-Aug=3.600
+  snaps  n=4: 22-Jul..28-Aug=3.450

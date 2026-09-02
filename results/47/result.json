@@ -1,0 +1,20 @@
+{
+  "id": 47,
+  "name": "NORGES and RIKSBANK decide on the SAME day (hike \u002B cut)",
+  "question": "Two decisions in one report, one hike one cut, one 1-day lag and one 6-day period-start roll: does each roll and re-base on its own calendar without touching the other?",
+  "mustFail": false,
+  "pass": false,
+  "failures": [
+    "RIKSBANK row 3 (02-Dec-26): turn flag is True, expected False",
+    "RIKSBANK row 3 (02-Dec-26) Step: blank, expected -4.0",
+    "RIKSBANK row 3 (02-Dec-26) d1: blank, expected -2.0",
+    "RIKSBANK row 3 (02-Dec-26) w1: blank, expected -2.0",
+    "RIKSBANK row 3 (02-Dec-26) m1: blank, expected -2.0"
+  ],
+  "notes": [
+    "FOMC: on 07-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "NORGES: on 28-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "RIKSBANK: on 04-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 1383
+}

@@ -1,0 +1,12 @@
+{
+  "id": 34,
+  "name": "RBA cuts TODAY - source page prices, composite dates",
+  "question": "When the dealer page carries the price and only the composite carries SW_EFF_DT/MATURITY, does every published row take its DATES from the composite and its PRICE from the source page - on the day the two disagree most?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "RBA: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 948
+}

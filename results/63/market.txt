@@ -1,0 +1,29 @@
+scenario 63: Emergency cut, price history only - no maturity records at all
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:25
+
+=== ECB (EUR) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 31-May-26, 19-Jul-26, 06-Sep-26, 18-Sep-26, 06-Nov-26, 25-Dec-26, 12-Feb-27, 02-Apr-27, 21-May-27
+  past      : 31-May-26, 19-Jul-26
+  decisions : 31-Aug-26, 12-Sep-26, 31-Oct-26, 19-Dec-26, 06-Feb-27, 27-Mar-27, 15-May-27
+  app boundaries: 25-May-26, 13-Jul-26, 31-Aug-26, 18-Sep-26, 31-Oct-26, 19-Dec-26, 06-Feb-27, 27-Mar-27, 15-May-27
+  fixing ESTRON Index = 2.000
+  quote  n=0  spell=Both      mid=2.050   prev=2.050   eff=19-Jul-26  mat=06-Sep-26  age=-
+  quote  n=1  spell=Both      mid=1.550   prev=2.200   eff=06-Sep-26  mat=18-Sep-26  age=-
+  quote  n=2  spell=Both      mid=2.200   prev=2.320   eff=18-Sep-26  mat=06-Nov-26  age=-
+  quote  n=3  spell=Both      mid=2.320   prev=2.430   eff=06-Nov-26  mat=25-Dec-26  age=-
+  quote  n=4  spell=Both      mid=2.430   prev=2.520   eff=25-Dec-26  mat=12-Feb-27  age=-
+  quote  n=5  spell=Both      mid=2.520   prev=2.600   eff=12-Feb-27  mat=02-Apr-27  age=-
+  closes n=1: 22-Jun..13-Jul=2.050  14-Jul..28-Aug=2.200
+  closes n=2: 22-Jun..13-Jul=2.200  14-Jul..28-Aug=2.320
+  closes n=3: 22-Jun..13-Jul=2.320  14-Jul..28-Aug=2.430
+  closes n=4: 22-Jun..13-Jul=2.430  14-Jul..28-Aug=2.520
+  closes n=5: 22-Jun..13-Jul=2.520  14-Jul..28-Aug=2.600
+  closes n=6: 22-Jun..13-Jul=2.600  14-Jul..28-Aug=2.660
+  closes n=7: 22-Jun..13-Jul=2.660
+  snaps  n=1: 22-Jun..13-Jul=2.050  14-Jul..28-Aug=2.200
+  snaps  n=2: 22-Jun..13-Jul=2.200  14-Jul..28-Aug=2.320
+  snaps  n=3: 22-Jun..13-Jul=2.320  14-Jul..28-Aug=2.430
+  snaps  n=4: 22-Jun..13-Jul=2.430  14-Jul..28-Aug=2.520
+  snaps  n=5: 22-Jun..13-Jul=2.520  14-Jul..28-Aug=2.600
+  snaps  n=6: 22-Jun..13-Jul=2.600  14-Jul..28-Aug=2.660
+  snaps  n=7: 22-Jun..13-Jul=2.660

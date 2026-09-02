@@ -162,7 +162,8 @@ namespace RateDesk.Weekly.Core
                         ? Cell($"<i>{Nb(f.MaskLabel)}</i>", FrontW[3], true)
                         : Cell(RunsTable.RateText(f.MidPct), FrontW[3], true))
                     + Cell(f.RefPct is double rp
-                        ? RunsTable.RateText(rp) + (f.RefRebased ? "†" : "") : "&nbsp;", FrontW[4], true)
+                        ? (f.RefRebased ? $"<i>{RunsTable.RateText(rp)}*</i>" : RunsTable.RateText(rp))
+                        : "&nbsp;", FrontW[4], true)
                     + (f.Masked
                         ? Cell("&nbsp;", FrontW[5], true)
                         : ChangeCell(f.PricedBp, FrontW[5], 0))   // scale 0 = no heat on Priced
@@ -180,7 +181,7 @@ namespace RateDesk.Weekly.Core
                     $"color:{Ink};padding:1px {TitlePad}px;line-height:15pt;\">"
                     + (anyStartOnly ? "*&nbsp;swap-period start shown (no decision calendar)" : "")
                     + (anyStartOnly && anyRebased ? "<br>" : "")
-                    + (anyRebased ? "†&nbsp;fixing re-based onto the just-decided period's OIS" : "")
+                    + (anyRebased ? $"<i>{RunsTable.RebaseNote}</i>" : "")
                     + "</td></tr>" + BlankRow(FrontW.Length));
             sb.Append("</table>");
             return sb.ToString();
@@ -203,8 +204,9 @@ namespace RateDesk.Weekly.Core
                     $"font-weight:bold;color:{Ink};padding:1px 3px;mso-line-height-rule:exactly;" +
                     $"line-height:15pt;\">{Nb(b.Bank + " closing run")}</td></tr>");
                 sb.Append("<tr>"
-                    + Cell(Nb(b.FixingLabel + " fixing" + (b.Rebased ? b.RebasedLabel : "")), RunW[0], false)
-                    + Cell(b.FixingPct is { } fp ? RunsTable.RateText(fp) : "&nbsp;", RunW[1], true)
+                    + Cell(Nb(b.FixingLabel + " fixing"), RunW[0], false)
+                    + Cell(b.FixingText.Length > 0
+                        ? (b.Rebased ? $"<i>{b.FixingText}</i>" : b.FixingText) : "&nbsp;", RunW[1], true)
                     + Cell("&nbsp;", RunW[2], false) + Cell("&nbsp;", RunW[3], false)
                     + Cell("&nbsp;", RunW[4], false) + Cell("&nbsp;", RunW[5], false)
                     + Cell("&nbsp;", RunW[6], false) + Cell("&nbsp;", RunW[7], false)
@@ -240,6 +242,12 @@ namespace RateDesk.Weekly.Core
                 }
                 sb.Append(BlankRow(RunW.Length));   // the sheet's blank separator row
             }
+            // the * disclaimer, snug under the last OIS table and BEFORE the inflation runs,
+            // only on a day a fixing actually carries the star (desk 2026-09-02)
+            if (blocks.Any(x => x.Rebased))
+                sb.Append($"<tr><td colspan=\"{RunW.Length}\" style=\"{Font}font-size:8pt;" +
+                    $"font-style:italic;color:{Ink};padding:0 3px 2px 3px;mso-line-height-rule:exactly;" +
+                    $"line-height:10pt;\">{RunsTable.RebaseNote}</td></tr>");
             sb.Append("</table>");
             return sb.ToString();
         }

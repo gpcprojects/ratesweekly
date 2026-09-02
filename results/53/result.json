@@ -1,0 +1,12 @@
+{
+  "id": 53,
+  "name": "Dashboard strip rendered the day after a decision",
+  "question": "When the newest stored close IS the decision day, does each dashboard row still carry its own contract, or the neighbouring one?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "FOMC: on 20-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 761
+}

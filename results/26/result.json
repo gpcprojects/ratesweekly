@@ -1,0 +1,20 @@
+{
+  "id": 26,
+  "name": "Weekend walk-back: Friday decision, run after the weekend",
+  "question": "The last mark of any kind is Friday\u0027s 16:15 snap. Does \u03941d walk back over the weekend to it and print the move since, leaving the delivered cut where it belongs - in the 1w and the 1m?",
+  "mustFail": false,
+  "pass": false,
+  "failures": [
+    "FOMC row 1 (02-Oct-26) d1: expected BLANK, got -2.0",
+    "FOMC row 1 (02-Oct-26) w1: -2.0 != expected -17.0",
+    "FOMC row 2 (13-Nov-26) d1: expected BLANK, got -2.0",
+    "FOMC row 2 (13-Nov-26) w1: -2.0 != expected -17.0",
+    "FOMC row 3 (25-Dec-26) d1: expected BLANK, got -2.0",
+    "FOMC row 3 (25-Dec-26) w1: -2.0 != expected -17.0",
+    "FOMC 02-Oct-26: \u03941d and \u03941w are both -2.0 - the 1d anchor walked past Friday\u0027s mark into the pre-decision tape",
+    "FOMC 13-Nov-26: \u03941d and \u03941w are both -2.0 - the 1d anchor walked past Friday\u0027s mark into the pre-decision tape",
+    "FOMC 25-Dec-26: \u03941d and \u03941w are both -2.0 - the 1d anchor walked past Friday\u0027s mark into the pre-decision tape"
+  ],
+  "notes": [],
+  "ms": 619
+}

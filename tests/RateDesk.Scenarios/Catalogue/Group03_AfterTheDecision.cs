@@ -392,8 +392,8 @@ public static class Group03_AfterTheDecision
             if (run.Rows.Any(r => r.Date == E10_St0))
                 msgs.Add("the period the ECB decided yesterday is back on the board");
             // the re-base must stay VISIBLE for the whole announcement-to-start week
-            if (!s.SheetHtml.Contains("†")) msgs.Add("the re-based fixing carries no dagger in the email");
-            if (!s.BlastText.Contains("rebased")) msgs.Add("the blast does not say the fixing is rebased");
+            if (!s.SheetHtml.Contains("*</i>")) msgs.Add("the adjusted fixing carries no star in the email");
+            if (!s.BlastText.Contains("*)")) msgs.Add("the blast does not say the fixing is rebased");
             // the mis-rung read this scenario exists to catch: Delta 1d off rung 1 on the
             // announcement day would read the DECIDED period (2.250), i.e. +16.0bp, not +3.0
             var r0 = run.Rows[0];
@@ -629,7 +629,7 @@ public static class Group03_AfterTheDecision
             }
             if (run.Rows.Any(r => r.Date == E14_St0))
                 msgs.Add("the period the ECB decided three days ago is back on the board");
-            if (!s.SheetHtml.Contains("†")) msgs.Add("the re-based fixing carries no dagger in the email");
+            if (!s.SheetHtml.Contains("*</i>")) msgs.Add("the adjusted fixing carries no star in the email");
             return msgs;
         });
         yield return s14;

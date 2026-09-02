@@ -1,0 +1,25 @@
+scenario 32: RIKSBANK trustConfigDates — priced rungs with no date fields
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== RIKSBANK (SEK) source='' decisionTime=08:30 rollsAtPeriodStart=True turn=False
+  starts    : 18-May-26, 29-Jun-26, 10-Aug-26, 21-Sep-26, 02-Nov-26, 14-Dec-26, 25-Jan-27, 08-Mar-27
+  past      : 18-May-26, 29-Jun-26, 10-Aug-26
+  decisions : 04-Aug-26, 15-Sep-26, 27-Oct-26, 08-Dec-26, 19-Jan-27, 02-Mar-27
+  app boundaries: 18-May-26, 29-Jun-26, 10-Aug-26, 21-Sep-26, 02-Nov-26, 14-Dec-26, 25-Jan-27, 08-Mar-27
+  fixing SWESTR Index = 2.000
+  quote  n=0  spell=Both      mid=2.000   prev=2.000   eff=-          mat=-          age=-
+  quote  n=1  spell=Both      mid=2.100   prev=2.100   eff=-          mat=-          age=-
+  quote  n=2  spell=Both      mid=2.200   prev=2.200   eff=-          mat=-          age=-
+  quote  n=3  spell=Both      mid=2.300   prev=2.300   eff=-          mat=-          age=-
+  closes n=1: 17-Jun..29-Jun=1.900  30-Jun..10-Aug=2.000  11-Aug..31-Aug=2.100
+  closes n=2: 17-Jun..29-Jun=2.000  30-Jun..10-Aug=2.100  11-Aug..31-Aug=2.200
+  closes n=3: 17-Jun..29-Jun=2.100  30-Jun..10-Aug=2.200  11-Aug..31-Aug=2.300
+  closes n=4: 17-Jun..29-Jun=2.200  30-Jun..10-Aug=2.300  11-Aug..31-Aug=2.400
+  closes n=5: 17-Jun..29-Jun=2.300  30-Jun..10-Aug=2.400
+  closes n=6: 17-Jun..29-Jun=2.400
+  snaps  n=1: 17-Jun..29-Jun=1.900  30-Jun..10-Aug=2.000  11-Aug..31-Aug=2.100
+  snaps  n=2: 17-Jun..29-Jun=2.000  30-Jun..10-Aug=2.100  11-Aug..31-Aug=2.200
+  snaps  n=3: 17-Jun..29-Jun=2.100  30-Jun..10-Aug=2.200  11-Aug..31-Aug=2.300
+  snaps  n=4: 17-Jun..29-Jun=2.200  30-Jun..10-Aug=2.300  11-Aug..31-Aug=2.400
+  snaps  n=5: 17-Jun..29-Jun=2.300  30-Jun..10-Aug=2.400
+  snaps  n=6: 17-Jun..29-Jun=2.400

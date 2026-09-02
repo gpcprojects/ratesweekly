@@ -1,0 +1,12 @@
+{
+  "id": 28,
+  "name": "RIKSBANK hikes TODAY, SKSF renumbers in 6 days (announcement day)",
+  "question": "On the announcement day of a period-start-renumbering family, does the decided period leave the board WITHOUT the roll-day CoD correction firing on a feed that has not renumbered?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "RIKSBANK: on 20-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 737
+}

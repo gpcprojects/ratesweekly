@@ -1,0 +1,2 @@
+FOMC: on 20-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers' own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.
+FOMC announces at 19:00 London, after this run's 16:15 marks — the board is NOT rolled past today's decision, because every price in this run was taken before it.

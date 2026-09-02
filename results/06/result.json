@@ -1,0 +1,14 @@
+{
+  "id": 6,
+  "name": "Decision TODAY, NO decisionTimeLondon on file",
+  "question": "With the announcement time missing the intraday state is unknowable - does the run degrade honestly (no roll, no re-base), and does it TELL anyone that the decision day is running ungated?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "ECB: on 06-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "CHECK: ECB has no decisionTimeLondon in config\\meetings.json - the decision-day front roll degrades to the next morning, so a decision day publishes an already-delivered move as still priced in",
+    "ECB: ticker re-pointed between 06-Jul-26 and 07-Jul-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output"
+  ],
+  "ms": 704
+}

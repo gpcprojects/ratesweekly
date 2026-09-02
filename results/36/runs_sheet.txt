@@ -1,0 +1,14 @@
+DRAX OIS Runs 31Aug26 |  |  |  |  |  |  | 
+ |  |  |  |  |  |  | 
+RBNZ closing run |  |  |  |  |  |  | 
+NZ OCR fixing (rebased) | 3.250 |  |  |  |  |  | 
+StartDate | Maturity | Mid | Priced (bp) | Step (bp) | Δ 1d (bp) | Δ 1w (bp) | Δ 1m (bp)
+13-Oct-26 | 24-Nov-26 | 3.350 | +10.0 |  | +4.0 | +4.0 | +4.0
+24-Nov-26 | 05-Jan-27 | 3.450 | +20.0 | +10.0 | +4.0 | +4.0 | +4.0
+ |  |  |  |  |  |  | 
+BOC closing run |  |  |  |  |  |  | 
+CORRA fixing (rebased) | 2.750 |  |  |  |  |  | 
+StartDate | Maturity | Mid | Priced (bp) | Step (bp) | Δ 1d (bp) | Δ 1w (bp) | Δ 1m (bp)
+20-Oct-26 | 08-Dec-26 | 2.800 | +5.0 |  | +4.0 | +4.0 | +4.0
+08-Dec-26 | 26-Jan-27 | 2.870 | +12.0 | +7.0 | +4.0 | +4.0 | +4.0
+26-Jan-27 |  | 2.900 | +15.0 | +3.0 | +4.0 | +4.0 | +4.0

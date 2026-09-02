@@ -1,0 +1,5 @@
+RBA: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers' own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.
+CHECK: RBA 24-Nov-26 publishes NO mid — rejected (ticker -45.0bp off its neighbours). The row is labelled 'n/a' on every surface; nothing was invented in its place. Verify the contributor (SOURCES).
+RBNZ: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers' own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.
+CHECK: RBNZ 20-Oct-26 Δ1d -33.0bp exceeds the 12bp sanity bar — verify before distribution
+CHECK: RBNZ 20-Oct-26 Δ1w -33.0bp exceeds the 30bp sanity bar — verify before distribution

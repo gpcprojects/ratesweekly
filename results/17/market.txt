@@ -1,0 +1,24 @@
+scenario 17: ECB cuts 25bp TODAY, fully priced (lagged start)
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== ECB (EUR) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 31-May-26, 12-Jul-26, 06-Sep-26, 25-Oct-26, 13-Dec-26, 31-Jan-27
+  past      : 31-May-26, 12-Jul-26
+  decisions : 31-Aug-26, 19-Oct-26, 07-Dec-26, 25-Jan-27
+  app boundaries: 25-May-26, 06-Jul-26, 31-Aug-26, 19-Oct-26, 07-Dec-26, 25-Jan-27
+  fixing ESTRON Index = 2.000
+  quote  n=0  spell=Both      mid=2.000   prev=2.000   eff=12-Jul-26  mat=06-Sep-26  age=-
+  quote  n=1  spell=Both      mid=1.750   prev=1.755   eff=06-Sep-26  mat=25-Oct-26  age=-
+  quote  n=2  spell=Both      mid=1.740   prev=1.745   eff=25-Oct-26  mat=13-Dec-26  age=-
+  quote  n=3  spell=Both      mid=1.675   prev=1.680   eff=13-Dec-26  mat=31-Jan-27  age=-
+  quote  n=4  spell=Both      mid=1.575   prev=1.580   eff=31-Jan-27  mat=21-Mar-27  age=-
+  closes n=1: 22-Jun..06-Jul=2.000  07-Jul..10-Aug=1.800  11-Aug..28-Aug=1.755
+  closes n=2: 22-Jun..06-Jul=1.800  07-Jul..10-Aug=1.790  11-Aug..28-Aug=1.745
+  closes n=3: 22-Jun..06-Jul=1.790  07-Jul..10-Aug=1.720  11-Aug..28-Aug=1.680
+  closes n=4: 22-Jun..06-Jul=1.720  07-Jul..10-Aug=1.620  11-Aug..28-Aug=1.580
+  closes n=5: 22-Jun..06-Jul=1.620
+  snaps  n=1: 22-Jun..06-Jul=2.000  07-Jul..10-Aug=1.800  11-Aug..28-Aug=1.755
+  snaps  n=2: 22-Jun..06-Jul=1.800  07-Jul..10-Aug=1.790  11-Aug..28-Aug=1.745
+  snaps  n=3: 22-Jun..06-Jul=1.790  07-Jul..10-Aug=1.720  11-Aug..28-Aug=1.680
+  snaps  n=4: 22-Jun..06-Jul=1.720  07-Jul..10-Aug=1.620  11-Aug..28-Aug=1.580
+  snaps  n=5: 22-Jun..06-Jul=1.620

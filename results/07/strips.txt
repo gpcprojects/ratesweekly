@@ -1,0 +1,5 @@
+RBA: 4 row(s)  asOf 28-Aug-26
+   13-Oct-26 mid=3.470 1w=3.470 1m=3.470 turn=False tk=ADSF2A NABZ Curncy
+   24-Nov-26 mid=3.320 1w=3.320 1m=3.320 turn=False tk=ADSF3A NABZ Curncy
+   05-Jan-27 mid=3.170 1w=3.170 1m=3.170 turn=False tk=ADSF4A NABZ Curncy
+   16-Feb-27 mid=3.020 1w=3.020 1m=3.020 turn=False tk=ADSF5A NABZ Curncy

@@ -1,0 +1,7 @@
+{EU} {GB} {AU} {NZ} {US} {CA} {JN} {NO} {SW} London EOD OIS Run — 31-Aug-26
+
+{JN} BOJ Run   (TONA 0.750)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+19-Sep-26    0.930   +18.0      —   +1.5   +1.5   +6.0
+07-Nov-26    1.010   +26.0   +8.0   +1.5   +1.5   +5.0
+26-Dec-26    1.060   +31.0   +5.0   +1.0   +1.0   +4.0

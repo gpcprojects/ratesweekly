@@ -1,0 +1,16 @@
+{
+  "id": 20,
+  "name": "ECB HOLDS - a 25bp cut was priced (hawkish hold)",
+  "question": "When the bank does nothing and the strip jumps 23bp, does the decided period still roll off, and does the re-base pick up the UNCHANGED rate rather than a phantom move?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "ECB: on 06-Jul-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "CHECK: ECB 25-Oct-26 \u03941d \u002B23.0bp exceeds the 12bp sanity bar \u2014 verify before distribution",
+    "CHECK: ECB 13-Dec-26 \u03941d \u002B22.0bp exceeds the 12bp sanity bar \u2014 verify before distribution",
+    "CHECK: ECB 31-Jan-27 \u03941d \u002B21.0bp exceeds the 12bp sanity bar \u2014 verify before distribution",
+    "ECB: ticker re-pointed between 06-Jul-26 and 07-Jul-26 with no calendar boundary in that window \u2014 check the calendars against tools\\..\\dodgeball probe output"
+  ],
+  "ms": 729
+}

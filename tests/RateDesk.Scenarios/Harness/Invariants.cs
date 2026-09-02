@@ -302,7 +302,9 @@ public static class Invariants
                 f.Add($"front {fr.Bank}: start cell '{r[2]}' != '{D(fr.StartDate)}'");
             string wantMid = fr.Masked ? fr.MaskLabel : R(fr.MidPct);
             if (r[3] != wantMid) f.Add($"front {fr.Bank}: mid cell '{r[3]}' != '{wantMid}'");
-            string wantFix = fr.RefPct is { } rp ? R(rp) + (fr.RefRebased ? "†" : "") : "";
+            // the * convention (desk 2026-09-02): an adjusted fixing renders as the number
+            // with a star, italic in markup — Norm strips tags, the star survives
+            string wantFix = fr.RefPct is { } rp ? R(rp) + (fr.RefRebased ? "*" : "") : "";
             if (r[4] != wantFix) f.Add($"front {fr.Bank}: fixing cell '{r[4]}' != '{wantFix}'");
             string wantPriced = fr.Masked ? "" : B(fr.PricedBp);
             if (r[5] != wantPriced) f.Add($"front {fr.Bank}: priced cell '{r[5]}' != '{wantPriced}'");
@@ -313,8 +315,9 @@ public static class Invariants
         if (s.Report.Fronts.Any(x => x.Decision == null)
             && !s.SheetHtml.Contains("swap-period start shown"))
             f.Add("a front line shows a start-only date but the '*' footnote is missing");
-        if (s.Report.Fronts.Any(x => x.RefRebased) && !s.SheetHtml.Contains("re-based onto"))
-            f.Add("a front line carries the rebased dagger but the '†' footnote is missing");
+        if (s.Report.Fronts.Any(x => x.RefRebased)
+            && !s.SheetHtml.Contains("has been adjusted to reflect hike/cut"))
+            f.Add("a front line carries a starred fixing but the '*' disclaimer is missing");
     }
 
     // ---------------------------------------------------------------- G. card email
@@ -385,7 +388,7 @@ public static class Invariants
             if (r[3] != (fr.Masked ? fr.MaskLabel : R(fr.MidPct)))
                 f.Add($"card front {fr.Bank}: mid cell '{r[3]}' != " +
                       $"'{(fr.Masked ? fr.MaskLabel : R(fr.MidPct))}'");
-            string wantFix2 = fr.RefPct is { } rp2 ? R(rp2) + (fr.RefRebased ? "†" : "") : "";
+            string wantFix2 = fr.RefPct is { } rp2 ? R(rp2) + (fr.RefRebased ? "*" : "") : "";
             if (r[4] != wantFix2) f.Add($"card front {fr.Bank}: fixing cell '{r[4]}' != '{wantFix2}'");
             if (!fr.Masked)
             {

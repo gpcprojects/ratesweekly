@@ -1,0 +1,23 @@
+scenario 10: ECB hiked YESTERDAY, the decided period starts in 5 days (mixed state)
+today = 31-Aug-26 Mon   London now = 31-Aug-26 12:49
+
+=== ECB (EUR) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 30-May-26, 18-Jul-26, 05-Sep-26, 24-Oct-26, 12-Dec-26, 30-Jan-27
+  past      : 30-May-26, 18-Jul-26
+  decisions : 30-Aug-26, 18-Oct-26, 06-Dec-26, 24-Jan-27
+  app boundaries: 24-May-26, 12-Jul-26, 30-Aug-26, 18-Oct-26, 06-Dec-26, 24-Jan-27
+  fixing ESTRON Index = 2.000
+  quote  n=0  spell=Both      mid=2.200   prev=2.190   eff=18-Jul-26  mat=24-Oct-26  age=-
+  quote  n=1  spell=Both      mid=2.410   prev=2.380   eff=24-Oct-26  mat=12-Dec-26  age=-
+  quote  n=2  spell=Both      mid=2.460   prev=2.440   eff=12-Dec-26  mat=30-Jan-27  age=-
+  quote  n=3  spell=Both      mid=2.500   prev=2.490   eff=30-Jan-27  mat=20-Mar-27  age=-
+  closes n=1: 22-Jun..10-Jul=2.000  13-Jul..28-Aug=2.250
+  closes n=2: 22-Jun..10-Jul=2.250  13-Jul..28-Aug=2.300
+  closes n=3: 22-Jun..10-Jul=2.300  13-Jul..28-Aug=2.360
+  closes n=4: 22-Jun..10-Jul=2.360  13-Jul..28-Aug=2.420
+  closes n=5: 22-Jun..10-Jul=2.420
+  snaps  n=1: 22-Jun..10-Jul=2.000  13-Jul..28-Aug=2.250
+  snaps  n=2: 22-Jun..10-Jul=2.250  13-Jul..28-Aug=2.300
+  snaps  n=3: 22-Jun..10-Jul=2.300  13-Jul..28-Aug=2.360
+  snaps  n=4: 22-Jun..10-Jul=2.360  13-Jul..28-Aug=2.420
+  snaps  n=5: 22-Jun..10-Jul=2.420

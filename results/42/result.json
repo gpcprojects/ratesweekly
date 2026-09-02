@@ -1,0 +1,13 @@
+{
+  "id": 42,
+  "name": "FUTURES GUARD agrees \u2014 exchange-settled FF matches the meeting blend",
+  "question": "On a decision day with the gate rolling the decided period off, does the independent Fed Funds cross-check reproduce the meeting rows\u0027 own blend and say so?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "FOMC: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "futures guard FOMC ok: FFX6 Comdty Nov-26 implies 4.250 vs meeting blend 4.250 (\u0394\u002B0.0bp \u2264 2.5)"
+  ],
+  "ms": 767
+}

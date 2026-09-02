@@ -1,0 +1,19 @@
+
+CB Front Meeting Market Pricing
+Central Bank	Decision Date	Start Date	OIS Mid	Fixing	Priced (bp)
+RBA AUD	12-Oct-26	13-Oct-26	3.500	3.600	-10.0
+RBNZ NZD	19-Oct-26	20-Oct-26	2.150	2.500	-35.0
+
+Central Bank OIS Meetings
+
+RBA · AUD  fixing 3.600 (rebased)
+StartDate	Mid	Priced	Step	1d Chg	1w Chg	1m Chg
+13-Oct-26	3.500	-10.0		+4.0	+4.0	+4.0
+24-Nov-26	n/a					
+05-Jan-27	3.400	-20.0	-10.0	+4.0	+4.0	+4.0
+
+RBNZ · NZD  fixing 2.500 (rebased)
+StartDate	Mid	Priced	Step	1d Chg	1w Chg	1m Chg
+20-Oct-26	2.150	-35.0		-33.0	-33.0	-33.0
+08-Dec-26	2.520	+2.0	+37.0	+3.0	+3.0	+3.0
+26-Jan-27	2.550	+5.0	+3.0	+4.0	+4.0	+4.0

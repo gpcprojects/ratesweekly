@@ -1,0 +1,26 @@
+scenario 30: RIKSBANK cuts TODAY with a Y/E turn period on the board
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:24
+
+=== RIKSBANK (SEK) source='' decisionTime=00:05 rollsAtPeriodStart=True turn=True
+  starts    : 08-Jun-26, 20-Jul-26, 06-Sep-26, 26-Oct-26, 07-Dec-26, 18-Jan-27, 01-Mar-27
+  past      : 08-Jun-26, 20-Jul-26
+  decisions : 31-Aug-26, 20-Oct-26, 01-Dec-26, 12-Jan-27, 23-Feb-27
+  app boundaries: 08-Jun-26, 20-Jul-26, 06-Sep-26, 26-Oct-26, 07-Dec-26, 18-Jan-27, 01-Mar-27
+  fixing SWESTR Index = 2.000
+  quote  n=0  spell=Both      mid=2.000   prev=2.000   eff=20-Jul-26  mat=06-Sep-26  age=-
+  quote  n=1  spell=Both      mid=1.750   prev=1.760   eff=06-Sep-26  mat=26-Oct-26  age=-
+  quote  n=2  spell=Both      mid=1.700   prev=1.710   eff=26-Oct-26  mat=07-Dec-26  age=-
+  quote  n=3  spell=Both      mid=1.250   prev=1.260   eff=07-Dec-26  mat=18-Jan-27  age=-
+  quote  n=4  spell=Both      mid=1.650   prev=1.660   eff=18-Jan-27  mat=01-Mar-27  age=-
+  closes n=1: 17-Jun..20-Jul=2.000  21-Jul..28-Aug=1.760  31-Aug..31-Aug=1.750
+  closes n=2: 17-Jun..20-Jul=1.760  21-Jul..28-Aug=1.710  31-Aug..31-Aug=1.700
+  closes n=3: 17-Jun..20-Jul=1.710  21-Jul..28-Aug=1.260  31-Aug..31-Aug=1.250
+  closes n=4: 17-Jun..20-Jul=1.260  21-Jul..28-Aug=1.660  31-Aug..31-Aug=1.650
+  closes n=5: 17-Jun..20-Jul=1.660  21-Jul..28-Aug=1.640  31-Aug..31-Aug=1.630
+  closes n=6: 17-Jun..20-Jul=1.640
+  snaps  n=1: 17-Jun..20-Jul=2.000  21-Jul..28-Aug=1.760  31-Aug..31-Aug=1.750
+  snaps  n=2: 17-Jun..20-Jul=1.760  21-Jul..28-Aug=1.710  31-Aug..31-Aug=1.700
+  snaps  n=3: 17-Jun..20-Jul=1.710  21-Jul..28-Aug=1.260  31-Aug..31-Aug=1.250
+  snaps  n=4: 17-Jun..20-Jul=1.260  21-Jul..28-Aug=1.660  31-Aug..31-Aug=1.650
+  snaps  n=5: 17-Jun..20-Jul=1.660  21-Jul..28-Aug=1.640  31-Aug..31-Aug=1.630
+  snaps  n=6: 17-Jun..20-Jul=1.640

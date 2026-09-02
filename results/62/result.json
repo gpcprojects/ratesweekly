@@ -1,0 +1,13 @@
+{
+  "id": 62,
+  "name": "A legitimately gapping front row on a decision day - guarded in history, not live",
+  "question": "The live guard spares the front row because the front is the one that gaps for real. Does the stitched series that feeds its change columns spare it too?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "FOMC: on 31-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking.",
+    "CHECK: FOMC 12-Oct-26 \u03941w -33.0bp exceeds the 30bp sanity bar \u2014 verify before distribution"
+  ],
+  "ms": 764
+}

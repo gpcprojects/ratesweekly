@@ -1,0 +1,15 @@
+ECB: 3 row(s)  asOf 28-Aug-26
+   25-Oct-26 mid=2.400 1w=2.400 1m=2.400 turn=False tk=EESF2A Curncy
+   13-Dec-26 mid=2.350 1w=2.350 1m=2.350 turn=False tk=EESF3A Curncy
+   31-Jan-27 mid=2.300 1w=2.300 1m=2.300 turn=False tk=EESF4A Curncy
+RIKSBANK: 4 row(s)  asOf 28-Aug-26
+   12-Sep-26 mid=1.900 1w=1.900 1m=1.900 turn=False tk=SKSF1A Curncy
+   24-Oct-26 mid=1.850 1w=1.850 1m=1.850 turn=False tk=SKSF2A Curncy
+   05-Dec-26 mid=1.825 1w=1.400 1m=1.400 turn=True tk=SKSF3A Curncy
+   16-Jan-27 mid=1.800 1w=1.800 1m=1.800 turn=False tk=SKSF4A Curncy
+   note: 1 interior row(s) replaced by the neighbour midpoint — the quoted print was implausible against both neighbours
+   note: 1 roll(s) inside the 1m window — changes are measured against the ticker that pointed at the same contract then, not against this ticker's own close
+BOJ: 2 row(s)  asOf 28-Aug-26
+   26-Sep-26 mid=0.560 1w=0.560 1m=0.560 turn=False tk=JYSOMPM1 Curncy
+   07-Nov-26 mid=0.620 1w=0.620 1m=0.620 turn=False tk=JYSOMPM2 Curncy
+   note: 1 roll(s) inside the 1m window — changes are measured against the ticker that pointed at the same contract then, not against this ticker's own close

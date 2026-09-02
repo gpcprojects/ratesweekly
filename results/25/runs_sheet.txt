@@ -1,0 +1,15 @@
+DRAX OIS Runs 31Aug26 |  |  |  |  |  |  | 
+ |  |  |  |  |  |  | 
+MPC closing run |  |  |  |  |  |  | 
+SONIA fixing | 3.900 |  |  |  |  |  | 
+StartDate | Maturity | Mid | Priced (bp) | Step (bp) | Δ 1d (bp) | Δ 1w (bp) | Δ 1m (bp)
+08-Oct-26 | 19-Nov-26 | 3.800 | -10.0 |  | +10.0 | +10.0 | +10.0
+19-Nov-26 | 31-Dec-26 | 3.600 | -30.0 | -20.0 | +10.0 | +10.0 | +10.0
+31-Dec-26 | 11-Feb-27 | 3.400 | -50.0 | -20.0 | +10.0 | +10.0 | +10.0
+ |  |  |  |  |  |  | 
+FOMC closing run |  |  |  |  |  |  | 
+EFFR fixing | 3.900 |  |  |  |  |  | 
+StartDate | Maturity | Mid | Priced (bp) | Step (bp) | Δ 1d (bp) | Δ 1w (bp) | Δ 1m (bp)
+08-Oct-26 | 19-Nov-26 | 3.800 | -10.0 |  | +5.0 | +10.0 | +10.0
+19-Nov-26 | 31-Dec-26 | 3.600 | -30.0 | -20.0 | +10.0 | +10.0 | +10.0
+31-Dec-26 | 11-Feb-27 | 3.400 | -50.0 | -20.0 | +10.0 | +10.0 | +10.0

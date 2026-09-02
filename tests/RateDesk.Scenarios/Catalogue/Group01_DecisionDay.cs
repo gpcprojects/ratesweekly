@@ -164,8 +164,8 @@ public static class Group01_DecisionDay
             if (s.Run("ECB")!.Rows.Any(r => r.Date == E_St0))
                 msgs.Add("the period the ECB just decided is still on the board after the statement");
             // the re-base must be VISIBLE - a silently changed base is worse than none
-            if (!s.SheetHtml.Contains("†")) msgs.Add("the re-based fixing carries no dagger in the email");
-            if (!s.BlastText.Contains("rebased")) msgs.Add("the blast does not say the fixing is rebased");
+            if (!s.SheetHtml.Contains("*</i>")) msgs.Add("the adjusted fixing carries no star in the email");
+            if (!s.BlastText.Contains("*)")) msgs.Add("the blast does not say the fixing is rebased");
             return msgs;
         });
         yield return ecb;

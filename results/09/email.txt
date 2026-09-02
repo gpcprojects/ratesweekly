@@ -1,0 +1,13 @@
+
+CB Front Meeting Market Pricing
+Central Bank	Decision Date	Start Date	OIS Mid	Fixing	Priced (bp)
+ECB EUR	19-Oct-26	25-Oct-26	2.550	2.400	+15.0
+
+Central Bank OIS Meetings
+
+ECB · EUR  fixing 2.400 (rebased)
+StartDate	Mid	Priced	Step	1d Chg	1w Chg	1m Chg
+25-Oct-26	2.550	+15.0		+1.0	+1.0	+1.0
+13-Dec-26	2.700	+30.0	+15.0	+1.0	+1.0	+1.0
+31-Jan-27	2.850	+45.0	+15.0	+1.0	+1.0	+1.0
+21-Mar-27	3.000	+60.0	+15.0	+1.0	+1.0	+1.0

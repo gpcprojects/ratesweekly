@@ -1,0 +1,7 @@
+{EU} {GB} {AU} {NZ} {US} {CA} {JN} {NO} {SW} London EOD OIS Run — 31-Aug-26
+
+{GB} MPC Run   (SONIA 3.680 rebased)
+StartDate      Mid  Priced   Step    Δ1d    Δ1w    Δ1m
+12-Oct-26    3.530   -15.0      —  -22.0  -22.0  -22.0
+23-Nov-26    3.380   -30.0  -15.0  -22.0  -22.0  -22.0
+04-Jan-27    3.230   -45.0  -15.0  -22.0  -22.0  -22.0

@@ -1,0 +1,25 @@
+scenario 61: Morning after a SURPRISE hike, feed re-pointed - what is the re-based fixing?
+today = 31-Aug-26 Mon   London now = 31-Aug-26 13:25
+
+=== ECB (EUR) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 16-Jul-26, 03-Sep-26, 22-Oct-26, 10-Dec-26, 28-Jan-27, 18-Mar-27
+  past      : 16-Jul-26
+  decisions : 28-Aug-26, 16-Oct-26, 04-Dec-26, 22-Jan-27, 12-Mar-27
+  app boundaries: 10-Jul-26, 28-Aug-26, 16-Oct-26, 04-Dec-26, 22-Jan-27, 12-Mar-27
+  fixing ESTRON Index = 2.230
+  quote  n=0  spell=Both      mid=2.400   prev=2.300   eff=16-Jul-26  mat=22-Oct-26  age=-
+  quote  n=1  spell=Both      mid=2.530   prev=2.300   eff=22-Oct-26  mat=10-Dec-26  age=-
+  quote  n=2  spell=Both      mid=2.560   prev=2.330   eff=10-Dec-26  mat=28-Jan-27  age=-
+  quote  n=3  spell=Both      mid=2.580   prev=2.350   eff=28-Jan-27  mat=18-Mar-27  age=-
+  closes n=1: 22-Jun..10-Jul=2.230  13-Jul..27-Aug=2.250  28-Aug..28-Aug=2.480
+  closes n=2: 22-Jun..10-Jul=2.250  13-Jul..27-Aug=2.300  28-Aug..28-Aug=2.530
+  closes n=3: 22-Jun..10-Jul=2.300  13-Jul..27-Aug=2.330  28-Aug..28-Aug=2.560
+  closes n=4: 22-Jun..10-Jul=2.330  13-Jul..27-Aug=2.350  28-Aug..28-Aug=2.580
+  closes n=5: 22-Jun..10-Jul=2.350  13-Jul..27-Aug=2.360  28-Aug..28-Aug=2.590
+  closes n=6: 22-Jun..10-Jul=2.360
+  snaps  n=1: 22-Jun..10-Jul=2.230  13-Jul..27-Aug=2.250  28-Aug..28-Aug=2.480
+  snaps  n=2: 22-Jun..10-Jul=2.250  13-Jul..27-Aug=2.300  28-Aug..28-Aug=2.530
+  snaps  n=3: 22-Jun..10-Jul=2.300  13-Jul..27-Aug=2.330  28-Aug..28-Aug=2.560
+  snaps  n=4: 22-Jun..10-Jul=2.330  13-Jul..27-Aug=2.350  28-Aug..28-Aug=2.580
+  snaps  n=5: 22-Jun..10-Jul=2.350  13-Jul..27-Aug=2.360  28-Aug..28-Aug=2.590
+  snaps  n=6: 22-Jun..10-Jul=2.360

@@ -1,0 +1,12 @@
+
+CB Front Meeting Market Pricing
+Central Bank	Decision Date	Start Date	OIS Mid	Fixing	Priced (bp)
+RIKSBANK SEK	01-Dec-26	07-Dec-26	Y/E Turn	2.000	
+
+Central Bank OIS Meetings
+
+RIKSBANK · SEK  fixing 2.000
+StartDate	Mid	Priced	Step	1d Chg	1w Chg	1m Chg
+07-Dec-26	Y/E Turn					
+18-Jan-27	2.400	+40.0		0.0	0.0	0.0
+01-Mar-27	2.500	+50.0	+10.0	0.0	0.0	0.0

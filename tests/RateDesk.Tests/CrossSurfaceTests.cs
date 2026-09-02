@@ -109,9 +109,13 @@ namespace RateDesk.Tests
             rep.Runs[0].Rows[0].MidSource = "interp (ticker +137.0bp off — rejected)";
             var html = WeeklyEmail.Html(rep);
             Assert.Contains("3.775†", html);             // guard-synthesized mid carries the dagger
-            Assert.Contains("(rebased)", html);          // re-based fixing is labelled
+            // an adjusted fixing renders as the starred number in italics, with the one shared
+            // disclaimer line under the OIS tables (desk 2026-09-02 — the wordy label retired)
+            Assert.Contains("*</i>", html);
+            Assert.Contains("has been adjusted to reflect hike/cut", html);
             var text = WeeklyEmail.PlainText(rep);
-            Assert.Contains("(rebased)", text);
+            Assert.Contains("*", text);
+            Assert.Contains("has been adjusted to reflect hike/cut", text);
         }
 
         [Fact]

@@ -1,0 +1,71 @@
+scenario 47: NORGES and RIKSBANK decide on the SAME day (hike + cut)
+today = 28-Aug-26 Fri   London now = 28-Aug-26 15:04
+
+=== FOMC (USD) source='' decisionTime=19:00 rollsAtPeriodStart=False turn=False
+  starts    : 26-Jun-26, 07-Aug-26, 18-Sep-26, 30-Oct-26, 11-Dec-26, 22-Jan-27
+  past      : 26-Jun-26, 07-Aug-26
+  decisions : 18-Sep-26, 30-Oct-26, 11-Dec-26, 22-Jan-27
+  app boundaries: 26-Jun-26, 07-Aug-26, 18-Sep-26, 30-Oct-26, 11-Dec-26, 22-Jan-27
+  fixing FEDL01 Index = 3.900
+  quote  n=0  spell=Both      mid=3.900   prev=3.900   eff=07-Aug-26  mat=18-Sep-26  age=-
+  quote  n=1  spell=Both      mid=3.780   prev=3.780   eff=18-Sep-26  mat=30-Oct-26  age=-
+  quote  n=2  spell=Both      mid=3.660   prev=3.660   eff=30-Oct-26  mat=11-Dec-26  age=-
+  quote  n=3  spell=Both      mid=3.540   prev=3.540   eff=11-Dec-26  mat=22-Jan-27  age=-
+  closes n=1: 29-Jun..07-Aug=3.900  10-Aug..27-Aug=3.780
+  closes n=2: 19-Jun..26-Jun=3.900  29-Jun..07-Aug=3.780  10-Aug..27-Aug=3.660
+  closes n=3: 19-Jun..26-Jun=3.780  29-Jun..07-Aug=3.660  10-Aug..27-Aug=3.540
+  closes n=4: 19-Jun..26-Jun=3.660  29-Jun..07-Aug=3.540  10-Aug..27-Aug=3.420
+  closes n=5: 19-Jun..26-Jun=3.540  29-Jun..07-Aug=3.420
+  closes n=6: 19-Jun..26-Jun=3.420
+  snaps  n=1: 29-Jun..07-Aug=3.900  10-Aug..27-Aug=3.780
+  snaps  n=2: 19-Jun..26-Jun=3.900  29-Jun..07-Aug=3.780  10-Aug..27-Aug=3.660
+  snaps  n=3: 19-Jun..26-Jun=3.780  29-Jun..07-Aug=3.660  10-Aug..27-Aug=3.540
+  snaps  n=4: 19-Jun..26-Jun=3.660  29-Jun..07-Aug=3.540  10-Aug..27-Aug=3.420
+  snaps  n=5: 19-Jun..26-Jun=3.540  29-Jun..07-Aug=3.420
+  snaps  n=6: 19-Jun..26-Jun=3.420
+
+=== NORGES (NOK) source='' decisionTime=00:05 rollsAtPeriodStart=False turn=False
+  starts    : 06-Jun-26, 18-Jul-26, 29-Aug-26, 10-Oct-26, 21-Nov-26, 02-Jan-27
+  past      : 06-Jun-26, 18-Jul-26
+  decisions : 28-Aug-26, 09-Oct-26, 20-Nov-26, 01-Jan-27
+  app boundaries: 05-Jun-26, 17-Jul-26, 28-Aug-26, 09-Oct-26, 20-Nov-26, 01-Jan-27
+  fixing NOWA Index = 4.000
+  quote  n=0  spell=Both      mid=4.000   prev=4.000   eff=18-Jul-26  mat=29-Aug-26  age=-
+  quote  n=1  spell=Both      mid=4.250   prev=4.230   eff=29-Aug-26  mat=10-Oct-26  age=-
+  quote  n=2  spell=Both      mid=4.310   prev=4.290   eff=10-Oct-26  mat=21-Nov-26  age=-
+  quote  n=3  spell=Both      mid=4.360   prev=4.340   eff=21-Nov-26  mat=02-Jan-27  age=-
+  quote  n=4  spell=Both      mid=4.400   prev=4.380   eff=02-Jan-27  mat=13-Feb-27  age=-
+  closes n=1: 19-Jun..17-Jul=4.000  20-Jul..27-Aug=4.230  28-Aug..28-Aug=4.250
+  closes n=2: 19-Jun..17-Jul=4.230  20-Jul..27-Aug=4.290  28-Aug..28-Aug=4.310
+  closes n=3: 19-Jun..17-Jul=4.290  20-Jul..27-Aug=4.340  28-Aug..28-Aug=4.360
+  closes n=4: 19-Jun..17-Jul=4.340  20-Jul..27-Aug=4.380  28-Aug..28-Aug=4.400
+  closes n=5: 19-Jun..17-Jul=4.380
+  snaps  n=1: 19-Jun..17-Jul=4.000  20-Jul..27-Aug=4.230  28-Aug..28-Aug=4.250
+  snaps  n=2: 19-Jun..17-Jul=4.230  20-Jul..27-Aug=4.290  28-Aug..28-Aug=4.310
+  snaps  n=3: 19-Jun..17-Jul=4.290  20-Jul..27-Aug=4.340  28-Aug..28-Aug=4.360
+  snaps  n=4: 19-Jun..17-Jul=4.340  20-Jul..27-Aug=4.380  28-Aug..28-Aug=4.400
+  snaps  n=5: 19-Jun..17-Jul=4.380
+
+=== RIKSBANK (SEK) source='' decisionTime=00:05 rollsAtPeriodStart=True turn=True
+  starts    : 05-Jul-26, 04-Aug-26, 03-Sep-26, 03-Oct-26, 02-Nov-26, 02-Dec-26
+  past      : 05-Jul-26, 04-Aug-26
+  decisions : 28-Aug-26, 27-Sep-26, 27-Oct-26, 26-Nov-26
+  app boundaries: 05-Jul-26, 04-Aug-26, 03-Sep-26, 03-Oct-26, 02-Nov-26, 02-Dec-26
+  fixing SWESTR Index = 1.500
+  quote  n=0  spell=Both      mid=1.500   prev=1.500   eff=04-Aug-26  mat=03-Sep-26  age=-
+  quote  n=1  spell=Both      mid=1.250   prev=1.270   eff=03-Sep-26  mat=03-Oct-26  age=-
+  quote  n=2  spell=Both      mid=1.170   prev=1.190   eff=03-Oct-26  mat=02-Nov-26  age=-
+  quote  n=3  spell=Both      mid=1.120   prev=1.140   eff=02-Nov-26  mat=02-Dec-26  age=-
+  quote  n=4  spell=Both      mid=1.080   prev=1.100   eff=02-Dec-26  mat=01-Jan-27  age=-
+  closes n=1: 06-Jul..04-Aug=1.500  05-Aug..27-Aug=1.270  28-Aug..28-Aug=1.250
+  closes n=2: 19-Jun..03-Jul=1.500  06-Jul..04-Aug=1.270  05-Aug..27-Aug=1.190  28-Aug..28-Aug=1.170
+  closes n=3: 19-Jun..03-Jul=1.270  06-Jul..04-Aug=1.190  05-Aug..27-Aug=1.140  28-Aug..28-Aug=1.120
+  closes n=4: 19-Jun..03-Jul=1.190  06-Jul..04-Aug=1.140  05-Aug..27-Aug=1.100  28-Aug..28-Aug=1.080
+  closes n=5: 19-Jun..03-Jul=1.140  06-Jul..04-Aug=1.100
+  closes n=6: 19-Jun..03-Jul=1.100
+  snaps  n=1: 06-Jul..04-Aug=1.500  05-Aug..27-Aug=1.270  28-Aug..28-Aug=1.250
+  snaps  n=2: 19-Jun..03-Jul=1.500  06-Jul..04-Aug=1.270  05-Aug..27-Aug=1.190  28-Aug..28-Aug=1.170
+  snaps  n=3: 19-Jun..03-Jul=1.270  06-Jul..04-Aug=1.190  05-Aug..27-Aug=1.140  28-Aug..28-Aug=1.120
+  snaps  n=4: 19-Jun..03-Jul=1.190  06-Jul..04-Aug=1.140  05-Aug..27-Aug=1.100  28-Aug..28-Aug=1.080
+  snaps  n=5: 19-Jun..03-Jul=1.140  06-Jul..04-Aug=1.100
+  snaps  n=6: 19-Jun..03-Jul=1.100

@@ -1,0 +1,12 @@
+{
+  "id": 32,
+  "name": "RIKSBANK trustConfigDates \u2014 priced rungs with no date fields",
+  "question": "Do rungs that price but publish no SW_EFF_DT / MATURITY publish on the desk-confirmed config dates, and does the run still stop where the prices stop?",
+  "mustFail": false,
+  "pass": true,
+  "failures": [],
+  "notes": [
+    "RIKSBANK: on 10-Aug-26 the tickers were not numbered the way the meeting calendar implies, so the change columns follow the tickers\u0027 own recorded dates instead. This is normal after an unscheduled meeting; if there has not been one, the calendar in config/meetings.json needs checking."
+  ],
+  "ms": 875
+}

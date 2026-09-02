@@ -1,0 +1,21 @@
+
+CB Front Meeting Market Pricing
+Central Bank	Decision Date	Start Date	OIS Mid	Fixing	Priced (bp)
+ECB EUR	31-Aug-26	06-Sep-26	2.240	2.000	+24.0
+MPC GBP	31-Aug-26	31-Aug-26	3.680	3.900	-22.0
+
+Central Bank OIS Meetings
+
+ECB · EUR  fixing 2.000
+StartDate	Mid	Priced	Step	1d Chg	1w Chg	1m Chg
+06-Sep-26	2.240	+24.0		0.0	0.0	0.0
+25-Oct-26	2.390	+39.0	+15.0	0.0	0.0	0.0
+13-Dec-26	2.540	+54.0	+15.0	0.0	0.0	0.0
+31-Jan-27	2.690	+69.0	+15.0	0.0	0.0	0.0
+
+MPC · GBP  fixing 3.900
+StartDate	Mid	Priced	Step	1d Chg	1w Chg	1m Chg
+31-Aug-26	3.680	-22.0		0.0	0.0	0.0
+12-Oct-26	3.530	-37.0	-15.0	0.0	0.0	0.0
+23-Nov-26	3.380	-52.0	-15.0	0.0	0.0	0.0
+04-Jan-27	3.230	-67.0	-15.0	0.0	0.0	0.0
