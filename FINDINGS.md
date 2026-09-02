@@ -1,3 +1,21 @@
+## v0.19.0 (2026-09-02) — the history ships INSIDE the app (desk order)
+
+Desk: "the app is STANDALONE. incorporate the history INTO the app. that way it can't be missed.
+no copy paste of external file." `assets\history_seed.db` (a VACUUM'd copy of the desk store —
+179,782 closes from 2019-07, 40,556 fixings, 4,151 rung records, 9.8 MB) is now an EMBEDDED
+RESOURCE like the configs and templates. `SaveDown.EmbeddedSeed`:
+- a machine with NO store is BORN from the seed (before anything opens the db, app + CLI);
+- a SHALLOW store (<120d of closes) inherits everything it lacks from the seed, insert-only,
+  provenance kept — then the share snapshot still tops up when one exists;
+- a deep store answers one local query and skips. Startup logs the seed's manifest
+  ("embedded desk history: as of ...") so a stale seed is visible.
+The seed-to-today gap self-fills via StoreBackedHistory's ordinary gap-fill on the first run.
+**RELEASE RITUAL ADDITION: refresh the seed at every release** — VACUUM INTO
+assets\history_seed.db from the live store + regenerate assets\history_seed.txt, then build
+(now in CLAUDE.md). Exe grows ~10 MB (186 MB total). FLAGGED to the desk: the release repo is
+PUBLIC, so the seed puts bulk Bloomberg-derived history in a public download — flipping the
+repo private is one command if compliance wants it.
+
 ## Fixed 2026-09-02 (v0.18.4) — the history carrier was broken: both machines saved down LOCALLY
 
 Second terminal's popup: "fixing history is 0 day(s) deep and the share snapshot adds nothing."

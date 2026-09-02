@@ -19,6 +19,12 @@
          standalone -->
     <EmbeddedResource Include="..\..\templates\OIS_Store_Template.xlsm" />
     <EmbeddedResource Include="..\..\templates\Inflation_Store_Template.xlsm" />
+    <!-- THE DESK'S HISTORY SHIPS INSIDE THE APP (desk 2026-09-02: "the app is STANDALONE -
+         incorporate the history INTO the app, that way it can't be missed"). Refreshed from the
+         live store at every release (VACUUM INTO assets\history_seed.db) - the release ritual's
+         own step, and the manifest txt is shown at startup so a stale seed is visible. -->
+    <EmbeddedResource Include="..\..\assets\history_seed.db" />
+    <EmbeddedResource Include="..\..\assets\history_seed.txt" />
   </ItemGroup>
 
   <ItemGroup>

@@ -133,6 +133,40 @@ namespace RateDesk.Tests
             Assert.DoesNotContain(hist, x => x.Date == days[1] || x.Date == days[2]);
         }
 
+        // ------------------------- the history ships INSIDE the app (desk 2026-09-02) ----
+        [Fact]
+        public void EmbeddedSeed_ANewMachineIsBornWithTheDeskHistory()
+        {
+            Assert.NotNull(EmbeddedSeed.Manifest());
+            var db = Path.Combine(_dir, "born", "history.db");
+            Assert.True(EmbeddedSeed.EnsureStore(db));
+            using var store = new HistoryStore(db);
+            Assert.True(store.DailyRowCount() > 100_000);
+            Assert.True(store.FixingRowCount() > 30_000);
+            Assert.True(store.EarliestDaily() <= new DateTime(2019, 8, 1));
+            // an existing store — whatever its depth — is never touched by EnsureStore
+            Assert.False(EmbeddedSeed.EnsureStore(db));
+        }
+
+        [Fact]
+        public void EmbeddedSeed_AShallowStoreInheritsEverything_ADeepOneSkips()
+        {
+            using var store = new HistoryStore(Path.Combine(_dir, "shallow-seed.db"));
+            store.UpsertDaily("EESF1A Curncy", new[]
+                { new HistPoint(DateTime.Today.AddDays(-30), 2.11) }, excludeToday: false);
+
+            var note = EmbeddedSeed.InheritInto(store);
+            Assert.NotNull(note);
+            Assert.Contains("from the app itself", note);
+            Assert.True(store.DailyRowCount() > 100_000);
+            Assert.True(store.FixingRowCount() > 30_000);
+            // the machine's own row was never replaced
+            Assert.Contains(store.GetDaily("EESF1A Curncy", 36600),
+                p => p.Date.Date == DateTime.Today.AddDays(-30).Date && Math.Abs(p.Value - 2.11) < 1e-9);
+            // now deep — the next call is a one-query no-op
+            Assert.Null(EmbeddedSeed.InheritInto(store));
+        }
+
         // ----------------------------------- the 2026-09-02 desk report: the broken carrier ----
         [Fact]
         public void InheritAll_ShallowStoreInheritsTheDeskHistory_DeepStoreSkips()

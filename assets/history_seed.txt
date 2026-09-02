@@ -1,0 +1,6 @@
+asOf=2026-09-02
+daily=179782
+dailyFrom=2019-07-31
+dailyTo=2026-08-31
+fixings=40556
+maturity=4151

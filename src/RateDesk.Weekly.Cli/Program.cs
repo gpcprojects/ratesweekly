@@ -182,8 +182,15 @@ switch (cmd)
         {
             var appData = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RatesWeekly");
+            RateDesk.Weekly.Core.SaveDown.EmbeddedSeed.EnsureStore(dbPath, Console.WriteLine);
             using var store = new HistoryStore(dbPath);
             // shallow-store inheritance first (desk 2026-09-02: the app comes WITH the history)
+            try
+            {
+                if (RateDesk.Weekly.Core.SaveDown.EmbeddedSeed.InheritInto(store, Console.WriteLine) is { } n1)
+                    Console.WriteLine(n1);
+            }
+            catch (Exception ex1) { Console.WriteLine("! embedded inherit: " + ex1.Message); }
             try
             {
                 if (RateDesk.Weekly.Core.SaveDown.StoreBackup.InheritAll(store, appData, Console.WriteLine) is { } n0)

@@ -67,6 +67,10 @@ stacked vertically per side, compact ranked table.
 - SDK: dotnet 8 ("C:\Users\GPC Work\.dotnet\dotnet.exe" on the original machine).
 - Tests: dotnet test tests\RateDesk.Tests\RateDesk.Tests.csproj -c Release  (must stay green;
   fixture has USD/GBP/AUD/MXN only).
+- RELEASE RITUAL: refresh the embedded history seed FIRST — `VACUUM INTO` from the live store
+  (%LOCALAPPDATA%\RatesWeekly\history.db) to assets\history_seed.db + regenerate
+  assets\history_seed.txt (asOf/counts) — the app is STANDALONE and ships the desk's history
+  inside the exe (desk 2026-09-02); a stale seed is a stale desk for every new install.
 - Publish (single file, self-contained):
   dotnet publish src\RateDesk.Weekly\RateDesk.Weekly.csproj -c Release -r win-x64 -o publish --self-contained true /p:PublishSingleFile=true
   Verify (Get-Item publish\RatesWeekly.exe).VersionInfo.FileVersion afterwards — never trust build output.

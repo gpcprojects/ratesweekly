@@ -131,22 +131,7 @@ namespace RateDesk.Weekly.Core.SaveDown
                     if (snapFloor is not { } sf
                         || (localFloor is { } lf && sf > lf.AddDays(-60))) continue;
 
-                    int closes = 0, recs = 0;
-                    foreach (var tk in snap.DailyTickers())
-                    {
-                        var have = store.GetDaily(tk, 36600).Select(p => p.Date.Date).ToHashSet();
-                        foreach (var g in snap.GetDailyWithSource(tk, 36600)
-                                     .Where(p => !have.Contains(p.Date.Date)).GroupBy(p => p.Source))
-                            closes += store.UpsertDaily(tk,
-                                g.Select(p => new RateDesk.Core.Market.HistPoint(p.Date, p.Value)),
-                                excludeToday: true, source: g.Key);
-                    }
-                    foreach (var tk in snap.MaturityTickers())
-                    {
-                        var have = store.GetMaturityRows(tk).Select(r => r.Date).ToHashSet();
-                        foreach (var (day, mat, eff) in snap.GetMaturityRows(tk))
-                            if (!have.Contains(day)) { store.SetMaturity(tk, day, mat, eff); recs++; }
-                    }
+                    var (closes, recs) = InheritRowsFrom(store, snap);
                     log?.Invoke($"inherit: {closes:N0} close(s) + {recs:N0} rung record(s) from " +
                                 $"{path} — this store now reaches {store.EarliestDaily():dd-MMM-yy}");
                     // the fixings ride the same snapshot through their own merge gates
@@ -161,6 +146,30 @@ namespace RateDesk.Weekly.Core.SaveDown
                 finally { try { if (File.Exists(tmp)) File.Delete(tmp); } catch { } }
             }
             return null;
+        }
+
+        /// <summary>Insert-only inheritance of daily closes (provenance kept) and maturity
+        /// records from an OPEN snapshot store — the shared core behind the share-snapshot
+        /// inherit and the EMBEDDED seed (desk 2026-09-02). Local rows are never replaced.</summary>
+        internal static (int Closes, int Recs) InheritRowsFrom(HistoryStore store, HistoryStore snap)
+        {
+            int closes = 0, recs = 0;
+            foreach (var tk in snap.DailyTickers())
+            {
+                var have = store.GetDaily(tk, 36600).Select(p => p.Date.Date).ToHashSet();
+                foreach (var g in snap.GetDailyWithSource(tk, 36600)
+                             .Where(p => !have.Contains(p.Date.Date)).GroupBy(p => p.Source))
+                    closes += store.UpsertDaily(tk,
+                        g.Select(p => new RateDesk.Core.Market.HistPoint(p.Date, p.Value)),
+                        excludeToday: true, source: g.Key);
+            }
+            foreach (var tk in snap.MaturityTickers())
+            {
+                var have = store.GetMaturityRows(tk).Select(r => r.Date).ToHashSet();
+                foreach (var (day, mat, eff) in snap.GetMaturityRows(tk))
+                    if (!have.Contains(day)) { store.SetMaturity(tk, day, mat, eff); recs++; }
+            }
+            return (closes, recs);
         }
 
         /// <summary>INHERIT THE FIXING HISTORY WHEN THIS MACHINE'S IS THIN (desk report

@@ -140,6 +140,14 @@ namespace RateDesk.Weekly
             catch { /* informational */ }
             // one-time Roaming → Local store migration, BEFORE anything can open the db
             RateDesk.Weekly.Core.SaveDown.StoreBackup.MigrateRoamingToLocal(AppDataDir, DbPath, Log);
+            // THE APP COMES WITH THE DESK'S HISTORY (desk 2026-09-02): a machine with no store
+            // is born from the embedded seed — nothing to place, nothing to miss
+            try
+            {
+                if (RateDesk.Weekly.Core.SaveDown.EmbeddedSeed.Manifest() is { } sm) Log(sm);
+                RateDesk.Weekly.Core.SaveDown.EmbeddedSeed.EnsureStore(DbPath, Log);
+            }
+            catch (Exception ex) { Log("! embedded seed: " + ex.Message); }
             Loaded += async (_, _) => await SetupSaveDown();
             // one line per button; the first WEEKLY RUN clears these and takes the box over
             LogBox.Text =
@@ -575,7 +583,13 @@ namespace RateDesk.Weekly
                 using var store = new HistoryStore(DbPath);
                 var (result, weeklyRep, emailErr0) = await Task.Run(() =>
                 {
-                    // shallow-store inheritance first — see Daily_Click (desk 2026-09-02)
+                    // shallow-store inheritance first — embedded seed, then share (desk 2026-09-02)
+                    try
+                    {
+                        if (RateDesk.Weekly.Core.SaveDown.EmbeddedSeed.InheritInto(store, Log) is { } n1)
+                            Log(n1);
+                    }
+                    catch (Exception ex1) { Log("! embedded inherit: " + ex1.Message); }
                     try
                     {
                         if (RateDesk.Weekly.Core.SaveDown.StoreBackup.InheritAll(store, AppDataDir, Log) is { } n0)
@@ -825,10 +839,16 @@ namespace RateDesk.Weekly
             try
             {
                 using var store = new HistoryStore(DbPath);
-                // a shallow store inherits the desk's history from the share snapshot BEFORE
-                // anything reads it (desk 2026-09-02: the app comes WITH the history)
+                // a shallow store inherits the desk's history BEFORE anything reads it (desk
+                // 2026-09-02): the EMBEDDED seed first — it cannot be missed — then the share
+                // snapshot as a fresher top-up when one exists
                 await Task.Run(() =>
                 {
+                    try
+                    {
+                        if (Core.SaveDown.EmbeddedSeed.InheritInto(store, Log) is { } n1) Log(n1);
+                    }
+                    catch (Exception ex) { Log("! embedded inherit: " + ex.Message); }
                     try
                     {
                         if (Core.SaveDown.StoreBackup.InheritAll(store, AppDataDir, Log) is { } n)
